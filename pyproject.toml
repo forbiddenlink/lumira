@@ -20,22 +20,25 @@ dependencies = [
     "pillow>=10.0.0",
     "httpx>=0.27.0",
     "tenacity>=8.2.0",
-    "pydantic>=2.5.0",
-    "pydantic-settings>=2.0.0",
+    "pydantic>=2.10.0,<3.0.0",
+    "pydantic-settings>=2.6.0,<3.0.0",
     "sqlalchemy>=2.0.0",
     "alembic>=1.13.0",
     "pyyaml>=6.0.0",
     "python-dotenv>=1.0.0",
     "apscheduler>=3.10.0",
-    "structlog>=24.0.0",
+    "structlog>=24.4.0,<26.0.0",
     "tqdm>=4.66.0",
-    "fastapi>=0.109.0",
-    "python-multipart>=0.0.9",
-    "uvicorn[standard]>=0.27.0",
+    "fastapi>=0.115.0,<0.130.0",
+    "python-multipart>=0.0.17,<0.1.0",
+    "uvicorn[standard]>=0.32.0,<0.42.0",
     "websockets>=12.0.0",
-    "slowapi>=0.1.9",
+    "slowapi>=0.1.9,<0.2.0",
     "opencv-python-headless>=4.13.0.90",
     "aiofiles>=25.1.0",
+    "mangum>=0.19.0,<1.0.0",
+    "redis>=5.0.0",  # Required for caching and job queue
+    "rq>=1.16.0",  # Redis job queue
 ]
 
 [project.scripts]
@@ -93,8 +96,7 @@ controlnet = [
     "controlnet-aux>=0.0.9",
 ]
 queue = [
-    "rq>=1.16.0",
-    "rq-dashboard>=0.7.0",  # Optional admin UI
+    "rq-dashboard>=0.7.0",  # Optional admin UI (rq is now in core deps)
 ]
 
 [tool.ruff]

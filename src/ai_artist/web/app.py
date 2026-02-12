@@ -3,9 +3,11 @@
 import asyncio
 import contextlib
 import json
+from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
+from typing import cast
 
 import aiofiles
 from fastapi import (
@@ -21,10 +23,11 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Response
 from fastapi.security import APIKeyHeader
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
+from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from ..gallery.manager import GalleryManager
 from ..utils.config import WebConfig
@@ -151,6 +154,9 @@ def _rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Re
 logger = get_logger(__name__)
 
 
+ExceptionHandler = Callable[[Request, Exception], Response | Awaitable[Response]]
+
+
 class ImageMetadata(BaseModel):
     """Image metadata response model."""
 
@@ -185,7 +191,7 @@ class PromptTemplate(BaseModel):
     num_inference_steps: int = 30
     guidance_scale: float = 7.5
     created_at: str
-    tags: list[str] = []
+    tags: list[str] = Field(default_factory=list)
 
 
 class CreateTemplateRequest(BaseModel):
@@ -198,7 +204,7 @@ class CreateTemplateRequest(BaseModel):
     height: int = 1024
     num_inference_steps: int = 30
     guidance_scale: float = 7.5
-    tags: list[str] = []
+    tags: list[str] = Field(default_factory=list)
 
 
 class GenerationRequest(BaseModel):
@@ -251,7 +257,16 @@ def validate_generation_request(request: GenerationRequest) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan - startup and shutdown events."""
+    # Initialize database tables on startup
+    from ..db.models import Base
+    from ..db.session import create_db_engine
     from .dependencies import _gallery_manager
+
+    db_path = Path("data/ai_artist.db")
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    engine = create_db_engine(db_path)
+    Base.metadata.create_all(engine)
+    logger.info("database_initialized", db_path=str(db_path))
 
     # Only initialize if not already set (e.g., by tests)
     if _gallery_manager is None:
@@ -317,16 +332,23 @@ app = FastAPI(
 app.state.limiter = limiter
 
 # Add exception handlers
-# Note: type: ignore needed because FastAPI's exception handler
-# typing is overly strict. The handlers are correctly typed for
-# their specific exception types
-# type: ignore[arg-type]
-app.add_exception_handler(HTTPException, http_exception_handler)
-# type: ignore[arg-type]
-app.add_exception_handler(RequestValidationError, validation_exception_handler)
-app.add_exception_handler(Exception, general_exception_handler)
-# type: ignore[arg-type]
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+# FastAPI accepts subtype-specific handlers at runtime; cast for static typing.
+app.add_exception_handler(
+    HTTPException,
+    cast(ExceptionHandler, http_exception_handler),
+)
+app.add_exception_handler(
+    RequestValidationError,
+    cast(ExceptionHandler, validation_exception_handler),
+)
+app.add_exception_handler(
+    Exception,
+    cast(ExceptionHandler, general_exception_handler),
+)
+app.add_exception_handler(
+    RateLimitExceeded,
+    cast(ExceptionHandler, _rate_limit_exceeded_handler),
+)
 
 # Add middleware (added in reverse order of execution)
 # CORS must be added last so it processes requests first
@@ -357,8 +379,9 @@ static_dir = Path(__file__).parent.parent.parent / "static"
 async def root(request: Request):
     """Serve modern gallery homepage."""
     return templates.TemplateResponse(
+        request,
         "gallery_modern.html",
-        {"request": request, "title": "AI Artist Gallery"},
+        {"title": "AI Artist Gallery"},
     )
 
 
@@ -369,8 +392,9 @@ async def aria_page(request: Request):
     Personality, mood, and creation interface.
     """
     return templates.TemplateResponse(
+        request,
         "aria.html",
-        {"request": request, "title": "Aria | Autonomous AI Artist"},
+        {"title": "Aria | Autonomous AI Artist"},
     )
 
 
@@ -444,8 +468,9 @@ async def offline_page():
 async def classic_gallery(request: Request):
     """Serve classic gallery page."""
     return templates.TemplateResponse(
+        request,
         "gallery.html",
-        {"request": request, "title": "AI Artist Gallery - Classic"},
+        {"title": "AI Artist Gallery - Classic"},
     )
 
 
@@ -453,8 +478,9 @@ async def classic_gallery(request: Request):
 async def test_websocket(request: Request):
     """Serve WebSocket test page."""
     return templates.TemplateResponse(
+        request,
         "test_websocket.html",
-        {"request": request, "title": "WebSocket Test"},
+        {"title": "WebSocket Test"},
     )
 
 
@@ -675,16 +701,21 @@ async def upload_image(
     - image: PNG/JPG file
     - metadata: Optional JSON string with prompt, model, etc.
     """
-    from fastapi import UploadFile
-
     # Parse multipart data manually since we need Depends
     form = await request.form()
 
     if "image" not in form:
         raise HTTPException(status_code=400, detail="No image file provided")
 
-    image_file: UploadFile = form["image"]
-    metadata_str: str | None = form.get("metadata")
+    image_value = form["image"]
+    if not isinstance(image_value, StarletteUploadFile):
+        raise HTTPException(status_code=400, detail="No image file provided")
+    image_file: StarletteUploadFile = image_value
+
+    metadata_value = form.get("metadata")
+    metadata_str: str | None = (
+        metadata_value if isinstance(metadata_value, str) else None
+    )
 
     # Validate file type
     if not image_file.content_type or not image_file.content_type.startswith("image/"):
@@ -754,9 +785,9 @@ async def upload_batch(
     form = await request.form()
 
     # Collect all image files
-    images = []
+    images: list[StarletteUploadFile] = []
     for key, value in form.items():
-        if key.startswith("image") and hasattr(value, "content_type"):
+        if key.startswith("image") and isinstance(value, StarletteUploadFile):
             images.append(value)
 
     if not images:
@@ -779,9 +810,10 @@ async def upload_batch(
             # Check for corresponding metadata
             metadata = {}
             metadata_key = f"metadata_{idx}"
-            if metadata_key in form:
+            metadata_value = form.get(metadata_key)
+            if isinstance(metadata_value, str):
                 with contextlib.suppress(json.JSONDecodeError):
-                    metadata = json.loads(form[metadata_key])
+                    metadata = json.loads(metadata_value)
 
             # Generate filename
             import hashlib
@@ -1149,9 +1181,9 @@ async def websocket_endpoint(websocket: WebSocket):
         await ws_manager.disconnect(websocket, client_id)
 
 
-@app.get("/health")
-async def health_check():
-    """Health check endpoint."""
+@app.get("/health/details")
+async def health_details():
+    """Detailed health and runtime diagnostics endpoint."""
     from .dependencies import _gallery_manager
 
     return {
