@@ -17,8 +17,9 @@ logger = get_logger(__name__)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
-# Setup templates
-templates_dir = Path(__file__).parent.parent.parent / "templates"
+# Setup templates - templates are in project root, not src directory
+# Path: admin.py -> web -> ai_artist -> src -> ai-artist -> templates
+templates_dir = Path(__file__).parent.parent.parent.parent / "templates"
 templates = Jinja2Templates(directory=str(templates_dir))
 
 

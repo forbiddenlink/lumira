@@ -100,10 +100,7 @@ class AIArtist:
         # Initialize model pool if enabled (for 10x faster startup)
         if self.config.performance.enable_model_pool:
             logger.info("initializing_model_pool", enabled=True)
-            self.model_pool = ModelPool(
-                device=self.config.model.device,
-                dtype=get_torch_dtype(self.config.model.dtype),
-            )
+            self.model_pool = ModelPool(config=self.config)
             # Start background preloading of models
             if self.config.performance.preload_models:
                 preload_list = self.config.performance.preload_models.split(",")
