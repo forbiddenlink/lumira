@@ -7,6 +7,7 @@ import time
 import uuid
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+from typing import Any, cast
 
 import structlog
 
@@ -72,7 +73,7 @@ def configure_logging(
         processors.append(structlog.dev.ConsoleRenderer(colors=True))
 
     structlog.configure(
-        processors=processors,
+        processors=cast(Any, processors),
         wrapper_class=structlog.stdlib.BoundLogger,
         context_class=dict,
         logger_factory=structlog.stdlib.LoggerFactory(),

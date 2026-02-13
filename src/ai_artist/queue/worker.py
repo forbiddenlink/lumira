@@ -265,7 +265,7 @@ def generate_image(prompt: str, params: dict[str, Any]) -> dict[str, Any]:
                 )
 
 
-def cleanup_stale_jobs(max_age_hours: int = 24) -> dict[str, int]:
+def cleanup_stale_jobs(max_age_hours: int = 24) -> dict[str, Any]:
     """Cleanup stale jobs from the registry.
 
     This is a maintenance function that can be scheduled periodically.
@@ -279,7 +279,7 @@ def cleanup_stale_jobs(max_age_hours: int = 24) -> dict[str, int]:
     from datetime import timedelta
 
     try:
-        from redis import Redis
+        from redis import Redis  # type: ignore[import-untyped]
         from rq import Queue
         from rq.job import Job
     except ImportError:
@@ -291,7 +291,7 @@ def cleanup_stale_jobs(max_age_hours: int = 24) -> dict[str, int]:
 
     try:
         redis = Redis.from_url(redis_url)
-        stats = {"cleaned": 0, "errors": 0}
+        stats: dict[str, int] = {"cleaned": 0, "errors": 0}
 
         for queue_name in ["generation", "generation-high", "generation-low"]:
             queue = Queue(queue_name, connection=redis)

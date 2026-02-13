@@ -55,6 +55,7 @@ def mock_config():
     config.autonomy = MagicMock(enabled=False, max_retries=0)
     config.trends = MagicMock(enabled=False)
     config.model_manager = MagicMock(enabled=False)
+    config.performance = MagicMock(enable_model_pool=False, preload_models="")
 
     return config
 

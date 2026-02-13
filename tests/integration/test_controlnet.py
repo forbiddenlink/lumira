@@ -1,15 +1,15 @@
 """Integration tests for ControlNet preprocessing and model loading."""
 
+import numpy as np
 import pytest
 from PIL import Image
-import numpy as np
 
 from ai_artist.core.controlnet import (
-    ControlNetPreprocessor,
-    ControlNetLoader,
-    ControlNetType,
-    SDXL_CONTROLNET_MODELS,
     SD15_CONTROLNET_MODELS,
+    SDXL_CONTROLNET_MODELS,
+    ControlNetLoader,
+    ControlNetPreprocessor,
+    ControlNetType,
 )
 
 
@@ -27,7 +27,7 @@ def sample_image():
     center_y, center_x = 250, 250
     for y in range(height):
         for x in range(width):
-            if (x - center_x) ** 2 + (y - center_y) ** 2 < 100 ** 2:
+            if (x - center_x) ** 2 + (y - center_y) ** 2 < 100**2:
                 img_array[y, x] = [100, 150, 200]
 
     return Image.fromarray(img_array)
@@ -96,9 +96,7 @@ class TestControlNetPreprocessor:
 
     def test_preprocess_canny(self, sample_image):
         """Test unified preprocess method with canny type."""
-        result = ControlNetPreprocessor.preprocess(
-            sample_image, ControlNetType.CANNY
-        )
+        result = ControlNetPreprocessor.preprocess(sample_image, ControlNetType.CANNY)
         assert isinstance(result, Image.Image)
 
     def test_preprocess_canny_string(self, sample_image):
@@ -300,8 +298,7 @@ class TestControlNetModelLoading:
         import torch
 
         model = ControlNetLoader.load(
-            SDXL_CONTROLNET_MODELS[ControlNetType.CANNY],
-            dtype=torch.float16
+            SDXL_CONTROLNET_MODELS[ControlNetType.CANNY], dtype=torch.float16
         )
 
         assert model is not None

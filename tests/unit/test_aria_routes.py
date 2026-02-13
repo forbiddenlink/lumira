@@ -71,6 +71,7 @@ class TestAriaState:
             assert 0.0 <= value <= 1.0, f"{trait} should be between 0 and 1"
 
 
+@pytest.mark.slow
 class TestAriaCreate:
     """Tests for /api/aria/create endpoint."""
 

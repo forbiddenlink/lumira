@@ -1,6 +1,5 @@
 """Tests for IP-Adapter integration."""
 
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -157,7 +156,9 @@ class TestIPAdapterManager:
         ip_adapter_manager.set_ip_adapter_scale(mock_pipeline, 0.5)
         mock_pipeline.set_ip_adapter_scale.assert_called_once_with(0.5)
 
-    def test_set_ip_adapter_scale_invalid_raises(self, ip_adapter_manager, mock_pipeline):
+    def test_set_ip_adapter_scale_invalid_raises(
+        self, ip_adapter_manager, mock_pipeline
+    ):
         """Test invalid scale raises error."""
         with pytest.raises(ValueError, match="must be 0.0-1.0"):
             ip_adapter_manager.set_ip_adapter_scale(mock_pipeline, 1.5)
@@ -178,7 +179,9 @@ class TestIPAdapterManager:
         assert isinstance(result, Image.Image)
         assert result.mode == "RGB"
 
-    def test_prepare_reference_image_string_path(self, ip_adapter_manager, sample_image):
+    def test_prepare_reference_image_string_path(
+        self, ip_adapter_manager, sample_image
+    ):
         """Test preparing image from string path."""
         result = ip_adapter_manager.prepare_reference_image(str(sample_image))
         assert isinstance(result, Image.Image)
@@ -295,7 +298,13 @@ class TestIPAdapterIntegrationWithGenerator:
     @pytest.fixture
     def mock_diffusion_pipeline(self):
         """Mock the full diffusion pipeline for integration tests."""
-        with patch("ai_artist.core.generator.DiffusionPipeline") as mock:
+        with (
+            patch("ai_artist.core.generator.DiffusionPipeline") as mock,
+            patch(
+                "ai_artist.core.generator.torch.compile",
+                side_effect=lambda module, **kwargs: module,
+            ) as _mock_compile,
+        ):
             pipeline = MagicMock()
             pipeline.to.return_value = pipeline
             pipeline.enable_attention_slicing.return_value = None
@@ -303,6 +312,7 @@ class TestIPAdapterIntegrationWithGenerator:
             pipeline.vae = MagicMock()
             pipeline.scheduler = MagicMock()
             pipeline.scheduler.config = {}
+            pipeline.unet = MagicMock()
             pipeline.__class__.__name__ = "StableDiffusionXLPipeline"
 
             # IP-Adapter methods
@@ -325,7 +335,9 @@ class TestIPAdapterIntegrationWithGenerator:
 
         mock_class, mock_instance = mock_diffusion_pipeline
 
-        with patch("ai_artist.core.generator.DPMSolverMultistepScheduler") as mock_scheduler:
+        with patch(
+            "ai_artist.core.generator.DPMSolverMultistepScheduler"
+        ) as mock_scheduler:
             mock_scheduler.from_config.return_value = MagicMock()
 
             generator = ImageGenerator(
@@ -349,7 +361,7 @@ class TestIPAdapterIntegrationWithGenerator:
             mock_instance.load_ip_adapter.assert_called_once()
 
             # Verify scale was set
-            mock_instance.set_ip_adapter_scale.assert_called_with(mock_instance, 0.5)
+            mock_instance.set_ip_adapter_scale.assert_called_with(0.5)
 
             # Verify ip_adapter_image was passed to pipeline
             call_kwargs = mock_instance.call_args.kwargs
@@ -363,7 +375,9 @@ class TestIPAdapterIntegrationWithGenerator:
 
         mock_class, mock_instance = mock_diffusion_pipeline
 
-        with patch("ai_artist.core.generator.DPMSolverMultistepScheduler") as mock_scheduler:
+        with patch(
+            "ai_artist.core.generator.DPMSolverMultistepScheduler"
+        ) as mock_scheduler:
             mock_scheduler.from_config.return_value = MagicMock()
 
             generator = ImageGenerator(

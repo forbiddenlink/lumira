@@ -6,7 +6,7 @@ from pathlib import Path
 from PIL import Image
 
 try:
-    from cairosvg import svg2png
+    import cairosvg  # noqa: F401
 
     CAIRO_AVAILABLE = True
 except ImportError:

@@ -27,13 +27,16 @@ class HealthResponse(BaseModel):
 class ReadinessResponse(BaseModel):
     """Readiness check response model."""
 
+    status: str
     ready: bool
     checks: dict[str, bool | dict[str, Any]]
+    timestamp: float
 
 
 class LivenessResponse(BaseModel):
     """Liveness check response model."""
 
+    status: str
     alive: bool
 
 
@@ -68,10 +71,10 @@ async def liveness_probe():
 
     This is a minimal check - just verifies the event loop is responsive.
     """
-    return LivenessResponse(alive=True)
+    return LivenessResponse(status="alive", alive=True)
 
 
-@router.get("/health/ready")
+@router.get("/health/ready", response_model=ReadinessResponse)
 async def readiness_probe():
     """
     Kubernetes readiness probe.
@@ -112,6 +115,7 @@ async def readiness_probe():
 
     return JSONResponse(
         content={
+            "status": "ready" if ready else "not_ready",
             "ready": ready,
             "checks": checks,
             "timestamp": time.time(),

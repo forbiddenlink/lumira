@@ -1,7 +1,7 @@
 """Image generation using Stable Diffusion + LoRA."""
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -79,8 +79,8 @@ class ImageGenerator:
         self.model_id = model_id
         self.device = device
         self.dtype = dtype
-        self.pipeline = None
-        self.refiner = None
+        self.pipeline: Any | None = None
+        self.refiner: Any | None = None
 
         # Cache for loaded models to avoid reloading
         self._model_cache: dict[str, DiffusionPipeline] = {}
@@ -691,7 +691,7 @@ class ImageGenerator:
         # Clear GPU cache after generation to prevent memory buildup
         self.clear_vram()
 
-        return images
+        return cast(list[Image.Image], images)
 
     def generate_img2img(
         self,

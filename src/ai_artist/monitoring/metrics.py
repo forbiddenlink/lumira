@@ -8,7 +8,7 @@ and system resource usage for production monitoring.
 import time
 from collections.abc import Callable
 from functools import wraps
-from typing import Any
+from typing import Any, cast
 
 import structlog
 
@@ -16,14 +16,8 @@ logger = structlog.get_logger(__name__)
 
 # Try to import prometheus_client, fallback gracefully if not available
 try:
-    from prometheus_client import (
-        CONTENT_TYPE_LATEST,
-        Counter,
-        Gauge,
-        Histogram,
-        Info,
-        generate_latest,
-    )
+    from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, Info
+    from prometheus_client import generate_latest as prometheus_generate_latest
 
     PROMETHEUS_AVAILABLE = True
 except ImportError:
@@ -41,7 +35,7 @@ except ImportError:
         def inc(self, amount: float = 1) -> None:
             pass
 
-        def labels(self, **kwargs: Any) -> "Counter":
+        def labels(self, **kwargs: Any) -> Any:
             return self
 
     class Gauge:  # type: ignore[no-redef]
@@ -57,7 +51,7 @@ except ImportError:
         def dec(self, amount: float = 1) -> None:
             pass
 
-        def labels(self, **kwargs: Any) -> "Gauge":
+        def labels(self, **kwargs: Any) -> Any:
             return self
 
     class Histogram:  # type: ignore[no-redef]
@@ -67,7 +61,7 @@ except ImportError:
         def observe(self, amount: float) -> None:
             pass
 
-        def labels(self, **kwargs: Any) -> "Histogram":
+        def labels(self, **kwargs: Any) -> Any:
             return self
 
     class Info:  # type: ignore[no-redef]
@@ -77,8 +71,7 @@ except ImportError:
         def info(self, data: dict[str, str]) -> None:
             pass
 
-    def generate_latest() -> bytes:  # type: ignore[no-redef]
-        return b"# Prometheus not installed"
+    prometheus_generate_latest = cast(Callable[..., bytes], None)
 
     CONTENT_TYPE_LATEST = "text/plain"
 
@@ -357,7 +350,7 @@ def get_metrics() -> tuple[bytes, str]:
     if not PROMETHEUS_AVAILABLE:
         return b"# Prometheus client not installed\n", "text/plain"
 
-    return generate_latest(), CONTENT_TYPE_LATEST
+    return prometheus_generate_latest(), CONTENT_TYPE_LATEST
 
 
 def is_metrics_available() -> bool:

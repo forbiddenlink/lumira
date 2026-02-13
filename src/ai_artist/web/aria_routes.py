@@ -1410,7 +1410,7 @@ async def upload_reference_image(
             )
 
         try:
-            img = Image.open(io.BytesIO(contents))
+            img: Image.Image = Image.open(io.BytesIO(contents))
             img.verify()  # Verify it's a valid image
             # Re-open after verify (verify closes the file)
             img = Image.open(io.BytesIO(contents))
@@ -1891,7 +1891,7 @@ async def img2img_generation(
                 )
 
         source_pil = Image.open(gallery_path)
-        original_prompt = source_img.prompt or ""
+        original_prompt = str(source_img.prompt or "")
     elif img2img_request.image_base64:
         try:
             image_data = base64.b64decode(img2img_request.image_base64)
@@ -1907,7 +1907,7 @@ async def img2img_generation(
         )
 
     # Use provided prompt or original
-    prompt = img2img_request.prompt or original_prompt
+    prompt: str = str(img2img_request.prompt or original_prompt)
     if not prompt:
         prompt = "artistic interpretation, high quality"
 

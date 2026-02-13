@@ -6,7 +6,7 @@ Supports both SDXL and FLUX model families.
 
 import asyncio
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import torch
 from diffusers import DiffusionPipeline
@@ -191,7 +191,7 @@ class ModelPool:
         if hasattr(pipeline, "enable_vae_slicing"):
             pipeline.enable_vae_slicing()
 
-        return pipeline
+        return cast(DiffusionPipeline, pipeline)
 
     def _load_flux_model_sync(
         self,
@@ -231,7 +231,9 @@ class ModelPool:
         if hasattr(pipeline, "enable_attention_slicing"):
             try:
                 pipeline.enable_attention_slicing(1)
-                logger.debug("model_pool_flux_attention_slicing_enabled", model_id=model_id)
+                logger.debug(
+                    "model_pool_flux_attention_slicing_enabled", model_id=model_id
+                )
             except Exception:
                 pass
 
@@ -243,7 +245,9 @@ class ModelPool:
                 pass
 
         # Try xFormers for CUDA
-        if device == "cuda" and hasattr(pipeline, "enable_xformers_memory_efficient_attention"):
+        if device == "cuda" and hasattr(
+            pipeline, "enable_xformers_memory_efficient_attention"
+        ):
             try:
                 pipeline.enable_xformers_memory_efficient_attention()
                 logger.debug("model_pool_flux_xformers_enabled", model_id=model_id)
@@ -251,7 +255,7 @@ class ModelPool:
                 pass
 
         logger.info("model_pool_flux_loaded", model_id=model_id)
-        return pipeline
+        return cast(DiffusionPipeline, pipeline)
 
     async def _warmup_pipeline(
         self,
@@ -288,8 +292,9 @@ class ModelPool:
                 warmup_kwargs["num_inference_steps"] = 1
 
             # Run minimal inference to compile CUDA kernels / MPS graphs
+            pipeline_fn = cast(Any, pipeline)
             _ = await asyncio.to_thread(
-                pipeline,
+                pipeline_fn,
                 **warmup_kwargs,
             )
 
@@ -315,7 +320,8 @@ class ModelPool:
             pipeline = self.ready_models.pop(model_id)
 
             # Move to CPU and clear cache
-            pipeline.to("cpu")
+            pipeline_obj = cast(Any, pipeline)
+            pipeline_obj.to("cpu")
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 
@@ -336,8 +342,8 @@ class ModelPool:
             Status dictionary with loaded models and warmup state
         """
         # Categorize models by type
-        sdxl_models = [m for m in self.ready_models.keys() if not self._is_flux_model(m)]
-        flux_models = [m for m in self.ready_models.keys() if self._is_flux_model(m)]
+        sdxl_models = [m for m in self.ready_models if not self._is_flux_model(m)]
+        flux_models = [m for m in self.ready_models if self._is_flux_model(m)]
 
         return {
             "loaded_models": list(self.ready_models.keys()),

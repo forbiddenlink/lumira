@@ -137,6 +137,7 @@ class TestFluxGeneration:
 
             # Create mock result with images
             import numpy as np
+
             noise = np.random.randint(50, 200, (512, 512, 3), dtype=np.uint8)
             mock_image = Image.fromarray(noise, mode="RGB")
             mock_result = MagicMock()

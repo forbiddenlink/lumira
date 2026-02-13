@@ -2,8 +2,8 @@
 
 import pytest
 
-from src.ai_artist.db.models import Base, GeneratedImage
-from src.ai_artist.db.session import create_db_engine, create_session_factory
+from ai_artist.db.models import Base, GeneratedImage
+from ai_artist.db.session import create_db_engine, create_session_factory
 
 
 @pytest.fixture

@@ -5,7 +5,6 @@ and text rendering capabilities. This generator provides a compatible
 interface with ImageGenerator for seamless integration.
 """
 
-from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
@@ -236,9 +235,28 @@ class FluxGenerator:
             if len(parts) > 3:
                 # Group keywords into a natural sentence
                 subject = parts[0]
-                style_parts = [p for p in parts[1:] if "style" in p.lower() or "art" in p.lower()]
-                quality_parts = [p for p in parts[1:] if any(q in p.lower() for q in ["detailed", "high quality", "professional", "8k", "4k"])]
-                mood_parts = [p for p in parts[1:] if p not in style_parts and p not in quality_parts]
+                style_parts = [
+                    p for p in parts[1:] if "style" in p.lower() or "art" in p.lower()
+                ]
+                quality_parts = [
+                    p
+                    for p in parts[1:]
+                    if any(
+                        q in p.lower()
+                        for q in [
+                            "detailed",
+                            "high quality",
+                            "professional",
+                            "8k",
+                            "4k",
+                        ]
+                    )
+                ]
+                mood_parts = [
+                    p
+                    for p in parts[1:]
+                    if p not in style_parts and p not in quality_parts
+                ]
 
                 enhanced = f"A detailed image of {subject}"
                 if style_parts:

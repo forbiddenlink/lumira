@@ -8,7 +8,7 @@ import asyncio
 import base64
 from collections.abc import Callable
 from io import BytesIO
-from typing import Any
+from typing import Any, cast
 
 import structlog
 import torch
@@ -91,7 +91,8 @@ class StreamingCallback:
 
         # Decode with VAE
         with torch.no_grad():
-            image = self.pipeline.vae.decode(latents).sample
+            pipeline_obj = cast(Any, self.pipeline)
+            image = pipeline_obj.vae.decode(latents).sample
 
         # Convert to PIL
         image = (image / 2 + 0.5).clamp(0, 1)
@@ -178,13 +179,14 @@ class StreamingGenerator:
         )
 
         # Set pipeline steps
-        pipeline.num_inference_steps = num_inference_steps
+        pipeline_obj = cast(Any, pipeline)
+        pipeline_obj.num_inference_steps = num_inference_steps
 
         # Generate with callback
         try:
             # Run in thread to not block event loop
-            result = await asyncio.to_thread(
-                pipeline,
+            result: Any = await asyncio.to_thread(
+                pipeline_obj,
                 prompt=prompt,
                 num_inference_steps=num_inference_steps,
                 guidance_scale=guidance_scale,

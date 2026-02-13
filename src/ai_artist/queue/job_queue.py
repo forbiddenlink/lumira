@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from datetime import datetime
 from enum import Enum
 from typing import Any
 
@@ -18,7 +17,7 @@ logger = get_logger(__name__)
 
 # Try to import RQ, gracefully handle if not installed
 try:
-    from redis import Redis
+    from redis import Redis  # type: ignore[import-untyped]
     from rq import Queue
     from rq.job import Job
 
@@ -104,25 +103,30 @@ class GenerationQueue:
             )
             self.enabled = False
             self.redis = None
-            self.queues: dict[str, Any] = {}
+            self.queues: dict[JobPriority, Any] = {}
             return
 
         self.enabled = True
         self.default_timeout = default_timeout
         self.result_ttl = result_ttl
+        self.queues = {}
 
         # Get Redis URL from environment or use default
-        redis_url = redis_url or os.getenv("REDIS_URL", "redis://localhost:6379")
+        redis_url_str: str = (
+            redis_url or os.getenv("REDIS_URL") or "redis://localhost:6379"
+        )
 
         try:
-            self.redis = Redis.from_url(redis_url)
+            self.redis = Redis.from_url(redis_url_str)
             # Test connection
             self.redis.ping()
 
             # Initialize priority queues
             self.queues = {
                 JobPriority.HIGH: Queue(
-                    self.QUEUE_HIGH, connection=self.redis, default_timeout=default_timeout
+                    self.QUEUE_HIGH,
+                    connection=self.redis,
+                    default_timeout=default_timeout,
                 ),
                 JobPriority.NORMAL: Queue(
                     self.QUEUE_NORMAL,
@@ -130,13 +134,15 @@ class GenerationQueue:
                     default_timeout=default_timeout,
                 ),
                 JobPriority.LOW: Queue(
-                    self.QUEUE_LOW, connection=self.redis, default_timeout=default_timeout
+                    self.QUEUE_LOW,
+                    connection=self.redis,
+                    default_timeout=default_timeout,
                 ),
             }
 
             logger.info(
                 "queue_initialized",
-                redis_url=redis_url.split("@")[-1],  # Hide credentials
+                redis_url=redis_url_str.split("@")[-1],  # Hide credentials
                 queues=list(self.queues.keys()),
             )
         except Exception as e:
@@ -214,7 +220,7 @@ class GenerationQueue:
                 prompt=prompt[:50] + "..." if len(prompt) > 50 else prompt,
             )
 
-            return job.id
+            return str(job.id)
 
         except Exception as e:
             logger.error("enqueue_failed", error=str(e))
@@ -250,9 +256,7 @@ class GenerationQueue:
             status = status_map.get(rq_status, JobStatus.QUEUED)
 
             # Extract timestamps
-            enqueued_at = (
-                job.enqueued_at.isoformat() if job.enqueued_at else None
-            )
+            enqueued_at = job.enqueued_at.isoformat() if job.enqueued_at else None
             started_at = job.started_at.isoformat() if job.started_at else None
             ended_at = job.ended_at.isoformat() if job.ended_at else None
 
@@ -307,11 +311,13 @@ class GenerationQueue:
         if not self.enabled:
             return {"enabled": False}
 
-        stats = {"enabled": True, "queues": {}}
+        queue_stats: dict[str, Any] = {}
+        stats: dict[str, Any] = {"enabled": True, "queues": queue_stats}
 
         for priority, queue in self.queues.items():
+            priority_key = priority.value
             try:
-                stats["queues"][priority.value] = {
+                queue_stats[priority_key] = {
                     "name": queue.name,
                     "count": len(queue),
                     "started_jobs": queue.started_job_registry.count,
@@ -319,7 +325,7 @@ class GenerationQueue:
                     "failed_jobs": queue.failed_job_registry.count,
                 }
             except Exception as e:
-                stats["queues"][priority.value] = {"error": str(e)}
+                queue_stats[priority_key] = {"error": str(e)}
 
         return stats
 

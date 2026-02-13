@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from src.ai_artist.api.unsplash import UnsplashClient
+from ai_artist.api.unsplash import UnsplashClient
 
 
 @pytest.fixture

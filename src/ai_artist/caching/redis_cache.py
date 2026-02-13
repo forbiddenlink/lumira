@@ -4,7 +4,7 @@ import json
 from typing import Any
 
 try:
-    import redis.asyncio as redis
+    import redis.asyncio as redis  # type: ignore[import-untyped]
 
     REDIS_AVAILABLE = True
 except ImportError:
@@ -146,7 +146,8 @@ class RedisCache:
         try:
             keys = await self.client.keys(pattern)
             if keys:
-                return await self.client.delete(*keys)
+                deleted = await self.client.delete(*keys)
+                return int(deleted)
             return 0
         except Exception as e:
             logger.warning("redis_clear_error", pattern=pattern, error=str(e))
@@ -165,7 +166,8 @@ class RedisCache:
             return False
 
         try:
-            return await self.client.exists(key) > 0
+            exists = await self.client.exists(key)
+            return bool(exists > 0)
         except Exception as e:
             logger.warning("redis_exists_error", key=key, error=str(e))
             return False
@@ -184,7 +186,8 @@ class RedisCache:
             return 0
 
         try:
-            return await self.client.incrby(key, amount)
+            value = await self.client.incrby(key, amount)
+            return int(value)
         except Exception as e:
             logger.warning("redis_incr_error", key=key, error=str(e))
             return 0

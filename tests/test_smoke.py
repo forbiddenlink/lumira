@@ -30,9 +30,9 @@ def test_transformers_available():
 
 def test_imports():
     """Test that our modules can be imported."""
-    from src.ai_artist import __version__
-    from src.ai_artist.utils.config import Config
-    from src.ai_artist.utils.logging import get_logger
+    from ai_artist import __version__
+    from ai_artist.utils.config import Config
+    from ai_artist.utils.logging import get_logger
 
     assert __version__ is not None
     assert get_logger is not None

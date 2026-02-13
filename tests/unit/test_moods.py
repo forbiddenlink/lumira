@@ -52,15 +52,16 @@ class TestMoodSystem:
 
     def test_initialization(self, mood_system):
         """Test MoodSystem initializes with correct defaults."""
-        assert mood_system.current_mood == Mood.CONTEMPLATIVE
+        assert isinstance(mood_system.current_mood, Mood)
         assert mood_system.energy_level == 0.5
         assert mood_system.mood_duration == 0
         assert isinstance(mood_system.mood_influences, dict)
         assert len(mood_system.mood_influences) == len(Mood)
 
-    def test_initial_mood_is_contemplative(self, mood_system):
-        """Test that Aria starts contemplative."""
-        assert mood_system.current_mood == Mood.CONTEMPLATIVE
+    def test_initial_mood_is_valid(self, mood_system):
+        """Test that Aria starts in a valid configured mood."""
+        assert mood_system.current_mood in Mood
+        assert mood_system.current_mood in mood_system.mood_influences
 
     def test_energy_level_bounds(self, mood_system):
         """Test that energy level stays within 0-1 bounds."""

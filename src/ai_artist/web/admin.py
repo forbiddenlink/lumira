@@ -33,8 +33,9 @@ async def admin_dashboard(request: Request) -> HTMLResponse:
         HTML response with dashboard
     """
     return templates.TemplateResponse(
+        request,
         "admin/dashboard.html",
-        {"request": request, "title": "Admin Dashboard"},
+        {"title": "Admin Dashboard"},
     )
 
 
@@ -82,7 +83,7 @@ async def get_statistics(
 
         return {
             "total_artworks": total_artworks,
-            "statuses": dict(statuses),
+            "statuses": {str(row[0]): int(row[1]) for row in statuses},
             "recent": [
                 {
                     "id": a.id,
@@ -120,14 +121,15 @@ async def get_performance_metrics() -> dict[str, Any]:
         Dict with performance data
     """
     try:
-        from ..monitoring.metrics import GENERATION_REQUESTS_TOTAL
+        from ..monitoring.metrics import generation_requests_total
+
+        metric_obj = generation_requests_total if generation_requests_total else None
+        total_generations = 0
+        if metric_obj and hasattr(metric_obj, "_value"):
+            total_generations = int(metric_obj._value.get())
 
         return {
-            "total_generations": (
-                GENERATION_REQUESTS_TOTAL._value.get()
-                if hasattr(GENERATION_REQUESTS_TOTAL, "_value")
-                else 0
-            ),
+            "total_generations": total_generations,
             "avg_duration": 0,  # TODO: Calculate from histogram
             "timestamp": datetime.now().isoformat(),
         }

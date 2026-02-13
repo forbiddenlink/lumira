@@ -5,15 +5,15 @@ import json
 import pytest
 from PIL import Image
 
-from src.ai_artist.db.models import (
+from ai_artist.db.models import (
     Base,
     GalleryComment,
     GalleryLike,
     GalleryShare,
     GeneratedImage,
 )
-from src.ai_artist.db.session import create_db_engine, create_session_factory
-from src.ai_artist.gallery.manager import GalleryManager
+from ai_artist.db.session import create_db_engine, create_session_factory
+from ai_artist.gallery.manager import GalleryManager
 
 
 @pytest.fixture
@@ -45,7 +45,7 @@ def test_save_image(test_gallery):
     # Verify metadata content
     saved_metadata = json.loads(metadata_path.read_text())
     assert saved_metadata["prompt"] == prompt
-    assert saved_metadata["metadata"]["seed"] == 42
+    assert saved_metadata["generation_params"]["seed"] == 42
     assert saved_metadata["featured"] is False
 
 

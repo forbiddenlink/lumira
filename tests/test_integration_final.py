@@ -4,7 +4,7 @@
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_image_generation_workflow():
@@ -16,7 +16,7 @@ def test_image_generation_workflow():
 
     from ai_artist.utils.config import load_config
 
-    config = load_config(Path("config/config.yaml"))
+    config = load_config(PROJECT_ROOT / "config/config.yaml")
     dtype = torch.float32 if config.model.dtype == "float32" else torch.float16
     print(f"  ✓ Config loaded: {config.model.base_model}")
     print(f"  ✓ Device: {config.model.device}")
@@ -102,24 +102,20 @@ def test_image_generation_workflow():
         print(f"  ✓ Error handling works: caught '{e}'")
 
     print("\n  ✅ All workflow components verified!\n")
-    return True
 
 
-def test_database_integration():
+def test_database_integration(tmp_path):
     """Test database integration for image saving."""
     print("🔍 Testing Database Integration...")
 
     from datetime import datetime
-    from pathlib import Path
 
     from sqlalchemy import create_engine
 
     from ai_artist.db.models import Base, GeneratedImage
 
     # Create test database
-    db_path = Path("data/test_workflow.db")
-    if db_path.exists():
-        db_path.unlink()
+    db_path = tmp_path / "test_workflow.db"
 
     from ai_artist.db.session import create_session_factory
 
@@ -156,12 +152,13 @@ def test_database_integration():
     # Verify it was saved
     with factory() as session:
         retrieved = session.query(GeneratedImage).filter_by(id=saved_id).first()
+        assert retrieved is not None
+        assert retrieved.generation_params is not None
         print(f"  ✓ Retrieved image: {retrieved.filename}")
         print(f"  ✓ Generation params: {list(retrieved.generation_params.keys())}")
         print(f"  ✓ Tags: {retrieved.tags}")
 
     print("  ✅ Database integration verified!\n")
-    return True
 
 
 def test_error_scenarios():
@@ -201,7 +198,6 @@ def test_error_scenarios():
         print(f"  ✓ WebSocket error caught: {str(ws_error)[:30]}...")
 
     print("  ✅ Error scenarios handled!\n")
-    return True
 
 
 def run_final_tests():
@@ -213,19 +209,25 @@ def run_final_tests():
     results = {}
 
     try:
-        results["workflow"] = test_image_generation_workflow()
+        test_image_generation_workflow()
+        results["workflow"] = True
     except Exception as e:
         print(f"  ❌ Workflow test failed: {e}")
         results["workflow"] = False
 
     try:
-        results["database"] = test_database_integration()
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as temp_dir:
+            test_database_integration(Path(temp_dir))
+        results["database"] = True
     except Exception as e:
         print(f"  ❌ Database integration test failed: {e}")
         results["database"] = False
 
     try:
-        results["errors"] = test_error_scenarios()
+        test_error_scenarios()
+        results["errors"] = True
     except Exception as e:
         print(f"  ❌ Error scenarios test failed: {e}")
         results["errors"] = False

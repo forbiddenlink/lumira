@@ -194,7 +194,7 @@ class FaceRestorer:
 
             # Use OpenCV face detector
             face_cascade = cv2.CascadeClassifier(
-                cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+                cv2.data.haarcascades + "haarcascade_frontalface_default.xml"  # type: ignore[attr-defined]
             )
             faces = face_cascade.detectMultiScale(gray, 1.1, 4)
 

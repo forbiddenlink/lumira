@@ -79,7 +79,7 @@ Environment Variables:
 
     # Try to import RQ
     try:
-        from redis import Redis
+        from redis import Redis  # type: ignore[import-untyped]
         from rq import Queue, Worker
     except ImportError:
         print("\nError: RQ is not installed.")

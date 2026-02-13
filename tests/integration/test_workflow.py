@@ -23,6 +23,8 @@ def mock_config():
     model.lora_scale = 0.8
     model.use_refiner = False
     model.refiner_model = "stabilityai/stable-diffusion-xl-refiner-1.0"
+    model.mood_models = MagicMock()
+    model.mood_models.get_model_for_mood.return_value = model.base_model
     config.model = model
 
     # Configure generation settings
@@ -49,6 +51,7 @@ def mock_config():
     config.autonomy = MagicMock(enabled=False, max_retries=0)
     config.trends = MagicMock(enabled=False)
     config.model_manager = MagicMock(enabled=False)
+    config.performance = MagicMock(enable_model_pool=False, preload_models="")
 
     return config
 
@@ -157,15 +160,18 @@ async def test_error_handling_api_failure(mock_config):
     """Test that the app handles API failures gracefully."""
     with (
         patch("ai_artist.main.ImageGenerator") as mock_gen_class,
-        patch("ai_artist.main.UnsplashClient") as mock_unsplash_class,
+        patch(
+            "ai_artist.main.AutonomousInspiration.generate_from_mode",
+            side_effect=Exception("API Error"),
+        ),
+        patch(
+            "ai_artist.main.AutonomousInspiration.generate_exploration",
+            side_effect=Exception("API Error"),
+        ),
     ):
         # Setup mocks
         mock_generator = MagicMock()
         mock_gen_class.return_value = mock_generator
-
-        mock_unsplash = AsyncMock()
-        mock_unsplash.get_random_photo.side_effect = Exception("API Error")
-        mock_unsplash_class.return_value = mock_unsplash
 
         # Create app instance (initialization happens automatically in __init__)
         app = AIArtist(mock_config)

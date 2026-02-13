@@ -6,8 +6,11 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+import pytest
+
+pytestmark = pytest.mark.skip(
+    reason="Manual verification script; run directly with `python tests/test_manual.py`."
+)
 
 
 def test_database():

@@ -6,7 +6,7 @@ or character from a reference image without retraining.
 
 import threading
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import torch
 from PIL import Image
@@ -196,7 +196,8 @@ class IPAdapterManager:
         )
 
         try:
-            pipeline.load_ip_adapter(
+            pipeline_obj = cast(Any, pipeline)
+            pipeline_obj.load_ip_adapter(
                 config["repo"],
                 subfolder=config["subfolder"],
                 weight_name=config["weight_name"],
@@ -244,7 +245,8 @@ class IPAdapterManager:
         if not 0.0 <= scale <= 1.0:
             raise ValueError(f"IP-Adapter scale must be 0.0-1.0, got {scale}")
 
-        pipeline.set_ip_adapter_scale(scale)
+        pipeline_obj = cast(Any, pipeline)
+        pipeline_obj.set_ip_adapter_scale(scale)
         logger.debug("ip_adapter_scale_set", scale=scale)
 
     def prepare_reference_image(
@@ -262,7 +264,7 @@ class IPAdapterManager:
             Prepared PIL Image in RGB mode
         """
         # Load image if path/string provided
-        if isinstance(image, (str, Path)):
+        if isinstance(image, str | Path):
             image = Image.open(image)
 
         # Convert to RGB if needed
@@ -339,7 +341,8 @@ class IPAdapterManager:
         )
 
         # Generate with IP-Adapter
-        result = pipeline(
+        pipeline_obj = cast(Any, pipeline)
+        result: Any = pipeline_obj(
             prompt=prompt,
             negative_prompt=negative_prompt,
             ip_adapter_image=ref_image,
@@ -352,7 +355,7 @@ class IPAdapterManager:
             **kwargs,
         )
 
-        images = result.images
+        images = cast(list[Image.Image], result.images)
         logger.info("ip_adapter_generation_complete", num_images=len(images))
 
         return images

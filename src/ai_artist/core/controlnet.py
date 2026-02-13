@@ -1,7 +1,8 @@
 """ControlNet helper utilities."""
 
+from collections.abc import Callable
 from enum import Enum
-from functools import lru_cache
+from typing import Any, cast
 
 import cv2
 import numpy as np
@@ -87,9 +88,11 @@ class ControlNetPreprocessor:
             canny_3ch = np.stack([canny, canny, canny], axis=2)
             canny_image = Image.fromarray(canny_3ch)
 
-            logger.debug("canny_preprocessing_complete",
-                        low_threshold=low_threshold,
-                        high_threshold=high_threshold)
+            logger.debug(
+                "canny_preprocessing_complete",
+                low_threshold=low_threshold,
+                high_threshold=high_threshold,
+            )
             return canny_image
         except ImportError as e:
             logger.error("opencv_missing", action="install_opencv_python")
@@ -114,14 +117,19 @@ class ControlNetPreprocessor:
             if cls._depth_detector is None:
                 logger.info("loading_depth_detector", model="lllyasviel/Annotators")
                 from controlnet_aux import MidasDetector
-                cls._depth_detector = MidasDetector.from_pretrained("lllyasviel/Annotators")
 
-            depth_image = cls._depth_detector(image)
+                cls._depth_detector = MidasDetector.from_pretrained(
+                    "lllyasviel/Annotators"
+                )
+
+            depth_image = cast(Image.Image, cls._depth_detector(image))
             logger.debug("depth_preprocessing_complete")
             return depth_image
         except ImportError as e:
-            logger.error("controlnet_aux_missing",
-                        action="install controlnet-aux: pip install controlnet-aux")
+            logger.error(
+                "controlnet_aux_missing",
+                action="install controlnet-aux: pip install controlnet-aux",
+            )
             raise RuntimeError(
                 "controlnet-aux is required for depth preprocessing. "
                 "Install with: pip install ai-artist[controlnet]"
@@ -144,14 +152,19 @@ class ControlNetPreprocessor:
             if cls._pose_detector is None:
                 logger.info("loading_pose_detector", model="lllyasviel/Annotators")
                 from controlnet_aux import OpenposeDetector
-                cls._pose_detector = OpenposeDetector.from_pretrained("lllyasviel/Annotators")
 
-            pose_image = cls._pose_detector(image)
+                cls._pose_detector = OpenposeDetector.from_pretrained(
+                    "lllyasviel/Annotators"
+                )
+
+            pose_image = cast(Image.Image, cls._pose_detector(image))
             logger.debug("pose_preprocessing_complete")
             return pose_image
         except ImportError as e:
-            logger.error("controlnet_aux_missing",
-                        action="install controlnet-aux: pip install controlnet-aux")
+            logger.error(
+                "controlnet_aux_missing",
+                action="install controlnet-aux: pip install controlnet-aux",
+            )
             raise RuntimeError(
                 "controlnet-aux is required for pose preprocessing. "
                 "Install with: pip install ai-artist[controlnet]"
@@ -174,14 +187,19 @@ class ControlNetPreprocessor:
             if cls._lineart_detector is None:
                 logger.info("loading_lineart_detector", model="lllyasviel/Annotators")
                 from controlnet_aux import LineartDetector
-                cls._lineart_detector = LineartDetector.from_pretrained("lllyasviel/Annotators")
 
-            lineart_image = cls._lineart_detector(image)
+                cls._lineart_detector = LineartDetector.from_pretrained(
+                    "lllyasviel/Annotators"
+                )
+
+            lineart_image = cast(Image.Image, cls._lineart_detector(image))
             logger.debug("lineart_preprocessing_complete")
             return lineart_image
         except ImportError as e:
-            logger.error("controlnet_aux_missing",
-                        action="install controlnet-aux: pip install controlnet-aux")
+            logger.error(
+                "controlnet_aux_missing",
+                action="install controlnet-aux: pip install controlnet-aux",
+            )
             raise RuntimeError(
                 "controlnet-aux is required for lineart preprocessing. "
                 "Install with: pip install ai-artist[controlnet]"
@@ -204,14 +222,19 @@ class ControlNetPreprocessor:
             if cls._softedge_detector is None:
                 logger.info("loading_softedge_detector", model="lllyasviel/Annotators")
                 from controlnet_aux import HEDdetector
-                cls._softedge_detector = HEDdetector.from_pretrained("lllyasviel/Annotators")
 
-            softedge_image = cls._softedge_detector(image)
+                cls._softedge_detector = HEDdetector.from_pretrained(
+                    "lllyasviel/Annotators"
+                )
+
+            softedge_image = cast(Image.Image, cls._softedge_detector(image))
             logger.debug("softedge_preprocessing_complete")
             return softedge_image
         except ImportError as e:
-            logger.error("controlnet_aux_missing",
-                        action="install controlnet-aux: pip install controlnet-aux")
+            logger.error(
+                "controlnet_aux_missing",
+                action="install controlnet-aux: pip install controlnet-aux",
+            )
             raise RuntimeError(
                 "controlnet-aux is required for softedge preprocessing. "
                 "Install with: pip install ai-artist[controlnet]"
@@ -222,10 +245,7 @@ class ControlNetPreprocessor:
 
     @classmethod
     def preprocess(
-        cls,
-        image: Image.Image,
-        controlnet_type: ControlNetType | str,
-        **kwargs
+        cls, image: Image.Image, controlnet_type: ControlNetType | str, **kwargs
     ) -> Image.Image:
         """Preprocess an image using the specified ControlNet type.
 
@@ -240,7 +260,7 @@ class ControlNetPreprocessor:
         if isinstance(controlnet_type, str):
             controlnet_type = ControlNetType(controlnet_type.lower())
 
-        preprocessors = {
+        preprocessors: dict[ControlNetType, Callable[..., Image.Image]] = {
             ControlNetType.CANNY: cls.get_canny_image,
             ControlNetType.DEPTH: cls.get_depth_image,
             ControlNetType.POSE: cls.get_pose_image,
@@ -251,11 +271,12 @@ class ControlNetPreprocessor:
         preprocessor = preprocessors.get(controlnet_type)
         if preprocessor is None:
             raise ValueError(f"Unknown ControlNet type: {controlnet_type}")
+        preprocessor_fn = cast(Callable[..., Image.Image], preprocessor)
 
         # Only pass kwargs for methods that accept them (canny)
         if controlnet_type == ControlNetType.CANNY:
-            return preprocessor(image, **kwargs)
-        return preprocessor(image)
+            return preprocessor_fn(image, **kwargs)
+        return preprocessor_fn(image)
 
     @classmethod
     def clear_cache(cls):
@@ -272,9 +293,7 @@ class ControlNetLoader:
 
     @staticmethod
     def load(
-        model_id: str,
-        dtype: torch.dtype = torch.float16,
-        variant: str | None = None
+        model_id: str, dtype: torch.dtype = torch.float16, variant: str | None = None
     ) -> ControlNetModel:
         """Load a ControlNet model.
 
@@ -288,20 +307,22 @@ class ControlNetLoader:
         """
         logger.info("loading_controlnet", model=model_id, dtype=str(dtype))
 
-        load_kwargs = {
+        load_kwargs: dict[str, Any] = {
             "torch_dtype": dtype,
             "use_safetensors": True,
         }
         if variant:
             load_kwargs["variant"] = variant
 
-        return ControlNetModel.from_pretrained(model_id, **load_kwargs)
+        return cast(
+            ControlNetModel, ControlNetModel.from_pretrained(model_id, **load_kwargs)
+        )
 
     @staticmethod
     def load_multiple(
         model_ids: list[str],
         dtype: torch.dtype = torch.float16,
-        variant: str | None = None
+        variant: str | None = None,
     ) -> list[ControlNetModel]:
         """Load multiple ControlNet models for multi-ControlNet pipelines.
 
@@ -335,7 +356,9 @@ class ControlNetLoader:
 
         model_id = SDXL_CONTROLNET_MODELS.get(controlnet_type)
         if model_id is None:
-            raise ValueError(f"No SDXL ControlNet model available for type: {controlnet_type}")
+            raise ValueError(
+                f"No SDXL ControlNet model available for type: {controlnet_type}"
+            )
         return model_id
 
     @staticmethod
@@ -353,5 +376,7 @@ class ControlNetLoader:
 
         model_id = SD15_CONTROLNET_MODELS.get(controlnet_type)
         if model_id is None:
-            raise ValueError(f"No SD 1.5 ControlNet model available for type: {controlnet_type}")
+            raise ValueError(
+                f"No SD 1.5 ControlNet model available for type: {controlnet_type}"
+            )
         return model_id

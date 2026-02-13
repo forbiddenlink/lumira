@@ -4,8 +4,6 @@ These tests use fakeredis to mock Redis, allowing tests to run without
 a real Redis instance.
 """
 
-import json
-from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -37,9 +35,9 @@ class TestGenerationQueue:
         """Test queue initializes correctly."""
         assert queue.enabled is True
         assert len(queue.queues) == 3  # high, normal, low
-        assert "high" in [p.value for p in queue.queues.keys()]
-        assert "normal" in [p.value for p in queue.queues.keys()]
-        assert "low" in [p.value for p in queue.queues.keys()]
+        assert "high" in [p.value for p in queue.queues]
+        assert "normal" in [p.value for p in queue.queues]
+        assert "low" in [p.value for p in queue.queues]
 
     def test_queue_unavailable_without_rq(self):
         """Test queue handles missing RQ gracefully."""
@@ -102,12 +100,14 @@ class TestWorkerFunctions:
         config_dir = tmp_path / "config"
         config_dir.mkdir()
         config_file = config_dir / "config.yaml"
-        config_file.write_text("""
+        config_file.write_text(
+            """
 model:
   base_model: test-model
   device: cpu
   dtype: float32
-""")
+"""
+        )
 
         # Create gallery directory
         gallery_dir = tmp_path / "gallery"
@@ -129,7 +129,7 @@ model:
 
                     # Should raise because no config and no CUDA
                     # (testing defensive behavior)
-                    result = generate_image("test prompt", {"width": 512})
+                    generate_image("test prompt", {"width": 512})
 
                     # Verify generator was created
                     MockGenerator.assert_called_once()
@@ -198,10 +198,10 @@ class TestGetQueue:
 
     def test_get_queue_returns_same_instance(self):
         """Test get_queue returns singleton."""
-        from ai_artist.queue.job_queue import _queue_instance, get_queue
+        import ai_artist.queue.job_queue as queue_module
+        from ai_artist.queue.job_queue import get_queue
 
         # Reset singleton
-        import ai_artist.queue.job_queue as queue_module
         queue_module._queue_instance = None
 
         with patch("ai_artist.queue.job_queue.RQ_AVAILABLE", False):
@@ -238,6 +238,7 @@ class TestQueueAPIEndpoints:
         with patch("ai_artist.queue.job_queue.RQ_AVAILABLE", False):
             # Reset singleton
             import ai_artist.queue.job_queue as queue_module
+
             queue_module._queue_instance = None
 
             response = client.post(

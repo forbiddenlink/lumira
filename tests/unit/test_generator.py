@@ -12,7 +12,13 @@ from ai_artist.core.generator import ImageGenerator
 @pytest.fixture
 def mock_pipeline():
     """Mock Diffusion pipeline."""
-    with patch("ai_artist.core.generator.DiffusionPipeline") as mock:
+    with (
+        patch("ai_artist.core.generator.DiffusionPipeline") as mock,
+        patch(
+            "ai_artist.core.generator.torch.compile",
+            side_effect=lambda module, **kwargs: module,
+        ) as _mock_compile,
+    ):
         pipeline = MagicMock()
         pipeline.to.return_value = pipeline
         pipeline.enable_attention_slicing.return_value = None
@@ -23,6 +29,7 @@ def mock_pipeline():
         pipeline.vae = MagicMock()
         pipeline.scheduler = MagicMock()
         pipeline.scheduler.config = {}
+        pipeline.unet = MagicMock()
         mock.from_pretrained.return_value = pipeline
         yield mock, pipeline
 

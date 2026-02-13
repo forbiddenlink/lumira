@@ -587,7 +587,7 @@ class ImageCurator:
             # Check for extreme values (blown highlights/crushed shadows)
             # Images with >30% extreme pixels likely have issues
             extremes = np.sum((img_array < 10) | (img_array > 245))
-            extreme_ratio = extremes / img_array.size
+            extreme_ratio = float(extremes) / float(img_array.size)
 
             # Check for color diversity (banding/posterization detection)
             # More unique colors = better (less banding)
@@ -596,7 +596,7 @@ class ImageCurator:
             )
             total_pixels = img_array.shape[0] * img_array.shape[1]
             color_diversity = min(
-                unique_colors / (total_pixels * 0.1), 1.0
+                float(unique_colors) / float(total_pixels * 0.1), 1.0
             )  # Expect 10% unique
 
             # Combine metrics (penalize extremes and low diversity)

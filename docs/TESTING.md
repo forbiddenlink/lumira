@@ -463,7 +463,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install -r requirements.txt
+        pip install -r requirements-full.txt
         pip install pytest pytest-cov
 
     - name: Run tests
