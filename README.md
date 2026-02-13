@@ -30,7 +30,8 @@ Aria isn't a tool - she's an **artist** you collaborate with:
 cd ai-artist
 python -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements-full.txt
+pip install -e .
 
 # Configure
 cp config/config.example.yaml config/config.yaml
@@ -43,6 +44,13 @@ python -m ai_artist.main --theme "twilight dreams"
 
 # Web gallery
 python -m ai_artist.web.app
+```
+
+If you only want the web gallery (no ML generation), use:
+
+```bash
+pip install -r requirements.txt
+pip install -e .
 ```
 
 ## Project Structure

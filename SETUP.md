@@ -76,7 +76,7 @@ pip install torch torchvision torchaudio
 pip install torch torchvision torchaudio
 
 # 5. Install project dependencies
-pip install -r requirements.txt
+pip install -r requirements-full.txt
 
 # 6. Install in editable mode
 pip install -e .
@@ -88,7 +88,7 @@ pip install -e .
 # Follow steps 1-5 from Method 1, then:
 
 # Install development dependencies
-pip install -r requirements.txt
+pip install -r requirements-full.txt
 pip install -e ".[dev]"
 
 # Install pre-commit hooks
@@ -476,7 +476,7 @@ pre-commit run --all-files
 pip install --upgrade pip setuptools wheel
 
 # Try again
-pip install -r requirements.txt
+pip install -r requirements-full.txt
 ```
 
 **Problem:** CUDA out of memory

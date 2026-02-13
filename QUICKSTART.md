@@ -37,8 +37,13 @@ source venv/bin/activate  # On macOS/Linux
 # OR
 venv\Scripts\activate     # On Windows
 
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies (choose one)
+pip install -r requirements-full.txt
+pip install -e .
+
+# Gallery-only install (no ML generation)
+# pip install -r requirements.txt
+# pip install -e .
 ```
 
 ### Step 3: Configure API Keys
@@ -67,7 +72,7 @@ api_keys:
 
 ## 🎨 Your First Artwork (30 seconds)
 
-Generate your first AI artwork:
+Generate your first AI artwork (requires `requirements-full.txt`):
 
 ```bash
 ai-artist --theme "sunset over mountains"

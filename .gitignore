@@ -64,3 +64,6 @@ MagicMock/
 config/config.yaml
 .history/
 .vercel
+
+# Specter knowledge graph cache
+.specter/
