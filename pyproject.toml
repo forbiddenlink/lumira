@@ -39,6 +39,7 @@ dependencies = [
     "mangum>=0.19.0,<1.0.0",
     "redis>=5.0.0",  # Required for caching and job queue
     "rq>=1.16.0",  # Redis job queue
+    "replicate>=1.0.0",  # Cloud image generation via Replicate API
 ]
 
 [project.scripts]

@@ -411,7 +411,7 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
     Returns concept info immediately and starts background generation.
     The session_id can be used to track progress via WebSocket.
     """
-    from ..core.generator import ImageGenerator
+    from ..core.replicate_generator import ReplicateGenerator as ImageGenerator
     from ..inspiration.autonomous import AutonomousInspiration
     from ..web.websocket import manager as ws_manager
 
@@ -1559,7 +1559,7 @@ async def create_with_reference(
     Returns:
         Same as /create endpoint, but with reference-conditioned generation
     """
-    from ..core.generator import ImageGenerator
+    from ..core.replicate_generator import ReplicateGenerator as ImageGenerator
     from ..inspiration.autonomous import AutonomousInspiration
     from ..web.websocket import manager as ws_manager
 
@@ -1918,7 +1918,7 @@ async def img2img_generation(
 
     # Generate variation using img2img
     try:
-        from ..core.generator import ImageGenerator
+        from ..core.replicate_generator import ReplicateGenerator as ImageGenerator
 
         config_path = Path("config/config.yaml")
         config = load_config(config_path)
@@ -2097,7 +2097,7 @@ async def generate_variations(
     selected_prompts = random.sample(prompts, min(var_request.count, len(prompts)))
 
     try:
-        from ..core.generator import ImageGenerator
+        from ..core.replicate_generator import ReplicateGenerator as ImageGenerator
 
         config_path = Path("config/config.yaml")
         config = load_config(config_path)

@@ -1,5 +1,10 @@
 """FastAPI web gallery application with modern best practices."""
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+
+load_dotenv()
+
 import asyncio
 import contextlib
 import json
