@@ -117,10 +117,11 @@ model:
             # Mock config path check
             MockPath.return_value.exists.return_value = False
 
-            with patch("ai_artist.queue.worker.ImageGenerator") as MockGenerator:
+            # Patch ImageGenerator where it's defined (core.generator), not where imported
+            with patch("ai_artist.core.generator.ImageGenerator") as MockGenerator:
                 MockGenerator.return_value = mock_generator
 
-                with patch("ai_artist.queue.worker.get_current_job") as mock_job:
+                with patch("rq.get_current_job") as mock_job:
                     mock_job.return_value = MagicMock(
                         id="test-job-123",
                         meta={},

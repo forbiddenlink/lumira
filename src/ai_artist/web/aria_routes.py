@@ -1931,15 +1931,16 @@ async def img2img_generation(
         )
         generator.load_model()
 
-        result = generator.generate_img2img(
+        images = generator.generate_img2img(
             prompt=prompt,
             image=source_pil,
             strength=img2img_request.strength,
             guidance_scale=img2img_request.guidance_scale,
         )
 
-        if result and result.get("image"):
-            # Save the new image
+        if images and len(images) > 0:
+            # Save the first generated image
+            result_image = images[0]
             now = datetime.now()
             gallery_path = Path("gallery")
             date_path = gallery_path / now.strftime("%Y/%m/%d") / "archive"
@@ -1948,7 +1949,7 @@ async def img2img_generation(
                 f"img2img_{uuid.uuid4().hex[:8]}_{now.strftime('%Y%m%d_%H%M%S')}.png"
             )
             save_path = date_path / filename
-            result["image"].save(save_path, "PNG")
+            result_image.save(save_path, "PNG")
 
             # Save metadata
             metadata_json = {
@@ -2117,17 +2118,18 @@ async def generate_variations(
 
         for i, prompt in enumerate(selected_prompts):
             # Use lower strength for variations to preserve more of original
-            result = generator.generate_img2img(
+            images = generator.generate_img2img(
                 prompt=prompt,
                 image=source_pil,
                 strength=0.6,  # Preserve more of original
                 guidance_scale=7.5,
             )
 
-            if result and result.get("image"):
+            if images and len(images) > 0:
+                result_image = images[0]
                 filename = f"var_{uuid.uuid4().hex[:8]}_{now.strftime('%Y%m%d_%H%M%S')}_{i}.png"
                 save_path = date_path / filename
-                result["image"].save(save_path, "PNG")
+                result_image.save(save_path, "PNG")
 
                 # Save metadata
                 metadata_json = {

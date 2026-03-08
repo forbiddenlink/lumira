@@ -172,13 +172,10 @@ class ReplicateGenerator:
             output = replicate.run(self.model_id, input=input_params)
 
             # Handle different output formats
-            images = []
+            images: list[Image.Image] = []
 
             # Output can be a list of URLs or FileOutput objects
-            if isinstance(output, list):
-                urls = output
-            else:
-                urls = [output]
+            urls = output if isinstance(output, list) else [output]
 
             for url in urls:
                 # Handle FileOutput objects
@@ -253,7 +250,7 @@ class ReplicateGenerator:
         try:
             output = replicate.run(img2img_model, input=input_params)
 
-            images = []
+            images: list[Image.Image] = []
             urls = output if isinstance(output, list) else [output]
 
             for url in urls:
@@ -302,10 +299,7 @@ class ReplicateGenerator:
             return True
 
         # Check for version hash pattern (indicates Replicate)
-        if ":" in model_id:
-            return True
-
-        return False
+        return ":" in model_id
 
     def _get_aspect_ratio(self, width: int, height: int) -> str:
         """Convert dimensions to FLUX aspect ratio string."""
