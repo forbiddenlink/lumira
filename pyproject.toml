@@ -1,7 +1,7 @@
 [project]
-name = "ai-artist"
+name = "lumira"
 version = "0.1.0"
-description = "Autonomous AI artist with LoRA style training"
+description = "Lumira - Autonomous AI artist illuminating spaces between feeling and form"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
