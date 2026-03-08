@@ -38,7 +38,6 @@ from ..gallery.manager import GalleryManager
 from ..utils.config import WebConfig
 from ..utils.logging import get_logger
 from .admin import router as admin_router
-from .aria_routes import router as aria_router
 from .dependencies import GalleryManagerDep, GalleryPathDep, set_gallery_manager
 from .exception_handlers import (
     general_exception_handler,
@@ -54,6 +53,7 @@ from .helpers import (
     is_valid_image,
     load_image_metadata,
 )
+from .lumira_routes import router as aria_router
 from .metrics_routes import router as metrics_router
 from .middleware import (
     ErrorHandlingMiddleware,
@@ -390,7 +390,7 @@ async def root(request: Request):
     )
 
 
-@app.get("/aria", response_class=HTMLResponse)
+@app.get("/lumira", response_class=HTMLResponse)
 async def aria_page(request: Request):
     """Serve Aria's creative studio.
 
@@ -398,7 +398,7 @@ async def aria_page(request: Request):
     """
     return templates.TemplateResponse(
         request,
-        "aria.html",
+        "lumira.html",
         {"title": "Aria | Autonomous AI Artist"},
     )
 

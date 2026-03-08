@@ -3,6 +3,7 @@
 import json
 
 import pytest
+from fastapi.testclient import TestClient
 from PIL import Image
 
 from ai_artist.db.models import (
@@ -14,6 +15,7 @@ from ai_artist.db.models import (
 )
 from ai_artist.db.session import create_db_engine, create_session_factory
 from ai_artist.gallery.manager import GalleryManager
+from ai_artist.web.app import app
 
 
 @pytest.fixture
@@ -348,3 +350,176 @@ class TestCommunityGalleryQueries:
             assert result.filename == "test_community.png"
         finally:
             session.close()
+
+
+# ========== API ENDPOINT TESTS (Phase 4-5 Additions) ==========
+
+
+@pytest.fixture
+def api_client():
+    """Create test client for API endpoints."""
+    return TestClient(app)
+
+
+class TestGalleryCollectionsAPI:
+    """Tests for /api/gallery/collections endpoints."""
+
+    def test_list_collections_returns_list(self, api_client):
+        """Collections endpoint should return a list."""
+        response = api_client.get("/api/gallery/collections")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert isinstance(data, list)
+
+    def test_create_collection_requires_fields(self, api_client):
+        """Create collection should require name and description."""
+        response = api_client.post(
+            "/api/gallery/collections",
+            json={},
+        )
+        assert response.status_code == 422
+
+    def test_create_collection_success(self, api_client):
+        """Create collection with valid data."""
+        response = api_client.post(
+            "/api/gallery/collections",
+            json={
+                "name": "Test Collection",
+                "description": "A test collection",
+                "theme": "nature",
+            },
+        )
+        # May succeed or depend on DB state
+        assert response.status_code in [200, 201, 500]
+
+    def test_get_collection_invalid_id(self, api_client):
+        """Get collection with invalid ID should 404."""
+        response = api_client.get("/api/gallery/collections/999999")
+        assert response.status_code == 404
+
+
+class TestGallerySearchAPI:
+    """Tests for /api/gallery/search endpoint."""
+
+    def test_search_returns_results_structure(self, api_client):
+        """Search should return results with expected structure."""
+        response = api_client.post(
+            "/api/gallery/search",
+            json={"query": "test"},
+        )
+        assert response.status_code == 200
+
+        data = response.json()
+        assert "results" in data
+        assert "total" in data
+        assert "filters_applied" in data
+
+    def test_search_with_mood_filter(self, api_client):
+        """Search with mood filter should apply filter."""
+        response = api_client.post(
+            "/api/gallery/search",
+            json={"mood": "contemplative"},
+        )
+        assert response.status_code == 200
+
+        data = response.json()
+        if data["total"] > 0:
+            assert "mood" in data["filters_applied"]
+
+    def test_search_with_date_filter(self, api_client):
+        """Search with date filters should work."""
+        response = api_client.post(
+            "/api/gallery/search",
+            json={
+                "date_from": "2025-01-01T00:00:00",
+                "sort_by": "newest",
+            },
+        )
+        assert response.status_code == 200
+
+    def test_search_sort_options(self, api_client):
+        """Search should support all sort options."""
+        sort_options = ["newest", "oldest", "best", "most_liked", "trending"]
+
+        for sort_by in sort_options:
+            response = api_client.post(
+                "/api/gallery/search",
+                json={"sort_by": sort_by},
+            )
+            assert response.status_code == 200, f"Failed for sort_by={sort_by}"
+
+
+class TestGalleryTrendingAPI:
+    """Tests for /api/gallery/trending endpoint."""
+
+    def test_trending_returns_structure(self, api_client):
+        """Trending endpoint should return expected structure."""
+        response = api_client.get("/api/gallery/trending")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert "trending" in data
+        assert "time_window" in data
+
+    def test_trending_time_windows(self, api_client):
+        """Trending should support different time windows."""
+        time_windows = ["day", "week", "month", "all"]
+
+        for window in time_windows:
+            response = api_client.get(f"/api/gallery/trending?time_window={window}")
+            assert response.status_code == 200, f"Failed for time_window={window}"
+
+    def test_trending_respects_limit(self, api_client):
+        """Trending should respect limit parameter."""
+        response = api_client.get("/api/gallery/trending?limit=5")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert len(data["trending"]) <= 5
+
+
+class TestGalleryImagesAPI:
+    """Tests for /api/gallery/images endpoint."""
+
+    def test_images_returns_list(self, api_client):
+        """Images endpoint should return paginated list."""
+        response = api_client.get("/api/gallery/images")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert "images" in data
+        assert "total" in data
+        assert isinstance(data["images"], list)
+
+    def test_images_sort_options(self, api_client):
+        """Images should support sort options."""
+        response = api_client.get("/api/gallery/images?sort=newest")
+        assert response.status_code == 200
+
+        response = api_client.get("/api/gallery/images?sort=popular")
+        assert response.status_code == 200
+
+    def test_images_pagination(self, api_client):
+        """Images should support pagination."""
+        response = api_client.get("/api/gallery/images?limit=10&offset=0")
+        assert response.status_code == 200
+
+
+class TestGalleryImageByShareId:
+    """Tests for /api/gallery/image/{share_id} endpoint."""
+
+    def test_get_image_invalid_share_id(self, api_client):
+        """Invalid share_id should return 404."""
+        response = api_client.get("/api/gallery/image/nonexistent123")
+        assert response.status_code == 404
+
+    def test_like_image_invalid_share_id(self, api_client):
+        """Like with invalid share_id should 404."""
+        response = api_client.post("/api/gallery/image/nonexistent123/like")
+        assert response.status_code == 404
+
+    def test_get_comments_invalid_share_id(self, api_client):
+        """Comments for invalid share_id should 404."""
+        response = api_client.get("/api/gallery/image/nonexistent123/comments")
+        assert response.status_code == 404

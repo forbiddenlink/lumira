@@ -1551,7 +1551,7 @@
         }
 
         function fetchState(loadGallery) {
-            fetch('/api/aria/state')
+            fetch('/api/lumira/state')
                 .then(function(res) {
                     if (!res.ok) throw new Error('Failed to fetch state');
                     return res.json();
@@ -1798,7 +1798,7 @@
                 }
             }, 3000);
 
-            fetch('/api/aria/create', {
+            fetch('/api/lumira/create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
             })
@@ -1839,7 +1839,7 @@
         }
 
         function forceEvolve() {
-            fetch('/api/aria/evolve', { method: 'POST' })
+            fetch('/api/lumira/evolve', { method: 'POST' })
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
                     if (data.mood) {
@@ -1860,7 +1860,7 @@
             btn.disabled = true;
             btn.style.opacity = '0.5';
 
-            fetch('/api/aria/mood/influence', {
+            fetch('/api/lumira/mood/influence', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ influence: influence, intensity: 0.7 })
@@ -1886,7 +1886,7 @@
         }
 
         function showStatement() {
-            fetch('/api/aria/statement')
+            fetch('/api/lumira/statement')
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
                     var modal = document.createElement('div');
@@ -1925,7 +1925,7 @@
         }
 
         function showEvolution() {
-            fetch('/api/aria/evolution')
+            fetch('/api/lumira/evolution')
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
                     var modal = document.createElement('div');
@@ -2103,7 +2103,7 @@
         }
 
         function showMemory() {
-            fetch('/api/aria/memory')
+            fetch('/api/lumira/memory')
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
                     var modal = document.createElement('div');
@@ -2229,7 +2229,7 @@
         }
 
         function showMoodGraph() {
-            fetch('/api/aria/mood/evolution')
+            fetch('/api/lumira/mood/evolution')
                 .then(function(res) { return res.json(); })
                 .then(function(data) {
                     var modal = document.createElement('div');
@@ -2434,7 +2434,7 @@
             btn.appendChild(loadingSpan);
             btn.appendChild(document.createTextNode(' Generating...'));
 
-            fetch('/api/aria/variations', {
+            fetch('/api/lumira/variations', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

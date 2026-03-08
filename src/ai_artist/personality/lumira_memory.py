@@ -20,7 +20,7 @@ class ArtistMemory:
     - Notable moments in her artistic development
     """
 
-    def __init__(self, memory_file: Path = Path("data/aria_memory.json")):
+    def __init__(self, memory_file: Path = Path("data/lumira_memory.json")):
         self.memory_file = memory_file
         self.memory: dict[str, Any] = {
             "artist_name": "Aria",

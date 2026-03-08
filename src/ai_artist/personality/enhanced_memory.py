@@ -591,7 +591,7 @@ class EnhancedMemorySystem:
     - Reflection system for periodic insight synthesis
     """
 
-    def __init__(self, memory_file: Path = Path("data/aria_enhanced_memory.json")):
+    def __init__(self, memory_file: Path = Path("data/lumira_enhanced_memory.json")):
         self.memory_file = memory_file
 
         # Three types of memory

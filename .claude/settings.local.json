@@ -58,7 +58,15 @@
       "Bash(railway up:*)",
       "Bash(railway service:*)",
       "Bash(railway:*)",
-      "Bash(pre-commit run:*)"
+      "Bash(pre-commit run:*)",
+      "Bash(rp-cli:*)",
+      "Bash(git -C /Volumes/LizsDisk/ai-artist log --oneline -15)",
+      "Bash(git -C /Volumes/LizsDisk/ai-artist log --oneline -25)",
+      "Bash(ruff check:*)",
+      "WebFetch(domain:railway.com)",
+      "WebFetch(domain:aria-production-3084.up.railway.app)",
+      "Bash(pip --version:*)",
+      "Skill(github-search)"
     ]
   }
 }

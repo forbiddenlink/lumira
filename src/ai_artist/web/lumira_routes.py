@@ -33,7 +33,7 @@ logger = get_logger(__name__)
 limiter = Limiter(key_func=get_remote_address)
 
 # Create router
-router = APIRouter(prefix="/api/aria", tags=["aria"])
+router = APIRouter(prefix="/api/lumira", tags=["aria"])
 
 # Singleton state for Aria (initialized on first request)
 _aria_state: dict[str, Any] | None = None
@@ -1134,7 +1134,7 @@ async def generate_async(
     """Start an async image generation job.
 
     This endpoint enqueues a generation job and returns immediately with a job_id.
-    Use GET /aria/job/{job_id} to check status, or connect to WebSocket for
+    Use GET /lumira/job/{job_id} to check status, or connect to WebSocket for
     real-time progress updates.
 
     Priority options:
