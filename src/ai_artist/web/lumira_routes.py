@@ -2891,3 +2891,264 @@ async def batch_create(
             job_ids=job_ids,
             message="Batch creation scheduled (queue unavailable, will process sequentially)",
         )
+
+
+# =============================================================================
+# Knowledge Graph Endpoints
+# =============================================================================
+
+
+class KnowledgeGraphStatsResponse(BaseModel):
+    """Knowledge graph statistics response."""
+
+    connected: bool
+    artworks: int
+    subjects: int
+    styles: int
+    moods: int
+    relationships: int = 0
+
+
+class CreativeSuggestionsResponse(BaseModel):
+    """Creative suggestions based on mood."""
+
+    mood: str
+    suggested_subjects: list[dict[str, Any]]
+    suggested_styles: list[dict[str, Any]]
+
+
+class ArtworkContextResponse(BaseModel):
+    """Full context for an artwork from the knowledge graph."""
+
+    id: str
+    title: str | None
+    prompt: str | None
+    aesthetic_score: float | None
+    subjects: list[dict[str, Any]]
+    styles: list[dict[str, Any]]
+    moods: list[dict[str, Any]]
+
+
+@router.get("/knowledge/stats", response_model=KnowledgeGraphStatsResponse)
+@limiter.limit("30/minute")
+async def get_knowledge_stats(request: Request):
+    """Get knowledge graph statistics.
+
+    Returns counts of artworks, subjects, styles, and moods in the graph.
+    """
+    from ..knowledge import get_knowledge_graph
+
+    graph = get_knowledge_graph()
+    stats = graph.get_stats()
+
+    return KnowledgeGraphStatsResponse(
+        connected=stats.get("connected", False),
+        artworks=stats.get("artworks", 0),
+        subjects=stats.get("subjects", 0),
+        styles=stats.get("styles", 0),
+        moods=stats.get("moods", 0),
+        relationships=stats.get("relationships", 0),
+    )
+
+
+@router.get("/knowledge/suggestions/{mood}", response_model=CreativeSuggestionsResponse)
+@limiter.limit("30/minute")
+async def get_creative_suggestions(request: Request, mood: str):
+    """Get creative suggestions for a mood.
+
+    Returns subjects and styles that have worked well for this mood,
+    enabling smarter creative decisions.
+
+    Args:
+        mood: The mood to get suggestions for (e.g., "serene", "energetic")
+    """
+    from ..knowledge import get_knowledge_graph
+
+    graph = get_knowledge_graph()
+    suggestions = graph.get_creative_suggestions(mood)
+
+    return CreativeSuggestionsResponse(
+        mood=suggestions["mood"],
+        suggested_subjects=suggestions["suggested_subjects"],
+        suggested_styles=suggestions["suggested_styles"],
+    )
+
+
+@router.get("/knowledge/artwork/{artwork_id}", response_model=ArtworkContextResponse)
+@limiter.limit("30/minute")
+async def get_artwork_context(request: Request, artwork_id: str):
+    """Get full context for an artwork from the knowledge graph.
+
+    Returns all subjects, styles, and moods associated with an artwork.
+    """
+    from ..knowledge import get_knowledge_graph
+
+    graph = get_knowledge_graph()
+    context = graph.get_artwork_context(artwork_id)
+
+    if not context:
+        raise HTTPException(status_code=404, detail="Artwork not found in knowledge graph")
+
+    return ArtworkContextResponse(
+        id=artwork_id,
+        title=context.get("title"),
+        prompt=context.get("prompt"),
+        aesthetic_score=context.get("aesthetic_score"),
+        subjects=context.get("subjects", []),
+        styles=context.get("styles", []),
+        moods=context.get("moods", []),
+    )
+
+
+# =============================================================================
+# Social Media Posting Endpoints
+# =============================================================================
+
+
+class SocialPostRequest(BaseModel):
+    """Request to post artwork to social media."""
+
+    artwork_id: str | None = None  # ID of existing artwork
+    image_path: str | None = None  # Or path to image
+    title: str = "Untitled"
+    caption: str | None = None
+    mood: str | None = None
+    style: str | None = None
+    platforms: list[str] | None = None  # None = all available
+
+
+class SocialPostResult(BaseModel):
+    """Result from a social media post."""
+
+    platform: str
+    success: bool
+    post_id: str | None = None
+    post_url: str | None = None
+    error: str | None = None
+
+
+class SocialPostResponse(BaseModel):
+    """Response from posting to social media."""
+
+    results: list[SocialPostResult]
+    successful_platforms: list[str]
+    failed_platforms: list[str]
+
+
+class SocialPlatformsResponse(BaseModel):
+    """Available social media platforms."""
+
+    available: list[str]
+    configured: dict[str, bool]
+
+
+@router.get("/social/platforms", response_model=SocialPlatformsResponse)
+@limiter.limit("30/minute")
+async def get_social_platforms(request: Request):
+    """Get available social media platforms.
+
+    Returns which platforms are configured and ready for posting.
+    """
+    from ..social import get_social_poster
+
+    poster = get_social_poster()
+    available = poster.get_available_platforms()
+
+    return SocialPlatformsResponse(
+        available=available,
+        configured={
+            "twitter": poster.twitter.is_available,
+            "instagram": poster.instagram.is_available,
+            "bluesky": poster.bluesky.is_available,
+        },
+    )
+
+
+@router.post("/social/post", response_model=SocialPostResponse)
+@limiter.limit("10/minute")
+async def post_to_social(request: Request, post_request: SocialPostRequest):
+    """Post artwork to social media platforms.
+
+    Posts an artwork to configured social media platforms.
+    Requires API credentials in environment variables.
+
+    Args:
+        artwork_id: ID of artwork from gallery (optional)
+        image_path: Path to image file (optional, if not using artwork_id)
+        title: Title of the artwork
+        caption: Custom caption (optional)
+        mood: Lumira's mood during creation (optional)
+        style: Artistic style (optional)
+        platforms: Specific platforms to post to (optional, defaults to all)
+    """
+    from ..social import get_social_poster
+
+    poster = get_social_poster()
+
+    # Get image
+    image = None
+    if post_request.image_path:
+        image_path = Path(post_request.image_path)
+        if not image_path.exists():
+            raise HTTPException(status_code=404, detail="Image file not found")
+        image = Image.open(image_path)
+    elif post_request.artwork_id:
+        # Look up in gallery
+        from ..gallery.manager import GalleryManager
+        from ..utils.config import load_config
+
+        config = load_config()
+        gallery = GalleryManager(config.paths.gallery_path)
+        images = gallery.list_images()
+
+        # Find by ID (filename stem)
+        for img_path in images:
+            if post_request.artwork_id in img_path.stem:
+                image = Image.open(img_path)
+                break
+
+        if image is None:
+            raise HTTPException(status_code=404, detail="Artwork not found in gallery")
+    else:
+        raise HTTPException(status_code=400, detail="Either artwork_id or image_path required")
+
+    # Post to platforms
+    results = poster.post_artwork(
+        image=image,
+        title=post_request.title,
+        mood=post_request.mood,
+        style=post_request.style,
+        platforms=post_request.platforms,
+    )
+
+    # Build response
+    post_results = []
+    successful = []
+    failed = []
+
+    for platform, result in results.items():
+        post_results.append(
+            SocialPostResult(
+                platform=result.platform,
+                success=result.success,
+                post_id=result.post_id,
+                post_url=result.post_url,
+                error=result.error,
+            )
+        )
+        if result.success:
+            successful.append(platform)
+        else:
+            failed.append(platform)
+
+    logger.info(
+        "social_post_complete",
+        successful=successful,
+        failed=failed,
+    )
+
+    return SocialPostResponse(
+        results=post_results,
+        successful_platforms=successful,
+        failed_platforms=failed,
+    )

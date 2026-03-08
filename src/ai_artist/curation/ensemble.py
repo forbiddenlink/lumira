@@ -3,14 +3,21 @@ Ensemble curation using multiple models for better quality assessment.
 
 Uses voting from multiple evaluation models to get more robust
 quality scores and reduce bias from any single model.
+
+Includes:
+- CLIP-based prompt alignment
+- LAION aesthetic predictor
+- AGIQA (AI-Generated Image Quality Assessment) for AI-specific quality
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import structlog
 from PIL import Image
 
 from ai_artist.utils.config import Config
+
+from .agiqa_scorer import get_agiqa_scorer
 
 logger = structlog.get_logger(__name__)
 
@@ -25,6 +32,8 @@ class EnsembleVote:
     avg_aesthetic: float
     consensus_strength: float  # 0-1, how much models agree
     final_score: float
+    # AGIQA-specific scores (AI-generated image quality)
+    agiqa_scores: dict = field(default_factory=dict)
 
 
 class EnsembleCurator:
@@ -41,7 +50,7 @@ class EnsembleCurator:
         logger.info("ensemble_curator_initialized")
 
     async def evaluate_with_ensemble(
-        self, image: Image.Image, prompt: str
+        self, image: Image.Image, prompt: str, use_agiqa: bool = True
     ) -> EnsembleVote:
         """
         Evaluate image quality using ensemble of models.
@@ -49,6 +58,7 @@ class EnsembleCurator:
         Args:
             image: Image to evaluate
             prompt: Generation prompt
+            use_agiqa: Whether to include AGIQA scoring (recommended for AI art)
 
         Returns:
             Ensemble voting results
@@ -61,25 +71,43 @@ class EnsembleCurator:
         # Get evaluation from primary curator
         primary_metrics = curator.evaluate(image, prompt)
 
-        # In future, add more evaluation models here:
-        # - Different CLIP models (OpenCLIP variants)
-        # - Different aesthetic predictors
-        # - Custom trained quality models
-        # - Perceptual quality metrics (LPIPS, FID)
-
-        # For now, use single evaluation but structure for expansion
+        # CLIP and aesthetic scores from primary
         clip_scores = [primary_metrics.clip_score]
         aesthetic_scores = [primary_metrics.aesthetic_score]
 
-        # Calculate consensus (for single model, it's 1.0)
-        consensus = 1.0
+        # AGIQA scoring for AI-generated image quality
+        agiqa_scores = {}
+        agiqa_final = 0.0
+        if use_agiqa:
+            try:
+                agiqa_scorer = get_agiqa_scorer()
+                agiqa_scores = agiqa_scorer.score(image, prompt)
+                agiqa_final = agiqa_scores.get("final_score", 0.0)
+            except Exception as e:
+                logger.warning("agiqa_scoring_failed", error=str(e))
+
+        # Calculate consensus
+        # With AGIQA, we have more signals to compare
+        if agiqa_scores:
+            scores = [primary_metrics.clip_score, primary_metrics.aesthetic_score, agiqa_final]
+            mean_score = sum(scores) / len(scores)
+            variance = sum((s - mean_score) ** 2 for s in scores) / len(scores)
+            consensus = max(0, 1.0 - (variance ** 0.5) * 2)  # Lower variance = higher consensus
+        else:
+            consensus = 1.0
 
         # Average scores
         avg_clip = sum(clip_scores) / len(clip_scores)
         avg_aesthetic = sum(aesthetic_scores) / len(aesthetic_scores)
 
-        # Weighted final score
-        final_score = 0.6 * avg_clip + 0.4 * avg_aesthetic
+        # Weighted final score (adjusted for AGIQA)
+        if agiqa_scores:
+            # AGIQA-enhanced weighting:
+            # 40% CLIP alignment, 25% aesthetic, 35% AGIQA (AI-specific quality)
+            final_score = 0.40 * avg_clip + 0.25 * avg_aesthetic + 0.35 * agiqa_final
+        else:
+            # Fallback to original weighting
+            final_score = 0.6 * avg_clip + 0.4 * avg_aesthetic
 
         vote = EnsembleVote(
             clip_scores=clip_scores,
@@ -88,12 +116,14 @@ class EnsembleCurator:
             avg_aesthetic=avg_aesthetic,
             consensus_strength=consensus,
             final_score=final_score,
+            agiqa_scores=agiqa_scores,
         )
 
         logger.debug(
             "ensemble_evaluation_complete",
             final_score=final_score,
             consensus=consensus,
+            agiqa_enabled=bool(agiqa_scores),
         )
 
         return vote

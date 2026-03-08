@@ -103,6 +103,17 @@ provenance = [
 queue = [
     "rq-dashboard>=0.7.0",  # Optional admin UI (rq is now in core deps)
 ]
+knowledge = [
+    "FalkorDB>=1.6.0",  # Graph database for semantic knowledge
+]
+social = [
+    "tweepy>=4.14.0",  # Twitter/X API
+    "instagrapi>=2.1.0",  # Instagram API
+    "atproto>=0.0.55",  # Bluesky/AT Protocol
+]
+agiqa = [
+    "scipy>=1.12.0",  # For AGIQA image analysis
+]
 
 [tool.ruff]
 target-version = "py311"
