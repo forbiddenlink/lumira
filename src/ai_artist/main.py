@@ -38,7 +38,7 @@ logger = get_logger(__name__)
 class AIArtist:
     """Aria - An autonomous AI artist with personality, moods, and memory."""
 
-    def __init__(self, config: Config, name: str = "Aria"):
+    def __init__(self, config: Config, name: str = "Lumira"):
         self.config = config
         self.name = name
         self.generator = None

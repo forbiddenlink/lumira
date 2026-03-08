@@ -16,7 +16,7 @@ class ArtistMemory:
     def __init__(self, memory_file: Path = Path("data/aria_memory.json")):
         self.memory_file = memory_file
         self.memory: dict[str, Any] = {
-            "name": "Aria",
+            "name": "Lumira",
             "created_at": datetime.now().isoformat(),
             "paintings": [],
             "reflections": [],

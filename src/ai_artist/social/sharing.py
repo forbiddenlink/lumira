@@ -48,7 +48,7 @@ class SocialSharing:
                 text = text[: max_chars - 3] + "..."
 
             # Add hashtags
-            hashtags = ["#AIArt", "#GenerativeArt", "#AIArtist", "#Aria"]
+            hashtags = ["#AIArt", "#GenerativeArt", "#AIArtist", "#Lumira"]
             text_with_tags = f"{text} {' '.join(hashtags)}"
 
             if len(text_with_tags) > max_chars:
@@ -120,7 +120,7 @@ class SocialSharing:
                 "#GenerativeArt",
                 "#DigitalArt",
                 "#AIArtist",
-                "#Aria",
+                "#Lumira",
                 "#MachineLearning",
                 "#DeepLearning",
                 "#ArtificialIntelligence",

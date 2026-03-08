@@ -31,7 +31,7 @@ class Mood(Enum):
 class Personality:
     """Aria's personality system with moods, preferences, and evolution."""
 
-    def __init__(self, name: str = "Aria"):
+    def __init__(self, name: str = "Lumira"):
         self.name = name
         self.current_mood = self._get_time_based_mood()
         self.energy_level = 0.7  # 0.0 to 1.0

@@ -296,10 +296,10 @@ def _get_aria_state() -> dict[str, Any]:
     if _aria_state is None:
         # Initialize fresh state
         _aria_state = {
-            "name": "Aria",
+            "name": "Lumira",
             "mood_system": MoodSystem(),
             "memory": EnhancedMemorySystem(),
-            "profile": ArtisticProfile(name="Aria"),
+            "profile": ArtisticProfile(name="Lumira"),
             "paintings_created": 0,
             "portfolio": [],
             # OCEAN personality traits
