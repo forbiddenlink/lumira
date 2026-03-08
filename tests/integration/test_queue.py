@@ -227,15 +227,15 @@ class TestQueueAPIEndpoints:
         return TestClient(app)
 
     def test_queue_stats_endpoint(self, client):
-        """Test GET /api/aria/queue/stats endpoint."""
-        response = client.get("/api/aria/queue/stats")
+        """Test GET /api/lumira/queue/stats endpoint."""
+        response = client.get("/api/lumira/queue/stats")
         assert response.status_code == 200
         data = response.json()
         assert "enabled" in data
         assert "queues" in data
 
     def test_generate_async_without_redis(self, client):
-        """Test POST /api/aria/generate-async when Redis unavailable."""
+        """Test POST /api/lumira/generate-async when Redis unavailable."""
         with patch("ai_artist.queue.job_queue.RQ_AVAILABLE", False):
             # Reset singleton
             import ai_artist.queue.job_queue as queue_module
@@ -243,7 +243,7 @@ class TestQueueAPIEndpoints:
             queue_module._queue_instance = None
 
             response = client.post(
-                "/api/aria/generate-async",
+                "/api/lumira/generate-async",
                 json={"prompt": "test prompt"},
             )
 
@@ -256,10 +256,10 @@ class TestQueueAPIEndpoints:
             queue_module._queue_instance = None
 
     def test_job_status_not_found(self, client):
-        """Test GET /api/aria/job/{job_id} returns 404 for unknown job."""
+        """Test GET /api/lumira/job/{job_id} returns 404 for unknown job."""
         # This will fail because Redis is not available in tests
         # but we're testing the endpoint exists
-        response = client.get("/api/aria/job/nonexistent-job-id")
+        response = client.get("/api/lumira/job/nonexistent-job-id")
         # Either 404 (job not found) or 503 (queue unavailable)
         assert response.status_code in (404, 503)
 

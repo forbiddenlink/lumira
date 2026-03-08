@@ -1,4 +1,4 @@
-# Aria Enhancements - Complete Implementation Summary
+# Lumira Enhancements - Complete Implementation Summary
 
 **Date**: February 1, 2026
 **Status**: ✅ ALL PHASES COMPLETE - Production Ready
@@ -11,7 +11,7 @@
 
 ## 🎉 Executive Summary
 
-Transformed Aria from a functional AI artist into an **enterprise-grade, intelligent, monitored application** with:
+Transformed Lumira from a functional AI artist into an **enterprise-grade, intelligent, monitored application** with:
 
 - **10x faster** initial generation (35s → 3-5s)
 - **Adaptive learning** from user feedback
@@ -25,7 +25,7 @@ Transformed Aria from a functional AI artist into an **enterprise-grade, intelli
 
 ### 1. Comprehensive Enhancement Plan
 
-- **File**: [docs/ARIA_ENHANCEMENT_PLAN_2026.md](../docs/ARIA_ENHANCEMENT_PLAN_2026.md)
+- **File**: [docs/LUMIRA_ENHANCEMENT_PLAN_2026.md](../docs/LUMIRA_ENHANCEMENT_PLAN_2026.md)
 - **Impact**: Strategic roadmap for 10x improvements
 - **Details**:
   - 21 specific improvements across 5 categories
@@ -116,7 +116,7 @@ model_manager:
 ### 1. Adaptive Learning System (NEW ⭐)
 
 - **File**: [src/ai_artist/learning/adaptive_learner.py](../src/ai_artist/learning/adaptive_learner.py)
-- **Impact**: Aria learns from user feedback and improves over time
+- **Impact**: Lumira learns from user feedback and improves over time
 - **Features**:
   - Multi-armed bandit algorithm (epsilon-greedy: 15% explore, 85% exploit)
   - Learns from user actions: like, love, download, share, delete
@@ -229,9 +229,9 @@ image = await generator.generate_with_streaming(
 
 **To Install**:
 
-1. Visit Aria in Chrome/Edge/Safari
+1. Visit Lumira in Chrome/Edge/Safari
 2. Click "Install" in address bar
-3. Aria becomes a native app!
+3. Lumira becomes a native app!
 
 ### 3. Service Worker Caching (NEW 🔧)
 
@@ -255,37 +255,37 @@ image = await generator.generate_with_streaming(
 **Generation Metrics**:
 
 ```prometheus
-aria_generation_requests_total{model, mood, status}
-aria_generation_duration_seconds{model, mood}
-aria_generation_steps{model}
-aria_images_generated_total{model, mood}
-aria_generation_errors_total{model, error_type}
+lumira_generation_requests_total{model, mood, status}
+lumira_generation_duration_seconds{model, mood}
+lumira_generation_steps{model}
+lumira_images_generated_total{model, mood}
+lumira_generation_errors_total{model, error_type}
 ```
 
 **Quality Metrics**:
 
 ```prometheus
-aria_curation_quality_score{model}
-aria_curation_clip_score{model}
-aria_curation_aesthetic_score{model}
+lumira_curation_quality_score{model}
+lumira_curation_clip_score{model}
+lumira_curation_aesthetic_score{model}
 ```
 
 **Learning Metrics**:
 
 ```prometheus
-aria_feedback_events_total{action, mood}
-aria_learning_model_score{model}
-aria_learning_samples_total{model}
+lumira_feedback_events_total{action, mood}
+lumira_learning_model_score{model}
+lumira_learning_samples_total{model}
 ```
 
 **System Metrics**:
 
 ```prometheus
-aria_model_pool_size
-aria_model_pool_preloaded
-aria_active_generations
-aria_gpu_memory_allocated_bytes
-aria_gpu_memory_reserved_bytes
+lumira_model_pool_size
+lumira_model_pool_preloaded
+lumira_active_generations
+lumira_gpu_memory_allocated_bytes
+lumira_gpu_memory_reserved_bytes
 ```
 
 **Helper Functions**:
@@ -309,7 +309,7 @@ async def generate():
 
 ```yaml
 scrape_configs:
-  - job_name: 'aria'
+  - job_name: 'lumira'
     scrape_interval: 15s
     static_configs:
       - targets: ['localhost:8000']
@@ -410,14 +410,14 @@ scrape_configs:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ai-artist
+  name: lumira
 spec:
   replicas: 3
   template:
     spec:
       containers:
-      - name: aria
-        image: ai-artist:latest
+      - name: lumira
+        image: lumira:latest
         env:
         - name: ENABLE_MODEL_POOL
           value: "true"
@@ -448,7 +448,7 @@ metadata:
     prometheus.io/path: "/metrics"
 spec:
   selector:
-    app: ai-artist
+    app: lumira
   ports:
   - port: 8000
 ```

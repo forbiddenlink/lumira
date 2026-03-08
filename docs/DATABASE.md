@@ -1,6 +1,6 @@
 # Database Schema Documentation
 
-Complete database schema for AI Artist project using SQLite + SQLAlchemy + Alembic.
+Complete database schema for Lumira project using SQLite + SQLAlchemy + Alembic.
 
 ---
 
@@ -330,7 +330,7 @@ alembic init alembic
 **Configure `alembic.ini`:**
 
 ```ini
-sqlalchemy.url = sqlite:///./data/ai_artist.db
+sqlalchemy.url = sqlite:///./data/lumira.db
 ```
 
 **Configure `alembic/env.py`:**
@@ -640,7 +640,7 @@ PRAGMA integrity_check;
 
 ```bash
 # Restore from backup
-sqlite3 ai_artist.db ".backup backup.db"
+sqlite3 lumira.db ".backup backup.db"
 ```
 
 ---

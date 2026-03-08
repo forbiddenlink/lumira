@@ -1,4 +1,4 @@
-# AI Artist - Comprehensive Testing Report
+# Lumira - Comprehensive Testing Report
 
 **Test Run:** 2026-02-01 (Updated after bug fixes)
 
@@ -82,25 +82,25 @@
 - Status: ✅ PASS
 - Details: /health returns 200 with status and version
 
-**Aria State Endpoint**
+**Lumira State Endpoint**
 
 - Status: ✅ PASS
-- Details: /api/aria/state returns mood, energy, personality traits
+- Details: /api/lumira/state returns mood, energy, personality traits
 
-**Aria Statement Endpoint**
+**Lumira Statement Endpoint**
 
 - Status: ✅ PASS
-- Details: /api/aria/statement returns artist statement
+- Details: /api/lumira/statement returns artist statement
 
 **Homepage**
 
 - Status: ✅ PASS
 - Details: / renders 151KB HTML with gallery UI
 
-**Aria Page**
+**Lumira Page**
 
 - Status: ✅ PASS
-- Details: /aria renders 66KB HTML with CREATE button
+- Details: /lumira renders 66KB HTML with CREATE button
 
 **Images Endpoint**
 
@@ -124,7 +124,7 @@
 **Dtype Parsing**
 
 - Status: ✅ FIXED
-- Details: Added proper torch.float32/float16 parsing in aria_routes.py
+- Details: Added proper torch.float32/float16 parsing in lumira_routes.py
 
 **Database Integration**
 
@@ -218,7 +218,7 @@ python test_api_endpoints.py
 
 ## Files Modified
 
-- [src/ai_artist/web/aria_routes.py](src/ai_artist/web/aria_routes.py) - Fixed dtype parsing, added DB integration, improved error handling
+- [src/ai_artist/web/lumira_routes.py](src/ai_artist/web/lumira_routes.py) - Fixed dtype parsing, added DB integration, improved error handling
 - [config/config.yaml](config/config.yaml) - Already configured correctly with dtype: float32
 
 ---
@@ -227,7 +227,7 @@ python test_api_endpoints.py
 
 1. **Restart the web server** to load the new code
 2. **Hard refresh browser** (Cmd+Shift+R) to clear cached JavaScript
-3. **Test CREATE button** on /aria page and verify:
+3. **Test CREATE button** on /lumira page and verify:
    - Stream of consciousness updates appear
    - Images are generated successfully
    - No black/NaN images due to dtype fix

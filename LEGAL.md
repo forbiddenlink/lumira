@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines the legal considerations and best practices for using the AI Artist project, particularly regarding copyright, training data, and generated content.
+This document outlines the legal considerations and best practices for using the Lumira project, particularly regarding copyright, training data, and generated content.
 
 **Last Updated**: January 8, 2026
 

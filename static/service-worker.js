@@ -1,10 +1,10 @@
 /**
- * Service Worker for Aria PWA
+ * Service Worker for Lumira PWA
  *
  * Provides offline support, caching, and background sync.
  */
 
-const CACHE_VERSION = 'aria-v1.0.1';
+const CACHE_VERSION = 'lumira-v1.0.1';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -55,7 +55,7 @@ self.addEventListener('activate', (event) => {
       .then((cacheNames) => {
         return Promise.all(
           cacheNames
-            .filter((name) => name.startsWith('aria-') && name !== STATIC_CACHE && name !== DYNAMIC_CACHE && name !== IMAGE_CACHE)
+            .filter((name) => name.startsWith('lumira-') && name !== STATIC_CACHE && name !== DYNAMIC_CACHE && name !== IMAGE_CACHE)
             .map((name) => {
               console.log('[SW] Deleting old cache:', name);
               return caches.delete(name);
@@ -224,13 +224,13 @@ self.addEventListener('push', (event) => {
   console.log('[SW] Push notification received');
 
   const data = event.data ? event.data.json() : {};
-  const title = data.title || 'Aria - New Artwork';
+  const title = data.title || 'Lumira - New Artwork';
   const options = {
     body: data.body || 'A new artwork has been created',
     icon: '/static/icons/icon-192x192.png',
     badge: '/static/icons/badge-72x72.png',
     vibrate: [200, 100, 200],
-    tag: data.tag || 'aria-notification',
+    tag: data.tag || 'lumira-notification',
     data: data.url || '/',
     actions: [
       { action: 'view', title: 'View' },

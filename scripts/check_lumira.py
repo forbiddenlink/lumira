@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Check Aria's current state and recent creations."""
+"""Check Lumira's current state and recent creations."""
 
 import json
 from datetime import datetime
 from pathlib import Path
 
 
-def check_aria_status():
-    """Display Aria's current personality state and recent works."""
+def check_lumira_status():
+    """Display Lumira's current personality state and recent works."""
 
-    memory_file = Path("data/aria_memory.json")
+    memory_file = Path("data/lumira_memory.json")
 
     if not memory_file.exists():
-        print("🎨 Aria hasn't created anything yet!")
+        print("🎨 Lumira hasn't created anything yet!")
         print("Run: python -m ai_artist.main --theme 'your theme'")
         return
 
@@ -20,7 +20,7 @@ def check_aria_status():
         memory = json.load(f)
 
     print("\n" + "=" * 60)
-    print("✨ ARIA - Autonomous AI Artist")
+    print("✨ LUMIRA - Autonomous AI Artist")
     print("=" * 60)
 
     # Basic stats
@@ -33,7 +33,7 @@ def check_aria_status():
     print(f"   Best Score: {best_score:.3f}")
 
     if total == 0:
-        print("\n🌱 Aria is just beginning her creative journey...")
+        print("\n🌱 Lumira is just beginning her creative journey...")
         return
 
     # Recent works
@@ -66,10 +66,10 @@ def check_aria_status():
         print(f"   Favorite Style: {top_style[0]} ({top_style[1]} times)")
 
     print("\n" + "=" * 60)
-    print("📖 Full memory at: data/aria_memory.json")
+    print("📖 Full memory at: data/lumira_memory.json")
     print("🖼️  Gallery at: gallery/")
     print("=" * 60 + "\n")
 
 
 if __name__ == "__main__":
-    check_aria_status()
+    check_lumira_status()

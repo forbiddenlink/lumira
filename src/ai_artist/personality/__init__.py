@@ -1,4 +1,4 @@
-"""Aria's personality system - bringing soul to the autonomous artist."""
+"""Lumira's personality system - bringing soul to the autonomous artist."""
 
 from .cognition import ThinkingProcess, Thought, ThoughtType
 from .enhanced_memory import EnhancedMemorySystem, EpisodicMemory, SemanticMemory

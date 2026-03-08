@@ -1,4 +1,4 @@
-"""Tests for Aria's mood system."""
+"""Tests for Lumira's mood system."""
 
 import random
 from datetime import datetime, timedelta
@@ -59,7 +59,7 @@ class TestMoodSystem:
         assert len(mood_system.mood_influences) == len(Mood)
 
     def test_initial_mood_is_valid(self, mood_system):
-        """Test that Aria starts in a valid configured mood."""
+        """Test that Lumira starts in a valid configured mood."""
         assert mood_system.current_mood in Mood
         assert mood_system.current_mood in mood_system.mood_influences
 

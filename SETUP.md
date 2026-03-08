@@ -1,6 +1,6 @@
 # 📦 Detailed Setup Guide
 
-Complete installation and configuration instructions for AI Artist.
+Complete installation and configuration instructions for Lumira.
 
 ---
 
@@ -50,8 +50,8 @@ Complete installation and configuration instructions for AI Artist.
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/yourusername/ai-artist.git
-cd ai-artist
+git clone https://github.com/yourusername/lumira.git
+cd lumira
 
 # 2. Create virtual environment
 python3.11 -m venv venv
@@ -150,7 +150,7 @@ api_keys:
 
 # Database
 database:
-  url: "sqlite:///./data/ai_artist.db"
+  url: "sqlite:///./data/lumira.db"
 
 # Scheduling
 scheduling:
@@ -187,7 +187,7 @@ PEXELS_API_KEY=your_pexels_api_key
 HF_TOKEN=your_huggingface_token
 
 # Database
-DATABASE_URL=sqlite:///./data/ai_artist.db
+DATABASE_URL=sqlite:///./data/lumira.db
 
 # Application
 LOG_LEVEL=INFO
@@ -327,7 +327,7 @@ No setup required. Database is created automatically:
 
 ```bash
 # Database location
-data/ai_artist.db
+data/lumira.db
 ```
 
 ### PostgreSQL (Production)
@@ -337,16 +337,16 @@ data/ai_artist.db
 2. **Create database:**
 
 ```sql
-CREATE DATABASE ai_artist;
-CREATE USER ai_artist_user WITH PASSWORD 'secure_password';
-GRANT ALL PRIVILEGES ON DATABASE ai_artist TO ai_artist_user;
+CREATE DATABASE lumira;
+CREATE USER lumira_user WITH PASSWORD 'secure_password';
+GRANT ALL PRIVILEGES ON DATABASE lumira TO lumira_user;
 ```
 
 3. **Update config:**
 
 ```yaml
 database:
-  url: "postgresql://ai_artist_user:secure_password@localhost/ai_artist"
+  url: "postgresql://lumira_user:secure_password@localhost/lumira"
 ```
 
 4. **Run migrations:**
@@ -363,7 +363,7 @@ alembic upgrade head
 
 ```bash
 # Start web server
-ai-artist-web
+lumira-web
 
 # Or with uvicorn directly
 uvicorn ai_artist.web.app:app --reload --host 0.0.0.0 --port 8000
@@ -401,7 +401,7 @@ server {
     }
 
     location /static {
-        alias /path/to/ai-artist/static;
+        alias /path/to/lumira/static;
     }
 }
 ```
@@ -518,7 +518,7 @@ pip install -e .
 
 ```bash
 # Close other connections and restart
-rm data/ai_artist.db-journal
+rm data/lumira.db-journal
 ```
 
 **Problem:** Web interface not loading
@@ -530,7 +530,7 @@ rm data/ai_artist.db-journal
 lsof -i :8000
 
 # Use different port
-ai-artist-web --port 8080
+lumira-web --port 8080
 ```
 
 ### Model Issues
@@ -572,10 +572,10 @@ python -c "import torch; print(f'✓ GPU available: {torch.cuda.is_available()}'
 pytest tests/test_smoke.py
 
 # 4. Generate test image
-ai-artist --theme "test image"
+lumira --theme "test image"
 
 # 5. Check web interface
-ai-artist-web
+lumira-web
 ```
 
 ---

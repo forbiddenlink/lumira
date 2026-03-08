@@ -1,4 +1,4 @@
-# 🎨 Aria Enhancement Plan - February 2026
+# 🎨 Lumira Enhancement Plan - February 2026
 
 ## Comprehensive Improvement Strategy
 
@@ -8,7 +8,7 @@ Across design, functionality, performance, features, code quality, and best prac
 
 ## 📊 Executive Summary
 
-Based on deep code analysis, Aria is already a well-architected AI artist with strong foundations:
+Based on deep code analysis, Lumira is already a well-architected AI artist with strong foundations:
 
 - ✅ Modern async FastAPI backend
 - ✅ Sophisticated personality/memory system
@@ -79,13 +79,13 @@ async def evaluate_batch(self, images: list[PIL.Image]) -> list[QualityMetrics]:
 # New: src/ai_artist/cache/redis_manager.py
 class PortfolioCache:
     async def get_portfolio(self) -> list[dict]:
-        cached = await self.redis.get("aria:portfolio")
+        cached = await self.redis.get("lumira:portfolio")
         if cached:
             return json.loads(cached)
 
         # Load from filesystem
         portfolio = await load_portfolio_from_gallery()
-        await self.redis.setex("aria:portfolio", 3600, json.dumps(portfolio))
+        await self.redis.setex("lumira:portfolio", 3600, json.dumps(portfolio))
         return portfolio
 ```
 
@@ -120,13 +120,13 @@ async def create_artwork(self):
 
 ### 5. **Progressive Web App (PWA)** 📱 [HIGH IMPACT]
 
-**What**: Make Aria installable like a native app
+**What**: Make Lumira installable like a native app
 
 ```html
 <!-- templates/manifest.json -->
 {
-  "name": "Aria - AI Artist",
-  "short_name": "Aria",
+  "name": "Lumira",
+  "short_name": "Lumira",
   "start_url": "/",
   "display": "standalone",
   "icons": [
@@ -163,7 +163,7 @@ async def on_progress(step: int, total: int, latents: torch.Tensor):
 
 **Benefits**:
 
-- See Aria "painting" in real-time
+- See Lumira "painting" in real-time
 - Cancel bad generations early
 - Better engagement
 
@@ -173,7 +173,7 @@ async def on_progress(step: int, total: int, latents: torch.Tensor):
 **Target**: Lazy-loaded, infinite scroll, responsive grid
 
 ```javascript
-// templates/aria.html
+// templates/lumira.html
 const observer = new IntersectionObserver((entries) => {
     if (entries[0].isIntersecting) {
         loadMoreImages();
@@ -287,7 +287,7 @@ class AdaptiveLearning:
 
 **Benefits**:
 
-- Aria learns what works over time
+- Lumira learns what works over time
 - Personalizes to user preferences
 - Gets better with age
 
@@ -429,16 +429,16 @@ tracer = trace.get_tracer(__name__)
 
 async def create_artwork(self, theme: str | None = None):
     with tracer.start_as_current_span(
-        "aria.create_artwork",
+        "lumira.create_artwork",
         attributes={
-            "aria.theme": theme or "autonomous",
-            "aria.mood": self.mood_system.current_mood.value
+            "lumira.theme": theme or "autonomous",
+            "lumira.mood": self.mood_system.current_mood.value
         }
     ) as span:
         # ... generation logic ...
 
-        span.set_attribute("aria.quality_score", best_score)
-        span.set_attribute("aria.selected_model", used_model)
+        span.set_attribute("lumira.quality_score", best_score)
+        span.set_attribute("lumira.selected_model", used_model)
 ```
 
 **Benefits**:
@@ -463,8 +463,8 @@ async def create_share_link(image_id: str):
     await redis.setex(f"share:{share_id}", 86400*30, image_id)
 
     return {
-        "url": f"https://aria.art/s/{share_id}",
-        "og_title": f"Aria's {image.style} artwork",
+        "url": f"https://lumira.art/s/{share_id}",
+        "og_title": f"Lumira's {image.style} artwork",
         "og_image": image.url
     }
 ```
@@ -498,7 +498,7 @@ async def remix_image(image_id: str, variation_type: str):
     elif variation_type == "mood_shift":
         new_prompt = shift_mood(original.prompt, from_mood="calm", to_mood="energetic")
 
-    return await aria.create_artwork(theme=new_prompt)
+    return await lumira.create_artwork(theme=new_prompt)
 ```
 
 ### 19. **Collections & Themes** 📚 [MEDIUM EFFORT]
@@ -508,12 +508,12 @@ async def remix_image(image_id: str, variation_type: str):
 class CollectionManager:
     async def create_series(self, theme: str, count: int = 5):
         """Generate cohesive series of related artworks."""
-        base_concept = await aria.thinking.explore(theme)
+        base_concept = await lumira.thinking.explore(theme)
         variations = generate_variations(base_concept, count)
 
         images = []
         for var in variations:
-            img = await aria.create_artwork(theme=var)
+            img = await lumira.create_artwork(theme=var)
             images.append(img)
 
         collection_id = save_collection(images, theme)
@@ -529,9 +529,9 @@ class CollectionManager:
 ```python
 from prometheus_client import Counter, Histogram, Gauge
 
-GENERATION_COUNT = Counter('aria_generations_total', 'Total artworks generated')
-GENERATION_DURATION = Histogram('aria_generation_seconds', 'Generation time')
-QUALITY_SCORE = Gauge('aria_quality_score', 'Latest quality score')
+GENERATION_COUNT = Counter('lumira_generations_total', 'Total artworks generated')
+GENERATION_DURATION = Histogram('lumira_generation_seconds', 'Generation time')
+QUALITY_SCORE = Gauge('lumira_quality_score', 'Latest quality score')
 
 @GENERATION_DURATION.time()
 async def create_artwork(self):
@@ -568,7 +568,7 @@ async def create_artwork(self):
 6. ✅ Advanced prompts (#8)
 7. ✅ Ensemble curation (#9)
 
-**Expected**: Better artwork quality, smarter Aria
+**Expected**: Better artwork quality, smarter Lumira
 
 ### Phase 3: Experience (Week 3)
 
@@ -623,15 +623,15 @@ async def create_artwork(self):
 ## 💡 Innovation Ideas (Future)
 
 - **🎵 Music-to-Image**: Generate art from audio mood
-- **🌍 Collaborative Canvas**: Multiple users co-create with Aria
+- **🌍 Collaborative Canvas**: Multiple users co-create with Lumira
 - **🎓 Style Training**: Fine-tune LoRAs from user favorites
 - **🔮 Predictive Generation**: Anticipate what user wants
 - **🤖 Multi-Agent**: Multiple AI artists with different personalities
-- **🎬 Video Generation**: Animate Aria's creation process
+- **🎬 Video Generation**: Animate Lumira's creation process
 
 ---
 
 **Document Status**: Draft v1.0
 **Last Updated**: February 1, 2026
-**Owner**: AI Artist Team
+**Owner**: Lumira Team
 **Review Date**: Weekly during implementation

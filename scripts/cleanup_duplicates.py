@@ -10,7 +10,7 @@ import httpx
 
 def main():
     railway_url = os.getenv(
-        "RAILWAY_URL", "https://aria-production-3084.up.railway.app"
+        "RAILWAY_URL", "https://lumira-production-3084.up.railway.app"
     )
     api_key = os.getenv("RAILWAY_API_KEY")
 

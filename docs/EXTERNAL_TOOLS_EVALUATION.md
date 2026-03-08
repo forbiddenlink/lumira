@@ -1,7 +1,7 @@
 # External Tools Evaluation
 
 **Date**: February 1, 2026
-**Purpose**: Evaluate GitHub repositories for potential integration into AI Artist project
+**Purpose**: Evaluate GitHub repositories for potential integration into Lumira project
 
 ---
 
@@ -45,13 +45,13 @@ Personal collection of ChatGPT prompts for developers covering:
    - Create architecture diagrams (Mermaid)
    - Explain code to non-technical users
 
-### Applicability to AI Artist
+### Applicability to Lumira
 
 #### ✅ **HIGH VALUE - RECOMMEND INTEGRATION**
 
-**Use Cases for Aria**:
+**Use Cases for Lumira**:
 
-1. **Enhanced Aria Prompting** - Use prompt engineering techniques to:
+1. **Enhanced Lumira Prompting** - Use prompt engineering techniques to:
    - Generate better artistic descriptions
    - Improve prompt enhancement algorithms
    - Create multi-step artistic workflows
@@ -75,7 +75,7 @@ Personal collection of ChatGPT prompts for developers covering:
    - Code quality checks
 3. Document in CONTRIBUTING.md for team use
 
-**Example Adapted Prompt for Aria**:
+**Example Adapted Prompt for Lumira**:
 
 ```text
 You are a world-class AI artist with deep knowledge of artistic styles,
@@ -128,7 +128,7 @@ outputs. Built on pandas and sklearn for fairness-aware machine learning.
    - Bias ratio visualizations
    - Demographic group comparisons
 
-### Applicability to AI Artist
+### Applicability to Lumira
 
 #### ⚠️ **MODERATE VALUE - CONDITIONAL RECOMMENDATION**
 
@@ -144,7 +144,7 @@ outputs. Built on pandas and sklearn for fairness-aware machine learning.
 **Cons**:
 
 - Primarily designed for classification/decision tasks
-- AI Artist is creative, not decision-making
+- Lumira is creative, not decision-making
 - No "protected classes" in art generation context
 - Limited direct applicability
 
@@ -211,7 +211,7 @@ bias_test_check(
 
 **audit-ai**:
 
-- ✅ Add to optional dependencies: `pip install ai-artist[audit]`
+- ✅ Add to optional dependencies: `pip install lumira[audit]`
 - ✅ Use for dataset analysis during LoRA training
 - ✅ Document fairness considerations
 - ❌ Don't integrate into main generation pipeline (not applicable)
@@ -222,7 +222,7 @@ bias_test_check(
 
 | Repository | Integration Priority | Action |
 |-----------|---------------------|--------|
-| dev-chatgpt-prompts | **HIGH** | Adapt prompts for Aria's artistic workflow + dev process |
+| dev-chatgpt-prompts | **HIGH** | Adapt prompts for Lumira's artistic workflow + dev process |
 | audit-ai | **MEDIUM** | Optional dependency for dataset auditing |
 
 ### Implementation Tasks
@@ -241,12 +241,12 @@ bias_test_check(
 3. **Long-term** (Future):
    - [ ] Implement style fairness metrics
    - [ ] Create comprehensive bias monitoring dashboard
-   - [ ] Publish fairness report for Aria
+   - [ ] Publish fairness report for Lumira
 
 ---
 
 ## Additional Resources
 
-- [ARIA.md - Authenticity Research](../ARIA.md)
+- [LUMIRA.md - Authenticity Research](../LUMIRA.md)
 - [BIAS_MITIGATION.md - Existing Documentation](./BIAS_MITIGATION.md)
 - [CONTRIBUTING.md - Development Guidelines](../CONTRIBUTING.md)

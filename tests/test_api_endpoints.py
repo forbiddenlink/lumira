@@ -47,12 +47,12 @@ def test_images_endpoint():
         print(f"  ✓ Sample image path: {first_image.get('image_path', 'N/A')[:50]}...")
 
 
-def test_aria_state_endpoint():
-    """Test Aria state endpoint."""
-    print("\n🔍 Testing /api/aria/state endpoint...")
+def test_lumira_state_endpoint():
+    """Test Lumira state endpoint."""
+    print("\n🔍 Testing /api/lumira/state endpoint...")
     client = TestClient(app)
 
-    response = client.get("/api/aria/state")
+    response = client.get("/api/lumira/state")
     print(f"  Status: {response.status_code}")
 
     assert response.status_code == 200, response.text
@@ -64,12 +64,12 @@ def test_aria_state_endpoint():
     print(f"  ✓ Personality traits: {len(data.get('personality', {}))}")
 
 
-def test_aria_statement_endpoint():
-    """Test Aria artist statement endpoint."""
-    print("\n🔍 Testing /api/aria/statement endpoint...")
+def test_lumira_statement_endpoint():
+    """Test Lumira artist statement endpoint."""
+    print("\n🔍 Testing /api/lumira/statement endpoint...")
     client = TestClient(app)
 
-    response = client.get("/api/aria/statement")
+    response = client.get("/api/lumira/statement")
     print(f"  Status: {response.status_code}")
 
     assert response.status_code == 200, response.text
@@ -94,18 +94,18 @@ def test_homepage():
     print(f"  ✓ Contains gallery div: {'gallery' in html.lower()}")
 
 
-def test_aria_page():
-    """Test Aria page rendering."""
-    print("\n🔍 Testing /aria page endpoint...")
+def test_lumira_page():
+    """Test Lumira page rendering."""
+    print("\n🔍 Testing /lumira page endpoint...")
     client = TestClient(app)
 
-    response = client.get("/aria")
+    response = client.get("/lumira")
     print(f"  Status: {response.status_code}")
 
     assert response.status_code == 200, response.text[:200]
     html = response.text
     print(f"  ✓ Response length: {len(html)} bytes")
-    print(f"  ✓ Contains 'Aria': {'Aria' in html}")
+    print(f"  ✓ Contains 'Lumira': {'Lumira' in html}")
     print(f"  ✓ Contains CREATE button: {'CREATE' in html or 'create' in html}")
 
 
@@ -132,18 +132,18 @@ def run_api_tests():
         results["images"] = False
 
     try:
-        test_aria_state_endpoint()
-        results["aria_state"] = True
+        test_lumira_state_endpoint()
+        results["lumira_state"] = True
     except Exception as e:
-        print(f"  ❌ Aria state endpoint failed: {e}")
-        results["aria_state"] = False
+        print(f"  ❌ Lumira state endpoint failed: {e}")
+        results["lumira_state"] = False
 
     try:
-        test_aria_statement_endpoint()
-        results["aria_statement"] = True
+        test_lumira_statement_endpoint()
+        results["lumira_statement"] = True
     except Exception as e:
-        print(f"  ❌ Aria statement endpoint failed: {e}")
-        results["aria_statement"] = False
+        print(f"  ❌ Lumira statement endpoint failed: {e}")
+        results["lumira_statement"] = False
 
     try:
         test_homepage()
@@ -153,11 +153,11 @@ def run_api_tests():
         results["homepage"] = False
 
     try:
-        test_aria_page()
-        results["aria_page"] = True
+        test_lumira_page()
+        results["lumira_page"] = True
     except Exception as e:
-        print(f"  ❌ Aria page failed: {e}")
-        results["aria_page"] = False
+        print(f"  ❌ Lumira page failed: {e}")
+        results["lumira_page"] = False
 
     # Summary
     print("\n" + "=" * 60)

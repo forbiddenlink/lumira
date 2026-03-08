@@ -61,7 +61,7 @@ MILESTONE_BONUSES = {
 
 
 class ExperienceSystem:
-    """Track Aria's artistic growth through XP and leveling."""
+    """Track Lumira's artistic growth through XP and leveling."""
 
     def __init__(self):
         self.total_xp: int = 0
@@ -458,7 +458,7 @@ class EpisodicMemory:
         emotional_state: dict[str, Any],
         timestamp: str | None = None,
     ):
-        """Record a specific episode in Aria's creative journey."""
+        """Record a specific episode in Lumira's creative journey."""
         episode = {
             "timestamp": timestamp or datetime.now().isoformat(),
             "event_type": event_type,  # "creation", "reflection", "discovery", etc.

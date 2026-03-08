@@ -1,4 +1,4 @@
-# AI Artist Configuration
+# Lumira Configuration
 
 # Model settings
 model:
@@ -31,7 +31,7 @@ api_keys:
 
 # Database
 database:
-  url: "sqlite:///./data/ai_artist.db"
+  url: "sqlite:///./data/lumira.db"
 
 # Scheduling (for automated mode)
 scheduling:

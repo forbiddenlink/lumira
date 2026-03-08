@@ -1,4 +1,4 @@
-"""Expanded tests for Aria's memory systems.
+"""Expanded tests for Lumira's memory systems.
 
 Tests both the basic ArtistMemory and the EnhancedMemorySystem.
 """
@@ -32,7 +32,7 @@ class TestArtistMemoryInit:
         """Test initialization with default path."""
         with patch.object(ArtistMemory, "_load"):
             memory = ArtistMemory()
-            assert memory.memory_file == Path("data/aria_memory.json")
+            assert memory.memory_file == Path("data/lumira_memory.json")
 
     def test_init_with_custom_path(self, tmp_path):
         """Test initialization with custom path."""
@@ -46,7 +46,7 @@ class TestArtistMemoryInit:
         memory_path = tmp_path / "memory.json"
         memory = ArtistMemory(memory_file=memory_path)
 
-        assert memory.memory["name"] == "Aria"
+        assert memory.memory["name"] == "Lumira"
         assert "paintings" in memory.memory
         assert "reflections" in memory.memory
         assert "preferences" in memory.memory

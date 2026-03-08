@@ -1,13 +1,13 @@
 # Web Gallery Guide
 
-The AI Artist Web Gallery provides a beautiful web interface to browse and explore your AI-generated artwork.
+The Lumira Web Gallery provides a beautiful web interface to browse and explore your AI-generated artwork.
 
 ## Quick Start
 
 ### Launch the Gallery
 
 ```bash
-ai-artist-web
+lumira-web
 ```
 
 The gallery will start on **<http://localhost:8000>**
@@ -162,7 +162,7 @@ WORKDIR /app
 COPY . .
 RUN pip install -e .
 EXPOSE 8000
-CMD ["ai-artist-web"]
+CMD ["lumira-web"]
 ```
 
 ## Architecture
@@ -312,4 +312,4 @@ app.add_middleware(
 
 ---
 
-**Note**: The web gallery is designed to complement the CLI tools, not replace them. Use `ai-artist-gallery` for terminal-based viewing and `ai-artist-web` for browser-based exploration.
+**Note**: The web gallery is designed to complement the CLI tools, not replace them. Use `lumira-gallery` for terminal-based viewing and `lumira-web` for browser-based exploration.

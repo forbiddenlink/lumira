@@ -1,4 +1,4 @@
-# AI Artist Docker Compose with GPU Support
+# Lumira Docker Compose with GPU Support
 # Requires: NVIDIA Docker runtime / NVIDIA Container Toolkit
 # Usage: docker compose -f docker-compose.gpu.yml up -d
 
@@ -67,8 +67,8 @@ services:
   # postgres:
   #   image: postgres:15
   #   environment:
-  #     POSTGRES_DB: ai_artist
-  #     POSTGRES_USER: ai_artist
+  #     POSTGRES_DB: lumira
+  #     POSTGRES_USER: lumira
   #     POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
   #   volumes:
   #     - postgres_data:/var/lib/postgresql/data

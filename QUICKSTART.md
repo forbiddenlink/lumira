@@ -1,6 +1,6 @@
 # 🚀 Quick Start Guide
 
-Get up and running with AI Artist in 10 minutes!
+Get up and running with Lumira in 10 minutes!
 
 ---
 
@@ -22,8 +22,8 @@ Before you begin, make sure you have:
 ### Step 1: Clone and Navigate
 
 ```bash
-git clone https://github.com/yourusername/ai-artist.git
-cd ai-artist
+git clone https://github.com/yourusername/lumira.git
+cd lumira
 ```
 
 ### Step 2: Set Up Environment
@@ -75,7 +75,7 @@ api_keys:
 Generate your first AI artwork (requires `requirements-full.txt`):
 
 ```bash
-ai-artist --theme "sunset over mountains"
+lumira --theme "sunset over mountains"
 ```
 
 That's it! Your image will be saved to `gallery/YYYY/MM/DD/`.
@@ -87,7 +87,7 @@ That's it! Your image will be saved to `gallery/YYYY/MM/DD/`.
 Launch the web interface:
 
 ```bash
-ai-artist-web
+lumira-web
 ```
 
 Then open your browser to: <http://localhost:8000>
@@ -96,14 +96,14 @@ Then open your browser to: <http://localhost:8000>
 
 ## 📅 Automated Daily Art
 
-Want AI Artist to create art automatically?
+Want Lumira to create art automatically?
 
 ```bash
 # Create art daily at 9 AM
-ai-artist-schedule start daily --hour 9
+lumira-schedule start daily --hour 9
 
 # Check schedule status
-ai-artist-schedule status
+lumira-schedule status
 ```
 
 ---
@@ -202,25 +202,25 @@ model:
 
 ## 🎉 You're All Set
 
-Your AI Artist is ready to create. Happy generating! 🎨
+Your Lumira is ready to create. Happy generating! 🎨
 
 **Quick Commands Reference:**
 
 ```bash
 # Generate single image
-ai-artist --theme "your prompt here"
+lumira --theme "your prompt here"
 
 # Launch web gallery
-ai-artist-web
+lumira-web
 
 # View gallery in terminal
-ai-artist-gallery
+lumira-gallery
 
 # Start daily automation
-ai-artist-schedule start daily
+lumira-schedule start daily
 
 # Check logs
-tail -f logs/ai_artist.log
+tail -f logs/lumira.log
 ```
 
 ---

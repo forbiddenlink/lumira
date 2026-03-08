@@ -11,7 +11,7 @@ All integration tests now pass after transitioning from Unsplash-based to autono
 ### Fixed Issues
 
 1. **Memory JSON Corruption**
-   - Issue: `data/aria_memory.json` had incomplete JSON at line 21
+   - Issue: `data/lumira_memory.json` had incomplete JSON at line 21
    - Fix: Reset to valid empty structure
    - Status: ✅ Resolved
 
@@ -31,7 +31,7 @@ The test logs confirm autonomous inspiration is working:
 ```
 [info] autonomous_inspiration_initialized moods=25 styles=47 subjects=91
 [info] exploration_generated prompt='silence, vibrant style, bright mood' theme=silence
-[info] aria_original_vision base_prompt='silence, vibrant style...' mode=exploration
+[info] lumira_original_vision base_prompt='silence, vibrant style...' mode=exploration
 [info] artwork_created creation_type=autonomous_original
 ```
 

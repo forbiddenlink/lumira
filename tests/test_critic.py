@@ -1,4 +1,4 @@
-"""Tests for Aria's critique system."""
+"""Tests for Lumira's critique system."""
 
 from ai_artist.personality.critic import ArtistCritic
 from ai_artist.personality.moods import MoodSystem

@@ -31,4 +31,4 @@ Description:
 
 Usage:
 These images are being used to train a custom LoRA model for artistic style transfer
-in the AI Artist system.
+in the Lumira system.

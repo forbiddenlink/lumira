@@ -1,6 +1,6 @@
-"""Aria's personality system - Moods, emotions, and artistic preferences.
+"""Lumira's personality system - Moods, emotions, and artistic preferences.
 
-Aria is not just a generator - she has moods that influence her art,
+Lumira is not just a generator - she has moods that influence her art,
 preferences that evolve, and a memory of her creative journey.
 """
 
@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 
 
 class Mood(Enum):
-    """Aria's emotional states that influence her artistic choices."""
+    """Lumira's emotional states that influence her artistic choices."""
 
     CONTEMPLATIVE = "contemplative"
     ENERGIZED = "energized"
@@ -29,7 +29,7 @@ class Mood(Enum):
 
 
 class Personality:
-    """Aria's personality system with moods, preferences, and evolution."""
+    """Lumira's personality system with moods, preferences, and evolution."""
 
     def __init__(self, name: str = "Lumira"):
         self.name = name
@@ -111,7 +111,7 @@ class Personality:
             return random.choice([Mood.DREAMY, Mood.CONTEMPLATIVE, Mood.FOCUSED])
 
     def update_mood(self, external_factors: dict[str, float] | None = None) -> Mood:
-        """Update Aria's mood based on energy, creativity, and external factors.
+        """Update Lumira's mood based on energy, creativity, and external factors.
 
         Args:
             external_factors: Optional dict like {'time_of_day': 0.8, 'recent_success': 0.9}
@@ -167,7 +167,7 @@ class Personality:
         return self.current_mood
 
     def get_mood_description(self) -> str:
-        """Get a description of Aria's current state."""
+        """Get a description of Lumira's current state."""
         mood_descriptions = {
             Mood.CONTEMPLATIVE: "I'm feeling thoughtful, pondering deeper meanings.",
             Mood.ENERGIZED: "I'm bursting with creative energy!",
@@ -190,7 +190,7 @@ class Personality:
         return colors
 
     def is_bored_with_subject(self, subject: str) -> bool:
-        """Check if Aria is bored with a subject (painted it too recently)."""
+        """Check if Lumira is bored with a subject (painted it too recently)."""
         return self.recent_subjects.count(subject) >= 2
 
     def record_subject(self, subject: str):
@@ -242,10 +242,10 @@ class Personality:
         return chosen
 
     def reflect_on_work(self, image_path: str, prompt: str, score: float) -> str:
-        """Generate Aria's reflection on a piece she just created.
+        """Generate Lumira's reflection on a piece she just created.
 
         Returns:
-            A personal reflection in Aria's voice
+            A personal reflection in Lumira's voice
         """
         reflections_by_mood = {
             Mood.CONTEMPLATIVE: [
@@ -300,7 +300,7 @@ class Personality:
         return base_reflection
 
     def evolve_preferences(self, style: str, subject: str, score: float):
-        """Evolve Aria's preferences based on success."""
+        """Evolve Lumira's preferences based on success."""
         # Increase affinity for successful combinations
         if score >= 0.65:
             if style in self.style_affinities:
@@ -326,7 +326,7 @@ class Personality:
                 self.style_affinities[s] = max(0.3, self.style_affinities[s] * 0.99)
 
     def get_state(self) -> dict:
-        """Get Aria's current personality state for persistence."""
+        """Get Lumira's current personality state for persistence."""
         return {
             "name": self.name,
             "mood": self.current_mood.value,

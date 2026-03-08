@@ -24,7 +24,7 @@ class RateLimitError(Exception):
 class UnsplashClient:
     """Async Unsplash API client."""
 
-    def __init__(self, access_key: str, app_name: str = "ai-artist"):
+    def __init__(self, access_key: str, app_name: str = "lumira"):
         self.access_key = access_key
         self.app_name = app_name
         self.base_url = "https://api.unsplash.com"

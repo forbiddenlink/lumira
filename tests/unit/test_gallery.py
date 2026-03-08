@@ -484,7 +484,7 @@ class TestGalleryImagesAPI:
 
     def test_images_returns_list(self, api_client):
         """Images endpoint should return paginated list."""
-        response = api_client.get("/api/gallery/images")
+        response = api_client.get("/api/gallery/public")
         assert response.status_code == 200
 
         data = response.json()
@@ -494,15 +494,15 @@ class TestGalleryImagesAPI:
 
     def test_images_sort_options(self, api_client):
         """Images should support sort options."""
-        response = api_client.get("/api/gallery/images?sort=newest")
+        response = api_client.get("/api/gallery/public?sort=newest")
         assert response.status_code == 200
 
-        response = api_client.get("/api/gallery/images?sort=popular")
+        response = api_client.get("/api/gallery/public?sort=popular")
         assert response.status_code == 200
 
     def test_images_pagination(self, api_client):
         """Images should support pagination."""
-        response = api_client.get("/api/gallery/images?limit=10&offset=0")
+        response = api_client.get("/api/gallery/public?page=1&per_page=10")
         assert response.status_code == 200
 
 

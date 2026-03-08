@@ -60,7 +60,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: ai-artist-worker
+    command: lumira-worker
     volumes:
       - ./gallery:/app/gallery
       - ./models:/app/models
@@ -108,8 +108,8 @@ services:
   # postgres:
   #   image: postgres:15
   #   environment:
-  #     POSTGRES_DB: ai_artist
-  #     POSTGRES_USER: ai_artist
+  #     POSTGRES_DB: lumira
+  #     POSTGRES_USER: lumira
   #     POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
   #   volumes:
   #     - postgres_data:/var/lib/postgresql/data

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Display Aria's insights, profile, and what she's learning."""
+"""Display Lumira's insights, profile, and what she's learning."""
 
 import sys
 from pathlib import Path
@@ -12,9 +12,9 @@ from src.ai_artist.personality.profile import ArtisticProfile
 
 
 def show_profile():
-    """Display Aria's artistic profile and identity."""
+    """Display Lumira's artistic profile and identity."""
     print("\n" + "=" * 70)
-    print("✨ ARIA'S ARTISTIC IDENTITY")
+    print("✨ LUMIRA'S ARTISTIC IDENTITY")
     print("=" * 70)
 
     profile = ArtisticProfile()
@@ -33,9 +33,9 @@ def show_profile():
 
 
 def show_insights():
-    """Display what Aria has learned from her experiences."""
+    """Display what Lumira has learned from her experiences."""
     print("\n" + "=" * 70)
-    print("🧠 ARIA'S LEARNING & INSIGHTS")
+    print("🧠 LUMIRA'S LEARNING & INSIGHTS")
     print("=" * 70)
 
     memory = EnhancedMemorySystem()
@@ -88,7 +88,7 @@ def show_insights():
 
 
 def show_working_memory():
-    """Display Aria's current session context."""
+    """Display Lumira's current session context."""
     print("\n" + "=" * 70)
     print("🔄 WORKING MEMORY (Current Session)")
     print("=" * 70)
@@ -113,7 +113,7 @@ def show_working_memory():
 def main():
     """Main entry point."""
     print("\n" + "=" * 70)
-    print("🎨 ARIA - AUTONOMOUS AI ARTIST")
+    print("🎨 LUMIRA - AUTONOMOUS AI ARTIST")
     print("=" * 70)
 
     # Show all sections
@@ -122,7 +122,7 @@ def main():
     show_working_memory()
 
     print("\n" + "=" * 70)
-    print("✨ Keep creating, Aria!")
+    print("✨ Keep creating, Lumira!")
     print("=" * 70 + "\n")
 
 

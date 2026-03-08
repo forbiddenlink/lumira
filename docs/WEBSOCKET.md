@@ -2,7 +2,7 @@
 
 ## Overview
 
-The AI Artist now supports real-time progress updates via WebSocket! This allows you to track image generation progress as it happens, rather than waiting for completion.
+Lumira now supports real-time progress updates via WebSocket! This allows you to track image generation progress as it happens, rather than waiting for completion.
 
 ## Features
 

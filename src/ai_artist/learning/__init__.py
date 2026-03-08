@@ -1,4 +1,4 @@
-"""Learning and intelligence modules for Aria."""
+"""Learning and intelligence modules for Lumira."""
 
 from .adaptive_learner import AdaptiveLearner, FeedbackSignal, get_adaptive_learner
 

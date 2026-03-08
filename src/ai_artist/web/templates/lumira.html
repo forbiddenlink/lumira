@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Aria - An autonomous AI artist with genuine personality, evolving moods, and creative independence.">
-    <title>Aria | Autonomous AI Artist</title>
+    <meta name="description" content="Lumira - An autonomous AI artist with genuine personality, evolving moods, and creative independence.">
+    <title>Lumira | Autonomous AI Artist</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1081,10 +1081,10 @@
     <a href="#gallery-grid" class="skip-link">Skip to Gallery</a>
 
     <!-- LEFT PANEL: MIND -->
-    <aside class="mind-panel" role="complementary" aria-label="Aria's Mind">
+    <aside class="mind-panel" role="complementary" aria-label="Lumira's Mind">
         <header>
-            <a href="/aria" style="text-decoration: none; color: inherit;" aria-label="Aria home">
-                <h1>ARIA</h1>
+            <a href="/lumira" style="text-decoration: none; color: inherit;" aria-label="Lumira home">
+                <h1>LUMIRA</h1>
             </a>
             <div class="subtitle" role="doc-subtitle">Autonomous AI Artist</div>
             <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
@@ -1105,13 +1105,13 @@
         </div>
 
         <!-- Mood Influence Buttons -->
-        <div class="mood-influence" role="group" aria-label="Influence Aria's mood">
+        <div class="mood-influence" role="group" aria-label="Influence Lumira's mood">
             <div class="influence-label">Influence Her Mood</div>
             <div class="influence-buttons">
-                <button class="influence-btn" onclick="influenceMood('energize')" title="Energize" aria-label="Energize Aria's mood">&#9889;</button>
-                <button class="influence-btn" onclick="influenceMood('calm')" title="Calm" aria-label="Calm Aria's mood">&#127754;</button>
-                <button class="influence-btn" onclick="influenceMood('provoke')" title="Provoke" aria-label="Provoke Aria's mood">&#128293;</button>
-                <button class="influence-btn" onclick="influenceMood('inspire')" title="Inspire" aria-label="Inspire Aria's mood">&#10024;</button>
+                <button class="influence-btn" onclick="influenceMood('energize')" title="Energize" aria-label="Energize Lumira's mood">&#9889;</button>
+                <button class="influence-btn" onclick="influenceMood('calm')" title="Calm" aria-label="Calm Lumira's mood">&#127754;</button>
+                <button class="influence-btn" onclick="influenceMood('provoke')" title="Provoke" aria-label="Provoke Lumira's mood">&#128293;</button>
+                <button class="influence-btn" onclick="influenceMood('inspire')" title="Inspire" aria-label="Inspire Lumira's mood">&#10024;</button>
             </div>
         </div>
 
@@ -1164,11 +1164,11 @@
         <!-- Controls -->
         <nav class="controls" role="group" aria-label="Primary actions">
             <button id="create-btn" onclick="triggerCreate()" aria-describedby="create-desc">CREATE</button>
-            <span id="create-desc" hidden>Trigger Aria to create a new artwork</span>
+            <span id="create-desc" hidden>Trigger Lumira to create a new artwork</span>
             <button class="btn-outline" onclick="showStatement()" title="Artist Statement" aria-label="View artist statement">?</button>
         </nav>
         <nav class="controls" style="margin-top: 0.75rem;" role="group" aria-label="Secondary actions">
-            <button class="btn-outline" onclick="forceEvolve()" aria-label="Evolve Aria's state">EVOLVE</button>
+            <button class="btn-outline" onclick="forceEvolve()" aria-label="Evolve Lumira's state">EVOLVE</button>
             <button class="btn-outline" onclick="showEvolution()" aria-label="View evolution timeline">TIMELINE</button>
             <button class="btn-outline" onclick="showMemory()" aria-label="View memory dashboard">MEMORY</button>
             <button class="btn-outline" onclick="window.open('/', '_blank')" aria-label="Open full gallery in new tab">FULL GALLERY</button>
@@ -1312,7 +1312,7 @@
             ws = new WebSocket(protocol + '//' + window.location.host + '/ws');
 
             ws.onopen = function() {
-                addLog('SYSTEM', 'Connected to Aria\'s consciousness');
+                addLog('SYSTEM', 'Connected to Lumira\'s consciousness');
             };
 
             ws.onmessage = function(event) {
@@ -1339,7 +1339,7 @@
                 case 'thinking_update':
                     addLog('THINKING', data.thought || data.message || '');
                     break;
-                case 'aria_state':
+                case 'lumira_state':
                     updateMoodDisplay(data);
                     break;
                 case 'critique_update':
@@ -1349,7 +1349,7 @@
                     }
                     break;
                 case 'creation_complete':
-                    addLog('ARIA', data.reflection || 'Creation complete');
+                    addLog('LUMIRA', data.reflection || 'Creation complete');
                     fetchState(true);
                     break;
                 case 'progress':
@@ -1364,7 +1364,7 @@
                     }
                     break;
                 case 'generation_complete':
-                    addLog('ARIA', 'Generation complete');
+                    addLog('LUMIRA', 'Generation complete');
                     fetchState(true);
                     break;
                 case 'error':
@@ -1452,7 +1452,7 @@
             document.getElementById('xp-bar').style.width = progress + '%';
             document.getElementById('xp-text').textContent = xpInLevel + ' / ' + xpForNext + ' XP';
 
-            // Update ARIA attributes
+            // Update LUMIRA attributes
             var xpBar = document.querySelector('.xp-bar-container');
             if (xpBar) {
                 xpBar.setAttribute('aria-valuenow', progress);
@@ -1823,7 +1823,7 @@
                     });
                 }
 
-                addLog('ARIA', data.reflection || 'Creation complete');
+                addLog('LUMIRA', data.reflection || 'Creation complete');
 
                 // Refresh gallery
                 fetchState(true);
@@ -1913,7 +1913,7 @@
 
                     var meta = document.createElement('div');
                     meta.className = 'modal-meta';
-                    meta.textContent = '- Aria, Autonomous AI Artist';
+                    meta.textContent = '- Lumira, Autonomous AI Artist';
                     content.appendChild(meta);
 
                     modal.appendChild(content);
@@ -2359,7 +2359,7 @@
             const currentTheme = html.getAttribute('data-theme');
             const newTheme = currentTheme === 'light' ? 'dark' : 'light';
             html.setAttribute('data-theme', newTheme);
-            localStorage.setItem('aria-theme', newTheme);
+            localStorage.setItem('lumira-theme', newTheme);
             updateThemeIcon(newTheme);
         }
 
@@ -2371,7 +2371,7 @@
         }
 
         function initTheme() {
-            const savedTheme = localStorage.getItem('aria-theme');
+            const savedTheme = localStorage.getItem('lumira-theme');
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             const theme = savedTheme || (prefersDark ? 'dark' : 'dark');
             document.documentElement.setAttribute('data-theme', theme);
@@ -2448,7 +2448,7 @@
                 return res.json();
             })
             .then(function(data) {
-                addLog('ARIA', 'Generated ' + data.variations.length + ' variations');
+                addLog('LUMIRA', 'Generated ' + data.variations.length + ' variations');
                 showVariationsModal(data.variations);
                 fetchState(true); // Refresh gallery
             })
@@ -2523,7 +2523,7 @@
             if (imgSrc) {
                 var link = document.createElement('a');
                 link.href = imgSrc.indexOf('/') === 0 ? imgSrc : '/' + imgSrc;
-                link.download = (painting.subject || 'aria-artwork') + '.png';
+                link.download = (painting.subject || 'lumira-artwork') + '.png';
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
@@ -2539,8 +2539,8 @@
 
             if (navigator.share) {
                 navigator.share({
-                    title: painting.subject || 'Aria Artwork',
-                    text: painting.reflection || 'Created by Aria, an autonomous AI artist',
+                    title: painting.subject || 'Lumira Artwork',
+                    text: painting.reflection || 'Created by Lumira, an autonomous AI artist',
                     url: shareUrl
                 }).catch(function() {});
             } else {

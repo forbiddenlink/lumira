@@ -1,4 +1,4 @@
-"""Tests for Aria's cognition and thinking process."""
+"""Tests for Lumira's cognition and thinking process."""
 
 from datetime import datetime
 from unittest.mock import MagicMock

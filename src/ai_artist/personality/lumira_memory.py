@@ -1,4 +1,4 @@
-"""Aria's memory system - Journaling and reflection on her creative journey."""
+"""Lumira's memory system - Journaling and reflection on her creative journey."""
 
 import json
 from datetime import datetime
@@ -11,7 +11,7 @@ logger = get_logger(__name__)
 
 
 class ArtistMemory:
-    """Aria's memory of her creative journey.
+    """Lumira's memory of her creative journey.
 
     Stores:
     - Paintings created

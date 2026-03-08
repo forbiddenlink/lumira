@@ -1,8 +1,8 @@
-# Bias Mitigation in Aria
+# Bias Mitigation in Lumira
 
 ## Overview
 
-Aria includes built-in bias mitigation strategies to ensure fair, diverse, and ethical image generation. This document explains how bias is addressed throughout the system.
+Lumira includes built-in bias mitigation strategies to ensure fair, diverse, and ethical image generation. This document explains how bias is addressed throughout the system.
 
 ## The Problem
 
@@ -16,7 +16,7 @@ Stable Diffusion models are trained on large datasets scraped from the internet,
 
 ### 1. Prompt Filtering
 
-When Aria receives inspiration from external sources (like Unsplash), the system automatically filters out ambiguous person references:
+When Lumira receives inspiration from external sources (like Unsplash), the system automatically filters out ambiguous person references:
 
 ```python
 # Filters applied when user hasn't explicitly requested portraits
@@ -30,7 +30,7 @@ person_keywords = ["person", "people", "man", "woman", "men", "women", "human", 
 
 ### 2. Negative Prompts
 
-When people aren't explicitly requested, Aria adds negative prompts to discourage human generation:
+When people aren't explicitly requested, Lumira adds negative prompts to discourage human generation:
 
 ```yaml
 # Automatically added when avoid_people=True
@@ -48,7 +48,7 @@ generator.generate(
 
 ### 3. Explicit Intent Detection
 
-Aria only generates human figures when users explicitly request them:
+Lumira only generates human figures when users explicitly request them:
 
 ```python
 # Triggers people generation:
@@ -143,4 +143,4 @@ If you observe biased output:
 
 ## License Note
 
-Bias mitigation features are part of Aria's core ethics framework and are MIT licensed like the rest of the project.
+Bias mitigation features are part of Lumira's core ethics framework and are MIT licensed like the rest of the project.

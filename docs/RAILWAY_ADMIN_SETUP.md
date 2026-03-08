@@ -8,7 +8,7 @@ To use the admin upload endpoints, you need to configure an API key on Railway.
 
 Go to your Railway project dashboard:
 
-1. Navigate to your `aria` service
+1. Navigate to your `lumira` service
 2. Click on "Variables" tab
 3. Add new variable:
    - **Name**: `RAILWAY_API_KEY`
@@ -63,7 +63,7 @@ With API key configured, you can use:
 ### Upload Single Image
 
 ```bash
-curl -X POST https://aria-production-3084.up.railway.app/api/admin/upload-image \
+curl -X POST https://lumira-production-3084.up.railway.app/api/admin/upload-image \
   -H "X-API-Key: your-api-key-here" \
   -F "image=@path/to/image.png" \
   -F "metadata={\"prompt\":\"Your prompt here\"}"
@@ -87,7 +87,7 @@ python scripts/upload_to_railway.py --all
 Test that your API key works:
 
 ```bash
-curl -X GET https://aria-production-3084.up.railway.app/api/images \
+curl -X GET https://lumira-production-3084.up.railway.app/api/images \
   -H "X-API-Key: your-api-key-here"
 ```
 

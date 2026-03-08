@@ -1,4 +1,4 @@
-# Railway Deployment Guide for Aria
+# Railway Deployment Guide for Lumira
 
 ## Prerequisites
 
@@ -17,10 +17,10 @@ open https://railway.app/account/billing
 ### 2. Initialize Project
 
 ```bash
-cd /Volumes/LizsDisk/ai-artist
+cd /Volumes/LizsDisk/lumira
 railway init
 # Select: Elizabeth Stein's Projects
-# Project name: aria
+# Project name: lumira
 ```
 
 ### 3. Set Environment Variables
@@ -48,12 +48,12 @@ railway up
 
 ```bash
 railway domain
-# This will show your app URL, e.g., https://aria-production-xxxx.up.railway.app
+# This will show your app URL, e.g., https://lumira-production-xxxx.up.railway.app
 ```
 
 ## What You Get
 
-**Full Aria Deployment:**
+**Full Lumira Deployment:**
 
 - ✅ Web gallery at `/`
 - ✅ Image generation API at `/api/generate`
@@ -162,7 +162,7 @@ railway logs
 
 If Railway costs are too high, you can:
 
-1. Run Aria locally (you already have MPS GPU)
+1. Run Lumira locally (you already have MPS GPU)
 2. Use Railway just for database/API endpoints
 3. Push generated images to GitHub/S3
 4. Deploy gallery-only to Vercel (free)

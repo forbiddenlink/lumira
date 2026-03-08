@@ -2,7 +2,7 @@
 
 ## System Overview
 
-The AI Artist is built as a modular pipeline with five core components:
+Lumira is built as a modular pipeline with five core components:
 
 ```text
 ┌─────────────────┐
@@ -472,7 +472,7 @@ async def load_json_async(path: Path) -> dict:
 
 **Response Models with Pydantic V2**:
 
-All ARIA API endpoints use typed response models for:
+All LUMIRA API endpoints use typed response models for:
 
 - OpenAPI documentation generation
 - Runtime validation
@@ -481,7 +481,7 @@ All ARIA API endpoints use typed response models for:
 ```python
 from pydantic import BaseModel
 
-class AriaEvolveResponse(BaseModel):
+class LumiraEvolveResponse(BaseModel):
     prompt: str
     seed: int | None
     guidance_scale: float
@@ -490,8 +490,8 @@ class AriaEvolveResponse(BaseModel):
     mood: str
     creativity: float
 
-@app.post("/aria/evolve", response_model=AriaEvolveResponse)
-async def evolve(request: EvolveRequest) -> AriaEvolveResponse:
+@app.post("/lumira/evolve", response_model=LumiraEvolveResponse)
+async def evolve(request: EvolveRequest) -> LumiraEvolveResponse:
     ...
 ```
 

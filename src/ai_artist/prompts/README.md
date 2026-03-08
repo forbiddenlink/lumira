@@ -1,6 +1,6 @@
 # Prompt Collections Module
 
-This module contains pre-defined prompt collections for AI Artist image generation.
+This module contains pre-defined prompt collections for Lumira image generation.
 
 ## Status: Unused / Future Feature
 

@@ -4,7 +4,7 @@ session_name: general
 researcher: Claude
 git_commit: 180d90d
 branch: main
-repository: ai-artist
+repository: lumira
 topic: "ARIA Comprehensive Improvements - Personality, Memory, UI"
 tags: [implementation, personality, memory, ui, accessibility, experience-system]
 status: complete
@@ -37,7 +37,7 @@ No external plan document - user gave open-ended "improve everything" request. R
 
 1. `src/ai_artist/personality/moods.py` - Core mood system with new decay, intensity, style axes
 2. `src/ai_artist/personality/enhanced_memory.py` - Memory with new ExperienceSystem and ReflectionSystem classes
-3. `src/ai_artist/web/templates/aria.html` - UI template with accessibility improvements
+3. `src/ai_artist/web/templates/lumira.html` - UI template with accessibility improvements
 
 ## Recent changes
 
@@ -65,7 +65,7 @@ No external plan document - user gave open-ended "improve everything" request. R
 - Lines 56-190: Rewrote `save_image()` to embed comprehensive EXIF-style metadata
 - Lines 193-267: Added `extract_metadata()` static method for reading metadata back
 
-**UI Template** (`src/ai_artist/web/templates/aria.html`):
+**UI Template** (`src/ai_artist/web/templates/lumira.html`):
 
 - Lines 18-80: Added CSS variables for accessibility (`--focus-ring`, `--xp-bar`)
 - Lines 80-120: Added skip link, focus-visible styles, reduced motion support
@@ -78,7 +78,7 @@ No external plan document - user gave open-ended "improve everything" request. R
 **API Routes** (`src/ai_artist/web/aria_routes.py`):
 
 - Lines 33-45: Updated `AriaStateResponse` with `mood_intensity`, `experience`, `style_axes`
-- Lines 144-175: Updated `get_aria_state()` to apply decay and return experience data
+- Lines 144-175: Updated `get_lumira_state()` to apply decay and return experience data
 
 ## Learnings
 
@@ -126,7 +126,7 @@ All modified files:
 - `src/ai_artist/personality/moods.py` - Mood decay, intensity, style axes (~700 lines)
 - `src/ai_artist/personality/enhanced_memory.py` - Experience + reflection systems (~600 lines)
 - `src/ai_artist/gallery/manager.py` - EXIF metadata embedding (~320 lines)
-- `src/ai_artist/web/templates/aria.html` - Accessibility + UI polish (~1500 lines)
+- `src/ai_artist/web/templates/lumira.html` - Accessibility + UI polish (~1500 lines)
 - `src/ai_artist/web/aria_routes.py` - API response updates (~490 lines)
 
 ## Action Items & Next Steps
@@ -150,7 +150,7 @@ All modified files:
 
 **Existing documentation**:
 
-- `ARIA.md` - Full system design and roadmap
+- `LUMIRA.md` - Full system design and roadmap
 - `README.md` - Project overview
 - `QUICKSTART.md` - 10-minute setup guide
 
@@ -163,6 +163,6 @@ python -c "from ai_artist.personality.moods import MoodSystem; print(MoodSystem(
 # Run web server
 uvicorn ai_artist.web.app:app --reload --port 8000
 
-# View Aria studio
+# View Lumira studio
 open http://localhost:8000/aria
 ```

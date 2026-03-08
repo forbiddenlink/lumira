@@ -859,7 +859,7 @@ async def advanced_search(
     if filters.mood:
         # This is a simplification - actual implementation depends on DB JSON support
         query = query.filter(
-            GeneratedImage.generation_params["mood"].astext == filters.mood
+            func.json_extract(GeneratedImage.generation_params, '$.mood') == filters.mood
         )
         filters_applied["mood"] = filters.mood
 

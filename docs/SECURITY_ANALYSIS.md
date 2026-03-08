@@ -25,7 +25,7 @@ All `random` module usage in this codebase falls into these categories:
 3. **Simulated Artistic Behavior**
    - `random.choices()` with weights for personality-driven decisions
    - `random.randint()` for determining numbers of artistic elements
-   - Examples: Aria's mood system, critic personality traits
+   - Examples: Lumira's mood system, critic personality traits
 
 ### ❌ NO Security-Critical Uses Found
 
@@ -44,7 +44,7 @@ All `random` module usage in this codebase falls into these categories:
 |------|--------|---------|---------|
 | `critic.py` | 9 | Critic personality traits, artistic evaluation | ✅ Safe |
 | `moods.py` | 8 | Mood selection and transitions | ✅ Safe |
-| `aria_routes.py` | 7 | Creative suggestions based on mood | ✅ Safe |
+| `lumira_routes.py` | 7 | Creative suggestions based on mood | ✅ Safe |
 | `main.py` | 3 | Query selection for inspiration | ✅ Safe |
 | `autonomous.py` | 2 | Autonomous art generation inspiration | ✅ Safe |
 | `app.py` | 2 | (Likely artistic endpoints) | ✅ Safe |

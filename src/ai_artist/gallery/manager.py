@@ -35,15 +35,15 @@ METADATA_KEYS = {
     "width": "width",
     "height": "height",
     "sampler": "sampler",
-    "mood": "aria_mood",
-    "mood_intensity": "aria_mood_intensity",
-    "energy": "aria_energy",
-    "style_axes": "aria_style_axes",
-    "experience_level": "aria_level",
-    "experience_title": "aria_title",
-    "aesthetic_score": "aria_aesthetic_score",
-    "clip_score": "aria_clip_score",
-    "critique": "aria_critique",
+    "mood": "lumira_mood",
+    "mood_intensity": "lumira_mood_intensity",
+    "energy": "lumira_energy",
+    "style_axes": "lumira_style_axes",
+    "experience_level": "lumira_level",
+    "experience_title": "lumira_title",
+    "aesthetic_score": "lumira_aesthetic_score",
+    "clip_score": "lumira_clip_score",
+    "critique": "lumira_critique",
 }
 
 
@@ -60,7 +60,7 @@ class GalleryManager:
         prompt: str,
         metadata: dict[str, Any],
         featured: bool = False,
-        aria_state: dict[str, Any] | None = None,
+        lumira_state: dict[str, Any] | None = None,
     ) -> Path:
         """Save image with comprehensive metadata for reproducibility.
 
@@ -69,7 +69,7 @@ class GalleryManager:
             prompt: The generation prompt
             metadata: Generation parameters (seed, steps, cfg, model, etc.)
             featured: Whether this is a featured/high-quality piece
-            aria_state: Optional Aria personality state (mood, style_axes, experience)
+            lumira_state: Optional Lumira personality state (mood, style_axes, experience)
 
         Returns:
             Path to saved image
@@ -114,36 +114,36 @@ class GalleryManager:
             pnginfo.add_text("lora", metadata["lora"])
             pnginfo.add_text("lora_scale", str(metadata.get("lora_scale", 0.8)))
 
-        # Aria personality state (for reproducibility and analysis)
-        if aria_state:
-            pnginfo.add_text("aria_mood", aria_state.get("mood", ""))
+        # Lumira personality state (for reproducibility and analysis)
+        if lumira_state:
+            pnginfo.add_text("lumira_mood", lumira_state.get("mood", ""))
             pnginfo.add_text(
-                "aria_mood_intensity", str(aria_state.get("mood_intensity", ""))
+                "lumira_mood_intensity", str(lumira_state.get("mood_intensity", ""))
             )
-            pnginfo.add_text("aria_energy", str(aria_state.get("energy", "")))
+            pnginfo.add_text("lumira_energy", str(lumira_state.get("energy", "")))
 
             # Style axes as JSON
-            if aria_state.get("style_axes"):
+            if lumira_state.get("style_axes"):
                 pnginfo.add_text(
-                    "aria_style_axes", json.dumps(aria_state["style_axes"])
+                    "lumira_style_axes", json.dumps(lumira_state["style_axes"])
                 )
 
             # Experience level
-            pnginfo.add_text("aria_level", str(aria_state.get("level", 1)))
-            pnginfo.add_text("aria_title", aria_state.get("title", ""))
+            pnginfo.add_text("lumira_level", str(lumira_state.get("level", 1)))
+            pnginfo.add_text("lumira_title", lumira_state.get("title", ""))
 
             # Quality scores
-            if aria_state.get("aesthetic_score"):
+            if lumira_state.get("aesthetic_score"):
                 pnginfo.add_text(
-                    "aria_aesthetic_score", str(aria_state["aesthetic_score"])
+                    "lumira_aesthetic_score", str(lumira_state["aesthetic_score"])
                 )
-            if aria_state.get("clip_score"):
-                pnginfo.add_text("aria_clip_score", str(aria_state["clip_score"]))
+            if lumira_state.get("clip_score"):
+                pnginfo.add_text("lumira_clip_score", str(lumira_state["clip_score"]))
 
             # Critique summary
-            if aria_state.get("critique"):
+            if lumira_state.get("critique"):
                 pnginfo.add_text(
-                    "aria_critique", aria_state["critique"][:500]
+                    "lumira_critique", lumira_state["critique"][:500]
                 )  # Limit length
 
         # Full metadata as JSON (backup/detailed)
@@ -151,7 +151,7 @@ class GalleryManager:
 
         # EU AI Act compliance
         pnginfo.add_text("AI-Generated", "true")
-        pnginfo.add_text("generator", "ARIA - Autonomous AI Artist")
+        pnginfo.add_text("generator", "LUMIRA - Autonomous AI Artist")
         pnginfo.add_text("generation_timestamp", now.isoformat())
 
         # Save image
@@ -172,7 +172,7 @@ class GalleryManager:
                 "lora": metadata.get("lora"),
                 "lora_scale": metadata.get("lora_scale"),
             },
-            "aria_state": aria_state or {},
+            "lumira_state": lumira_state or {},
             "created_at": now.isoformat(),
             "featured": featured,
             "reproducibility_hash": self._generate_reproducibility_hash(
@@ -187,7 +187,7 @@ class GalleryManager:
             "image_saved",
             path=str(image_path),
             featured=featured,
-            has_aria_state=aria_state is not None,
+            has_lumira_state=lumira_state is not None,
         )
 
         return image_path
@@ -212,7 +212,7 @@ class GalleryManager:
         metadata: dict[str, Any] = {
             "prompt": "",
             "generation_params": {},
-            "aria_state": {},
+            "lumira_state": {},
             "raw_metadata": {},
         }
 
@@ -238,23 +238,23 @@ class GalleryManager:
                         "lora_scale": png_text.get("lora_scale"),
                     }
 
-                    # Extract Aria state
-                    metadata["aria_state"] = {
-                        "mood": png_text.get("aria_mood"),
-                        "mood_intensity": png_text.get("aria_mood_intensity"),
-                        "energy": png_text.get("aria_energy"),
-                        "level": png_text.get("aria_level"),
-                        "title": png_text.get("aria_title"),
-                        "aesthetic_score": png_text.get("aria_aesthetic_score"),
-                        "clip_score": png_text.get("aria_clip_score"),
-                        "critique": png_text.get("aria_critique"),
+                    # Extract Lumira state
+                    metadata["lumira_state"] = {
+                        "mood": png_text.get("lumira_mood"),
+                        "mood_intensity": png_text.get("lumira_mood_intensity"),
+                        "energy": png_text.get("lumira_energy"),
+                        "level": png_text.get("lumira_level"),
+                        "title": png_text.get("lumira_title"),
+                        "aesthetic_score": png_text.get("lumira_aesthetic_score"),
+                        "clip_score": png_text.get("lumira_clip_score"),
+                        "critique": png_text.get("lumira_critique"),
                     }
 
                     # Parse style axes if present
-                    if png_text.get("aria_style_axes"):
+                    if png_text.get("lumira_style_axes"):
                         with contextlib.suppress(json.JSONDecodeError):
-                            metadata["aria_state"]["style_axes"] = json.loads(
-                                png_text["aria_style_axes"]
+                            metadata["lumira_state"]["style_axes"] = json.loads(
+                                png_text["lumira_style_axes"]
                             )
 
                     # Full metadata JSON if present

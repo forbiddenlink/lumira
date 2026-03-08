@@ -215,7 +215,7 @@ def main():
             print(f"   python scripts/manage_loras.py set {args.profile}_style")
             print()
             print("2. Generate images:")
-            print("   ai-artist")
+            print("   lumira")
 
 
 if __name__ == "__main__":

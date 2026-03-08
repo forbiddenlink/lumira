@@ -1,5 +1,5 @@
 """
-Prometheus metrics for Aria AI Artist.
+Prometheus metrics for Lumira AI Artist.
 
 Tracks generation performance, quality scores, user feedback,
 and system resource usage for production monitoring.
@@ -81,33 +81,33 @@ except ImportError:
 # =============================================================================
 
 generation_requests_total = Counter(
-    "aria_generation_requests_total",
+    "lumira_generation_requests_total",
     "Total number of image generation requests",
     ["model", "mood", "status"],
 )
 
 generation_duration_seconds = Histogram(
-    "aria_generation_duration_seconds",
+    "lumira_generation_duration_seconds",
     "Time spent generating images",
     ["model", "mood"],
     buckets=[1, 3, 5, 10, 20, 30, 60, 120, 300],
 )
 
 generation_steps = Histogram(
-    "aria_generation_steps",
+    "lumira_generation_steps",
     "Number of inference steps per generation",
     ["model"],
     buckets=[10, 20, 30, 40, 50, 75, 100],
 )
 
 images_generated_total = Counter(
-    "aria_images_generated_total",
+    "lumira_images_generated_total",
     "Total number of images generated",
     ["model", "mood"],
 )
 
 generation_errors_total = Counter(
-    "aria_generation_errors_total",
+    "lumira_generation_errors_total",
     "Total number of generation errors",
     ["model", "error_type"],
 )
@@ -117,28 +117,28 @@ generation_errors_total = Counter(
 # =============================================================================
 
 curation_quality_score = Histogram(
-    "aria_curation_quality_score",
+    "lumira_curation_quality_score",
     "Image quality scores from curator",
     ["model"],
     buckets=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
 )
 
 curation_clip_score = Histogram(
-    "aria_curation_clip_score",
+    "lumira_curation_clip_score",
     "CLIP similarity scores",
     ["model"],
     buckets=[0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4],
 )
 
 curation_aesthetic_score = Histogram(
-    "aria_curation_aesthetic_score",
+    "lumira_curation_aesthetic_score",
     "Aesthetic quality scores",
     ["model"],
     buckets=[4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.5, 8.0],
 )
 
 curation_duration_seconds = Histogram(
-    "aria_curation_duration_seconds",
+    "lumira_curation_duration_seconds",
     "Time spent evaluating images",
     buckets=[0.5, 1, 2, 3, 5, 10],
 )
@@ -148,19 +148,19 @@ curation_duration_seconds = Histogram(
 # =============================================================================
 
 feedback_events_total = Counter(
-    "aria_feedback_events_total",
+    "lumira_feedback_events_total",
     "Total user feedback events",
     ["action", "mood"],
 )
 
 learning_model_score = Gauge(
-    "aria_learning_model_score",
+    "lumira_learning_model_score",
     "Learned score for each model",
     ["model"],
 )
 
 learning_samples_total = Counter(
-    "aria_learning_samples_total",
+    "lumira_learning_samples_total",
     "Total learning samples collected",
     ["model"],
 )
@@ -170,27 +170,27 @@ learning_samples_total = Counter(
 # =============================================================================
 
 model_pool_size = Gauge(
-    "aria_model_pool_size",
+    "lumira_model_pool_size",
     "Number of models in the pool",
 )
 
 model_pool_preloaded = Gauge(
-    "aria_model_pool_preloaded",
+    "lumira_model_pool_preloaded",
     "Number of preloaded models ready",
 )
 
 active_generations = Gauge(
-    "aria_active_generations",
+    "lumira_active_generations",
     "Number of currently active generations",
 )
 
 gpu_memory_allocated_bytes = Gauge(
-    "aria_gpu_memory_allocated_bytes",
+    "lumira_gpu_memory_allocated_bytes",
     "GPU memory allocated in bytes",
 )
 
 gpu_memory_reserved_bytes = Gauge(
-    "aria_gpu_memory_reserved_bytes",
+    "lumira_gpu_memory_reserved_bytes",
     "GPU memory reserved in bytes",
 )
 
@@ -198,9 +198,9 @@ gpu_memory_reserved_bytes = Gauge(
 # Application Info
 # =============================================================================
 
-aria_info = Info(
-    "aria_application",
-    "Aria application information",
+lumira_info = Info(
+    "lumira_application",
+    "Lumira application information",
 )
 
 
@@ -324,9 +324,9 @@ def update_model_pool_metrics(pool_size: int, preloaded_count: int) -> None:
     model_pool_preloaded.set(preloaded_count)
 
 
-def set_aria_info(version: str, python_version: str, torch_version: str) -> None:
+def set_lumira_info(version: str, python_version: str, torch_version: str) -> None:
     """Set application info metrics."""
-    aria_info.info(
+    lumira_info.info(
         {
             "version": version,
             "python_version": python_version,

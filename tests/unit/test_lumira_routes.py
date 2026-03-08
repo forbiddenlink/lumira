@@ -1,4 +1,4 @@
-"""Tests for Aria API routes."""
+"""Tests for Lumira API routes."""
 
 import pytest
 from fastapi.testclient import TestClient
@@ -234,29 +234,29 @@ class TestLumiraEvolution:
 class TestLumiraPage:
     """Tests for /lumira HTML page."""
 
-    def test_aria_page_loads(self, client):
-        """Aria page should load successfully."""
+    def test_lumira_page_loads(self, client):
+        """Lumira page should load successfully."""
         response = client.get("/lumira")
         assert response.status_code == 200
         assert "text/html" in response.headers["content-type"]
 
-    def test_aria_page_has_title(self, client):
-        """Aria page should have correct title."""
+    def test_lumira_page_has_title(self, client):
+        """Lumira page should have correct title."""
         response = client.get("/lumira")
-        assert b"Aria" in response.content or b"ARIA" in response.content
+        assert b"Lumira" in response.content or b"LUMIRA" in response.content
 
-    def test_aria_page_has_mood_orb(self, client):
-        """Aria page should have mood orb element."""
+    def test_lumira_page_has_mood_orb(self, client):
+        """Lumira page should have mood orb element."""
         response = client.get("/lumira")
         assert b"mood-orb" in response.content
 
-    def test_aria_page_has_personality_section(self, client):
-        """Aria page should have personality display."""
+    def test_lumira_page_has_personality_section(self, client):
+        """Lumira page should have personality display."""
         response = client.get("/lumira")
         assert b"personality" in response.content.lower()
 
-    def test_aria_page_has_stream_of_consciousness(self, client):
-        """Aria page should have thinking stream."""
+    def test_lumira_page_has_stream_of_consciousness(self, client):
+        """Lumira page should have thinking stream."""
         response = client.get("/lumira")
         assert (
             b"thought-stream" in response.content
@@ -274,12 +274,12 @@ class TestLumiraMoodInfluence:
         """Influence endpoint should accept valid mood types."""
         response = client.post(
             "/api/lumira/mood/influence",
-            json={"influence_type": "energize", "intensity": 0.5},
+            json={"influence": "energize", "intensity": 0.5},
         )
         assert response.status_code == 200
 
         data = response.json()
-        assert "success" in data
+        assert "message" in data
         assert "previous_mood" in data
         assert "new_mood" in data
 
@@ -290,7 +290,7 @@ class TestLumiraMoodInfluence:
         for influence_type in influence_types:
             response = client.post(
                 "/api/lumira/mood/influence",
-                json={"influence_type": influence_type, "intensity": 0.3},
+                json={"influence": influence_type, "intensity": 0.3},
             )
             assert response.status_code == 200, f"Failed for {influence_type}"
 
@@ -299,14 +299,14 @@ class TestLumiraMoodInfluence:
         # Test low intensity
         response = client.post(
             "/api/lumira/mood/influence",
-            json={"influence_type": "energize", "intensity": 0.1},
+            json={"influence": "energize", "intensity": 0.1},
         )
         assert response.status_code == 200
 
         # Test high intensity
         response = client.post(
             "/api/lumira/mood/influence",
-            json={"influence_type": "calm", "intensity": 1.0},
+            json={"influence": "calm", "intensity": 1.0},
         )
         assert response.status_code == 200
 
@@ -323,7 +323,7 @@ class TestLumiraMemoryDashboard:
         assert "recent_memories" in data
         assert "patterns" in data
         assert "learned_preferences" in data
-        assert "memory_count" in data
+        assert "total_memories" in data
 
     def test_memory_dashboard_lists_are_correct_type(self, client):
         """Memory lists should be lists."""
@@ -345,7 +345,7 @@ class TestLumiraMoodEvolution:
 
         data = response.json()
         assert "history" in data
-        assert "current_phase" in data
+        assert "current_mood" in data
 
     def test_mood_evolution_history_is_list(self, client):
         """History should be a list."""
@@ -417,4 +417,4 @@ class TestLumiraBatchCreate:
         )
         if response.status_code == 200:
             data = response.json()
-            assert "batch_id" in data or "success" in data
+            assert "job_ids" in data or "message" in data

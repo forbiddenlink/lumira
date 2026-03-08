@@ -2,10 +2,10 @@
 """CLI tool to launch RQ workers for image generation.
 
 Usage:
-    ai-artist-worker              # Start worker for all queues
-    ai-artist-worker --high       # Start worker for high priority only
-    ai-artist-worker --burst      # Process jobs and exit
-    ai-artist-worker --verbose    # Enable verbose logging
+    lumira-worker              # Start worker for all queues
+    lumira-worker --high       # Start worker for high priority only
+    lumira-worker --burst      # Process jobs and exit
+    lumira-worker --verbose    # Enable verbose logging
 """
 
 import argparse
@@ -25,11 +25,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-    ai-artist-worker                    # Start worker for all queues
-    ai-artist-worker --high             # High priority queue only
-    ai-artist-worker --normal           # Normal priority queue only
-    ai-artist-worker --burst            # Process available jobs and exit
-    ai-artist-worker --with-scheduler   # Start with job scheduler
+    lumira-worker                    # Start worker for all queues
+    lumira-worker --high             # High priority queue only
+    lumira-worker --normal           # Normal priority queue only
+    lumira-worker --burst            # Process available jobs and exit
+    lumira-worker --with-scheduler   # Start with job scheduler
 
 Environment Variables:
     REDIS_URL                           # Redis connection URL
@@ -83,7 +83,7 @@ Environment Variables:
         from rq import Queue, Worker
     except ImportError:
         print("\nError: RQ is not installed.")
-        print("Install it with: pip install ai-artist[queue]")
+        print("Install it with: pip install lumira[queue]")
         print("Or: pip install rq")
         sys.exit(1)
 
@@ -136,7 +136,7 @@ Environment Variables:
         worker = Worker(
             queues,
             connection=redis_conn,
-            name=f"ai-artist-worker-{os.getpid()}",
+            name=f"lumira-worker-{os.getpid()}",
         )
 
         worker.work(

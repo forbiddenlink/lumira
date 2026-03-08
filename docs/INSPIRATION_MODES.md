@@ -1,10 +1,10 @@
 # Inspiration Modes
 
-Aria has two primary modes for generating artwork:
+Lumira has two primary modes for generating artwork:
 
 ## 1. Autonomous Mode (Default)
 
-**What it is:** Aria creates completely original artwork from her own imagination, using her built-in `AutonomousInspiration` system.
+**What it is:** Lumira creates completely original artwork from her own imagination, using her built-in `AutonomousInspiration` system.
 
 **How it works:**
 
@@ -20,7 +20,7 @@ Aria has two primary modes for generating artwork:
 - ✅ **Original artwork** - Not derivative of existing photos
 - ✅ **Diversity checking** - Avoids painting the same subject repeatedly
 - ✅ **Mood-influenced** - Her emotional state guides style and color choices
-- ✅ **No attribution needed** - These are Aria's own creations
+- ✅ **No attribution needed** - These are Lumira's own creations
 
 **Example prompts generated:**
 
@@ -35,7 +35,7 @@ serene forest, watercolor style, pastel palette, soft morning light
 - Default for all autonomous creations
 - When you want truly original artwork
 - When variety and surprise are desired
-- For Aria's natural creative expression
+- For Lumira's natural creative expression
 
 ## 2. Unsplash Reference Mode (Optional)
 
@@ -67,7 +67,7 @@ serene forest, watercolor style, pastel palette, soft morning light
 **Default behavior:**
 
 ```python
-# Aria generates her own original vision
+# Lumira generates her own original vision
 base_prompt = self.autonomous_inspiration.generate_surprise()
 # or
 base_prompt = self.autonomous_inspiration.generate_exploration(theme="nature")
@@ -125,4 +125,4 @@ inspiration:
 | **Speed** | Fast (no API calls) | Slower (API latency) |
 | **Use case** | Default creative mode | Reference/themed work |
 
-**Recommendation:** Use autonomous mode by default for Aria's natural creative expression, and reserve Unsplash for specific cases where photo reference is explicitly desired.
+**Recommendation:** Use autonomous mode by default for Lumira's natural creative expression, and reserve Unsplash for specific cases where photo reference is explicitly desired.

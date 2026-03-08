@@ -55,7 +55,7 @@ Build an autonomous AI artist that creates unique artwork with style consistency
 
 - [x] CreationScheduler with AsyncIOScheduler
 - [x] Topic rotation (8 themes)
-- [x] CLI tool: `ai-artist-schedule`
+- [x] CLI tool: `lumira-schedule`
 - [x] Multiple schedule types (daily, interval, weekly, cron)
 - [x] Batch creation support
 - [x] Job management (add, list, remove)

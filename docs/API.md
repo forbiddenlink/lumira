@@ -1,6 +1,6 @@
 # API Specifications
 
-Complete API documentation for all AI Artist modules.
+Complete API documentation for all Lumira modules.
 
 ---
 
@@ -233,7 +233,7 @@ Async HTTP client for Unsplash API with retry logic.
 ```python
 UnsplashClient(
     access_key: str,
-    app_name: str = "ai-artist",
+    app_name: str = "lumira",
 )
 ```
 

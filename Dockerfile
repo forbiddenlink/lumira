@@ -1,4 +1,4 @@
-# AI Artist Dockerfile
+# Lumira Dockerfile
 # Multi-stage build for optimized production image
 
 # ============================================

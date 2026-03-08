@@ -2,7 +2,7 @@
 
 ## Overview
 
-Security best practices for the AI Artist project, covering API keys, secrets management, and safe operation.
+Security best practices for the Lumira project, covering API keys, secrets management, and safe operation.
 
 ---
 
@@ -412,7 +412,7 @@ import os
 
 def setup_secure_logging():
     """Configure logging with security considerations."""
-    log_file = 'logs/ai_artist.log'
+    log_file = 'logs/lumira.log'
 
     # Create logs directory with restricted permissions
     os.makedirs('logs', exist_ok=True)
@@ -540,7 +540,7 @@ def generate():
    export UNSPLASH_ACCESS_KEY="new_key"
 
    # Restart services
-   systemctl restart ai-artist
+   systemctl restart lumira
    ```
 
 ### Security Checklist

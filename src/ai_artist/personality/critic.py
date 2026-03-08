@@ -1,7 +1,7 @@
-"""Aria's internal critic - evaluates concepts before generation.
+"""Lumira's internal critic - evaluates concepts before generation.
 
 The critique system is what separates an artist from a random generator.
-Aria evaluates her concepts, provides feedback, and iterates before creating.
+Lumira evaluates her concepts, provides feedback, and iterates before creating.
 """
 
 import random
@@ -16,7 +16,7 @@ class ArtistCritic:
     """
     An internal critic that evaluates painting concepts before generation.
 
-    This creates the iterative improvement loop that makes Aria's art better:
+    This creates the iterative improvement loop that makes Lumira's art better:
     1. Generate concept (mood + subject + style)
     2. Critique evaluates: composition, color harmony, mood alignment, novelty
     3. If not approved, revise (max 2-3 iterations)

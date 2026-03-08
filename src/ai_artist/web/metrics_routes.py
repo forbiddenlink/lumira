@@ -25,7 +25,7 @@ async def prometheus_metrics():
     Example prometheus.yml:
     ```yaml
     scrape_configs:
-      - job_name: 'aria'
+      - job_name: 'lumira'
         static_configs:
           - targets: ['localhost:8000']
         metrics_path: '/metrics'

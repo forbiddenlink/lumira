@@ -1,5 +1,5 @@
 """
-Adaptive Learning System for Aria.
+Adaptive Learning System for Lumira.
 
 Learns from user feedback to improve generation parameters over time.
 Uses reinforcement learning principles to optimize:
@@ -8,7 +8,7 @@ Uses reinforcement learning principles to optimize:
 - Style preferences
 - Prompt patterns
 
-Author: Aria AI Artist
+Author: Lumira AI Artist
 Date: February 2026
 """
 

@@ -149,14 +149,14 @@ async def test_websocket_manager():
 async def test_api_routes():
     """Test API route initialization."""
     print("🔍 Testing API Routes...")
-    from ai_artist.web.aria_routes import _get_aria_state, router
+    from ai_artist.web.lumira_routes import _get_lumira_state, router
 
     print(f"  ✓ Router created: {router.prefix}")
     print(f"  ✓ Router tags: {router.tags}")
 
     # Test state initialization
-    state = _get_aria_state()
-    print(f"  ✓ Aria name: {state['name']}")
+    state = _get_lumira_state()
+    print(f"  ✓ Lumira name: {state['name']}")
     print(f"  ✓ Mood system initialized: {state['mood_system'].current_mood.value}")
     print(f"  ✓ Personality traits: {len(state['personality'])}")
 

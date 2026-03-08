@@ -1,4 +1,4 @@
-"""Aria's mood system - influences her artistic choices.
+"""Lumira's mood system - influences her artistic choices.
 
 Enhanced with:
 - Mood decay over time (emotions naturally fade)
@@ -22,7 +22,7 @@ ModelType = Literal["sdxl", "flux-schnell", "flux-dev"]
 
 
 class Mood(str, Enum):
-    """Aria's possible moods."""
+    """Lumira's possible moods."""
 
     CONTEMPLATIVE = "contemplative"
     CHAOTIC = "chaotic"
@@ -324,7 +324,7 @@ class StyleAxes:
 
 
 class MoodSystem:
-    """Manages Aria's emotional state and how it affects her art.
+    """Manages Lumira's emotional state and how it affects her art.
 
     Enhanced with:
     - Mood decay over time (emotions naturally fade between sessions)
@@ -493,7 +493,7 @@ class MoodSystem:
             )
 
     def update_mood(self, external_factors: dict | None = None) -> Mood:
-        """Update Aria's mood based on time, energy, and external factors."""
+        """Update Lumira's mood based on time, energy, and external factors."""
         self.mood_duration += 1
 
         # Apply any time-based decay first
@@ -665,7 +665,7 @@ class MoodSystem:
         return subject
 
     def describe_feeling(self) -> str:
-        """Aria describes how she's feeling with intensity-aware language."""
+        """Lumira describes how she's feeling with intensity-aware language."""
         # Base feelings
         feelings_base = {
             Mood.CONTEMPLATIVE: "contemplative space",
@@ -744,7 +744,7 @@ class MoodSystem:
         return self.style_axes.to_prompt_modifiers()
 
     def reflect_on_work(self, score: float, subject: str) -> str:
-        """Aria reflects on a piece she just created with poetic, intensity-aware language."""
+        """Lumira reflects on a piece she just created with poetic, intensity-aware language."""
         # Richer, more distinctive reflections for each mood
         reflections = {
             Mood.CONTEMPLATIVE: [

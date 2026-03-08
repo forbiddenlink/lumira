@@ -1,9 +1,9 @@
-# Continuity Ledger: Aria Comprehensive Improvements
+# Continuity Ledger: Lumira Comprehensive Improvements
 
 ## Goal
 
 Implement 18 improvements across UI, generation, personality, gallery, and polish
-to make Aria a more polished, feature-rich AI artist.
+to make Lumira a more polished, feature-rich AI artist.
 
 ## Constraints
 
@@ -55,12 +55,12 @@ to make Aria a more polished, feature-rich AI artist.
 ### Backend (Python)
 
 - `src/ai_artist/web/aria_routes.py` - Added 6 new endpoints:
-  - `POST /api/aria/mood/influence` - Mood nudging
-  - `POST /api/aria/img2img` - Image-to-image generation
-  - `POST /api/aria/variations` - Generate variations
-  - `POST /api/aria/batch-create` - Batch creation
-  - `GET /api/aria/memory` - Memory dashboard
-  - `GET /api/aria/mood/evolution` - Mood evolution graph
+  - `POST /api/lumira/mood/influence` - Mood nudging
+  - `POST /api/lumira/img2img` - Image-to-image generation
+  - `POST /api/lumira/variations` - Generate variations
+  - `POST /api/lumira/batch-create` - Batch creation
+  - `GET /api/lumira/memory` - Memory dashboard
+  - `GET /api/lumira/mood/evolution` - Mood evolution graph
 
 - `src/ai_artist/web/gallery_routes.py` - Added 5 new endpoints:
   - `GET /api/gallery/collections` - List collections
@@ -82,7 +82,7 @@ to make Aria a more polished, feature-rich AI artist.
 
 ### Frontend (HTML/CSS/JS)
 
-- `src/ai_artist/web/templates/aria.html` - Many additions:
+- `src/ai_artist/web/templates/lumira.html` - Many additions:
   - Dark/Light theme toggle with localStorage persistence
   - High contrast mode support
   - Mood influence buttons (⚡🌊🔥✨)
@@ -99,12 +99,12 @@ to make Aria a more polished, feature-rich AI artist.
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
-| `/api/aria/mood/influence` | POST | Nudge Aria's mood |
-| `/api/aria/img2img` | POST | Image-to-image generation |
-| `/api/aria/variations` | POST | Generate variations |
-| `/api/aria/batch-create` | POST | Queue multiple creations |
-| `/api/aria/memory` | GET | Memory dashboard data |
-| `/api/aria/mood/evolution` | GET | Mood history graph |
+| `/api/lumira/mood/influence` | POST | Nudge Lumira's mood |
+| `/api/lumira/img2img` | POST | Image-to-image generation |
+| `/api/lumira/variations` | POST | Generate variations |
+| `/api/lumira/batch-create` | POST | Queue multiple creations |
+| `/api/lumira/memory` | GET | Memory dashboard data |
+| `/api/lumira/mood/evolution` | GET | Mood history graph |
 | `/api/gallery/collections` | GET | List collections |
 | `/api/gallery/collections` | POST | Create collection |
 | `/api/gallery/collections/{id}` | GET | Collection details |

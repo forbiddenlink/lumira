@@ -1,26 +1,26 @@
 {
   "name": "Lumira",
-  "created_at": "2026-03-07T20:29:01.551483",
+  "created_at": "2026-03-07T21:51:53.843728",
   "paintings": [
     {
-      "timestamp": "2026-03-07T20:29:01.774811",
-      "prompt": "test landscape, gothic style, powerful mood, somber abstract, color palette: deep blues, dark purples, masterpiece, symbolic metaphorical imagery, wistful bittersweet mood",
+      "timestamp": "2026-03-07T21:51:53.849888",
+      "prompt": "lighthouse meets volcano, abstract interpretation, minimalist, color palette: muted blues, soft grays, highly detailed, zen style, meditative quiet mood",
       "subject": "test landscape",
-      "style": "abstract",
-      "mood": "melancholic",
+      "style": "minimalist",
+      "mood": "contemplative",
       "colors": [
-        "deep blues",
-        "dark purples",
-        "shadowy grays"
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
       ],
       "score": 0.75,
-      "image_path": "/private/var/folders/vl/1g4kyx090p34nf40rd5vyydm0000gn/T/pytest-of-elizabethstein/pytest-11/test_full_artwork_creation_wor0/test_image.png",
+      "image_path": "/private/var/folders/vl/1g4kyx090p34nf40rd5vyydm0000gn/T/pytest-of-elizabethstein/pytest-19/test_full_artwork_creation_wor0/test_image.png",
       "metadata": {
         "creation_type": "autonomous_original",
-        "generation_mode": "exploration",
+        "generation_mode": "mashup",
         "model": "runwayml/stable-diffusion-v1-5",
-        "energy_level": 0.461904492089282,
-        "reflection": "There's an ache in this test landscape. I painted what I couldn't say. I'm quietly pleased. Sometimes the gentle moments surprise you."
+        "energy_level": 0.49907345675565185,
+        "reflection": "There's a question buried in this test landscape. I'm not sure I know the answer yet. I'm quietly pleased. Sometimes the gentle moments surprise you."
       }
     }
   ],
@@ -30,12 +30,12 @@
       "test landscape": 1
     },
     "favorite_styles": {
-      "abstract": 1
+      "minimalist": 1
     },
     "favorite_colors": {
-      "deep blues": 1,
-      "dark purples": 1,
-      "shadowy grays": 1
+      "muted blues": 1,
+      "soft grays": 1,
+      "gentle earth tones": 1
     }
   },
   "stats": {

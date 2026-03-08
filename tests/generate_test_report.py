@@ -44,21 +44,21 @@ results["categories"]["api_endpoints"] = {
         "status": "✅ PASS",
         "details": "/health returns 200 with status and version",
     },
-    "aria_state_endpoint": {
+    "lumira_state_endpoint": {
         "status": "✅ PASS",
-        "details": "/api/aria/state returns mood, energy, personality traits",
+        "details": "/api/lumira/state returns mood, energy, personality traits",
     },
-    "aria_statement_endpoint": {
+    "lumira_statement_endpoint": {
         "status": "✅ PASS",
-        "details": "/api/aria/statement returns artist statement",
+        "details": "/api/lumira/statement returns artist statement",
     },
     "homepage": {
         "status": "✅ PASS",
         "details": "/ renders 151KB HTML with gallery UI",
     },
-    "aria_page": {
+    "lumira_page": {
         "status": "✅ PASS",
-        "details": "/aria renders 66KB HTML with CREATE button",
+        "details": "/lumira renders 66KB HTML with CREATE button",
     },
     "images_endpoint": {
         "status": "⚠️ PARTIAL",
@@ -82,7 +82,7 @@ results["categories"]["gallery_structure"] = {
 results["categories"]["code_fixes_applied"] = {
     "dtype_parsing": {
         "issue": "Generator was not parsing dtype from config",
-        "fix": "Added proper torch.float32/float16 parsing in aria_routes.py",
+        "fix": "Added proper torch.float32/float16 parsing in lumira_routes.py",
         "status": "✅ FIXED",
     },
     "database_integration": {
@@ -242,7 +242,7 @@ with open(report_path, "w") as f:
     f.write("---\n\n")
     f.write("## Files Modified\n\n")
     f.write(
-        "- [src/ai_artist/web/aria_routes.py](src/ai_artist/web/aria_routes.py) - Fixed dtype parsing, added DB integration, improved error handling\n"
+        "- [src/ai_artist/web/lumira_routes.py](src/ai_artist/web/lumira_routes.py) - Fixed dtype parsing, added DB integration, improved error handling\n"
     )
     f.write(
         "- [config/config.yaml](config/config.yaml) - Already configured correctly with dtype: float32\n\n"
@@ -252,7 +252,7 @@ with open(report_path, "w") as f:
     f.write("## Next Steps\n\n")
     f.write("1. **Restart the web server** to load the new code\n")
     f.write("2. **Hard refresh browser** (Cmd+Shift+R) to clear cached JavaScript\n")
-    f.write("3. **Test CREATE button** on /aria page and verify:\n")
+    f.write("3. **Test CREATE button** on /lumira page and verify:\n")
     f.write("   - Stream of consciousness updates appear\n")
     f.write("   - Images are generated successfully\n")
     f.write("   - No black/NaN images due to dtype fix\n")

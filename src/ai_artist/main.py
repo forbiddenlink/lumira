@@ -1,4 +1,4 @@
-"""Aria - Autonomous AI Artist with personality and soul."""
+"""Lumira - Autonomous AI Artist with personality and soul."""
 
 import asyncio
 import random
@@ -36,7 +36,7 @@ logger = get_logger(__name__)
 
 
 class AIArtist:
-    """Aria - An autonomous AI artist with personality, moods, and memory."""
+    """Lumira - An autonomous AI artist with personality, moods, and memory."""
 
     def __init__(self, config: Config, name: str = "Lumira"):
         self.config = config
@@ -54,7 +54,7 @@ class AIArtist:
         self.trend_manager = None
         self.model_manager = None
 
-        # Aria's personality - the core of who she is
+        # Lumira's personality - the core of who she is
         self.mood_system = MoodSystem()
         # Simple memory for backward compatibility
         self.memory = ArtistMemory()
@@ -63,7 +63,7 @@ class AIArtist:
         # Artistic identity and voice
         self.profile = ArtisticProfile(name=name)
         # Internal critic for self-evaluation
-        self.critic = ArtistCritic(name="Aria's Inner Critic")
+        self.critic = ArtistCritic(name="Lumira's Inner Critic")
         # Visible thinking process (ReAct pattern)
         self.thinking = ThinkingProcess(
             mood_system=self.mood_system,
@@ -81,13 +81,13 @@ class AIArtist:
         # Setup logging with rotation
         configure_logging(
             log_level="INFO",
-            log_file=Path("logs/aria.log"),
+            log_file=Path("logs/lumira.log"),
             json_logs=False,  # Console-friendly for now
             enable_rotation=True,
         )
 
         logger.info(
-            "aria_awakening",
+            "lumira_awakening",
             name=self.name,
             mood=self.mood_system.current_mood,
             feeling=self.mood_system.describe_feeling(),
@@ -215,7 +215,7 @@ class AIArtist:
         """Handle a new thought from the thinking process."""
         # Log the thought
         logger.info(
-            "aria_thinking",
+            "lumira_thinking",
             type=thought.type.value,
             content=thought.content[:100],
         )
@@ -244,7 +244,7 @@ class AIArtist:
                 logger.debug("websocket_broadcast_failed", error=str(e))
 
     async def create_artwork(self, theme: str | None = None):
-        """Create a single piece of artwork with Aria's personality."""
+        """Create a single piece of artwork with Lumira's personality."""
         # Set unique request ID for this operation
         request_id = set_request_id()
         self._current_session_id = request_id
@@ -252,14 +252,14 @@ class AIArtist:
         # Clear thinking for new session
         self.thinking.clear_session()
 
-        # Update Aria's mood
+        # Update Lumira's mood
         self.mood_system.update_mood()
 
-        # Broadcast Aria's state if WebSocket available
+        # Broadcast Lumira's state if WebSocket available
         ws_manager = self._get_ws_manager()
         if ws_manager:
             try:
-                await ws_manager.send_aria_state(
+                await ws_manager.send_lumira_state(
                     mood=self.mood_system.current_mood.value,
                     energy=self.mood_system.energy_level,
                     feeling=self.mood_system.describe_feeling(),
@@ -304,7 +304,7 @@ class AIArtist:
         )
 
         logger.info(
-            "aria_creating",
+            "lumira_creating",
             theme=theme,
             mood=self.mood_system.current_mood.value,
             feeling=self.mood_system.describe_feeling(),
@@ -314,14 +314,14 @@ class AIArtist:
 
         with PerformanceTimer(logger, "artwork_creation"):
             # === VISIBLE THINKING: REFLECT & DECIDE ===
-            # Aria chooses what to paint (autonomous decision)
+            # Lumira chooses what to paint (autonomous decision)
             if theme:
                 query = theme
                 # Reflect on the suggested theme
                 self.thinking.reflect(theme)
                 logger.info("theme_suggested", theme=theme, source="human_suggestion")
             else:
-                # Aria reflects on possible directions
+                # Lumira reflects on possible directions
                 mood_subjects = self.mood_system.mood_influences[
                     self.mood_system.current_mood
                 ]["subjects"]
@@ -334,7 +334,7 @@ class AIArtist:
                     query = self.mood_system.get_mood_based_subject()
 
                 logger.info(
-                    "aria_chose_subject",
+                    "lumira_chose_subject",
                     subject=query,
                     mood=self.mood_system.current_mood.value,
                     source="autonomous_choice",
@@ -445,11 +445,11 @@ class AIArtist:
                 attempts += 1
 
             # === TRULY AUTONOMOUS PROMPT GENERATION ===
-            # Aria creates her own original vision, not based on existing photos
+            # Lumira creates her own original vision, not based on existing photos
             if self.autonomous_inspiration is None:
                 raise RuntimeError("Autonomous inspiration not initialized")
 
-            # Aria generates her own creative concept
+            # Lumira generates her own creative concept
             # Use different generation modes for variety
             generation_modes = ["surprise", "exploration", "fusion", "mashup"]
             mode = random.choice(generation_modes)
@@ -463,7 +463,7 @@ class AIArtist:
                 base_prompt = self.autonomous_inspiration.generate_from_mode(mode)
 
             logger.info(
-                "aria_original_vision",
+                "lumira_original_vision",
                 subject=query,
                 mode=mode,
                 base_prompt=base_prompt[:100],
@@ -496,7 +496,7 @@ class AIArtist:
                 # Process prompt (fresh variation each time if retrying)
                 base_prompt = self.prompt_engine.process(template)
 
-                # Let Aria's mood influence the prompt
+                # Let Lumira's mood influence the prompt
                 prompt = self.mood_system.influence_prompt(base_prompt)
 
                 if attempt > 0:
@@ -704,7 +704,7 @@ class AIArtist:
                 },
             )
 
-            # Let Aria reflect on her creation
+            # Let Lumira reflect on her creation
             reflection = self.mood_system.reflect_on_work(best_score, theme)
 
             # Record in memory (both simple and enhanced)
@@ -768,7 +768,7 @@ class AIArtist:
                 reflection=reflection[:100],
             )
 
-        # This is Aria's original artwork - no external attribution needed
+        # This is Lumira's original artwork - no external attribution needed
         return saved_path
 
     def _extract_style_from_prompt(self, prompt: str) -> str:
@@ -934,7 +934,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Aria - Autonomous AI Artist with personality and memory"
+        description="Lumira - Autonomous AI Artist with personality and memory"
     )
     parser.add_argument(
         "--config",
@@ -952,7 +952,7 @@ def main():
         "--theme",
         type=str,
         default=None,
-        help="Optional theme suggestion (if omitted, Aria chooses based on her mood)",
+        help="Optional theme suggestion (if omitted, Lumira chooses based on her mood)",
     )
     args = parser.parse_args()
 

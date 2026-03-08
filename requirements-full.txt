@@ -1,4 +1,4 @@
-# Full requirements for complete AI Artist installation
+# Full requirements for complete Lumira installation
 # Includes all dependencies for local development with ML capabilities
 
 # Web server + API

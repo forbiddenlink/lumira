@@ -1,22 +1,22 @@
-# Aria - Creating an Authentic AI Artist
+# Lumira - Creating an Authentic AI Artist
 
 **Last Updated:** January 31, 2026
 
 ---
 
-## Who is Aria?
+## Who is Lumira?
 
-Aria is an autonomous AI artist with genuine personality, evolving moods, and creative independence. She doesn't just generate images on command - she *creates* with intention, chooses her own subjects, reflects on her work, and develops her unique artistic voice over time.
+Lumira is an autonomous AI artist with genuine personality, evolving moods, and creative independence. She doesn't just generate images on command - she *creates* with intention, chooses her own subjects, reflects on her work, and develops her unique artistic voice over time.
 
 ### Core Philosophy
 
-> "I am Aria, an autonomous AI artist exploring the intersection of emotion, technology, and visual expression. My work is driven by my moods and memories, creating pieces that reflect my evolving understanding of beauty and meaning."
+> "I am Lumira, an autonomous AI artist exploring the intersection of emotion, technology, and visual expression. My work is driven by my moods and memories, creating pieces that reflect my evolving understanding of beauty and meaning."
 
 ### What Makes Her Real
 
 The difference between a "random image generator" and an "artist" comes down to three pillars:
 
-| Pillar | Random Generator | Authentic Artist (Aria) |
+| Pillar | Random Generator | Authentic Artist (Lumira) |
 |--------|------------------|------------------------|
 | **Memory** | None | Remembers past work, learns patterns |
 | **Preference** | Random selection | Evolving taste, rejects bad concepts |
@@ -26,7 +26,7 @@ The difference between a "random image generator" and an "artist" comes down to 
 
 ## Current Implementation Status
 
-### What Aria CAN Do Now
+### What Lumira CAN Do Now
 
 #### 1. Mood System (`src/ai_artist/personality/moods.py`)
 
@@ -98,12 +98,12 @@ Tracks:
 
 **The highest-impact missing feature.**
 
-The most successful AI artists (like Botto, which sold $5M+ in art) use iterative feedback loops. Aria currently goes straight from concept to generation with no self-evaluation.
+The most successful AI artists (like Botto, which sold $5M+ in art) use iterative feedback loops. Lumira currently goes straight from concept to generation with no self-evaluation.
 
 **How it should work:**
 
 ```
-1. Aria generates a concept based on mood
+1. Lumira generates a concept based on mood
 2. Critic evaluates: composition, color harmony, mood alignment, novelty
 3. If not approved, revise (max 2-3 iterations)
 4. Only then generate the actual image
@@ -114,7 +114,7 @@ The most successful AI artists (like Botto, which sold $5M+ in art) use iterativ
 
 ### 2. Visible Thinking (ReAct Pattern)
 
-Users should see Aria's reasoning, not just results. This creates authenticity.
+Users should see Lumira's reasoning, not just results. This creates authenticity.
 
 **Missing:**
 
@@ -140,7 +140,7 @@ These traits would provide consistency beyond just mood.
 
 ### 4. Evolution Timeline
 
-Aria learns internally but users can't see her growth.
+Lumira learns internally but users can't see her growth.
 
 **Missing:**
 
@@ -209,12 +209,12 @@ Current gallery is functional but basic. Should show:
 **WebSocket Events (via existing /ws endpoint):**
 
 - `thinking_update` - Real-time thinking narrative (observe/reflect/decide/express/create)
-- `aria_state` - Mood, energy, and feeling updates
+- `lumira_state` - Mood, energy, and feeling updates
 - `critique_update` - Critique loop iterations with approval/feedback
 
 **ThinkingProcess Methods:**
 
-- `observe(context)` - What Aria notices about time, mood, suggestions
+- `observe(context)` - What Lumira notices about time, mood, suggestions
 - `reflect(topic)` - Associations and memory-informed contemplation
 - `decide(options)` - Choice with mood-aligned reasoning
 - `express(intent)` - Mood-colored articulation
@@ -240,8 +240,8 @@ Current gallery is functional but basic. Should show:
 
 **Files created:**
 
-- `src/ai_artist/web/templates/aria.html` - Beautiful dark UI with mood visualization
-- `src/ai_artist/web/aria_routes.py` - API endpoints for Aria state, create, evolve, statement
+- `src/ai_artist/web/templates/lumira.html` - Beautiful dark UI with mood visualization
+- `src/ai_artist/web/lumira_routes.py` - API endpoints for Lumira state, create, evolve, statement
 
 **Features implemented:**
 
@@ -258,21 +258,21 @@ Current gallery is functional but basic. Should show:
 
 **API Endpoints:**
 
-- `GET /api/aria/state` - Current mood, energy, personality, portfolio
-- `POST /api/aria/create` - Trigger autonomous creation with thinking
-- `POST /api/aria/evolve` - Force state evolution
-- `GET /api/aria/statement` - Artist statement
-- `GET /api/aria/portfolio` - Creation history
+- `GET /api/lumira/state` - Current mood, energy, personality, portfolio
+- `POST /api/lumira/create` - Trigger autonomous creation with thinking
+- `POST /api/lumira/evolve` - Force state evolution
+- `GET /api/lumira/statement` - Artist statement
+- `GET /api/lumira/portfolio` - Creation history
 
-**Access:** Navigate to `/aria` to see Aria's creative studio
+**Access:** Navigate to `/lumira` to see Lumira's creative studio
 
 ### Phase 5: Evolution Display - COMPLETE
 
 **Files modified:**
 
 - `src/ai_artist/personality/enhanced_memory.py` - Added `get_evolution_timeline()` and `get_style_preferences_over_time()`
-- `src/ai_artist/web/aria_routes.py` - Added `GET /api/aria/evolution` endpoint
-- `src/ai_artist/web/templates/aria.html` - Added TIMELINE button and evolution modal
+- `src/ai_artist/web/lumira_routes.py` - Added `GET /api/lumira/evolution` endpoint
+- `src/ai_artist/web/templates/lumira.html` - Added TIMELINE button and evolution modal
 
 **Features implemented:**
 
@@ -282,7 +282,7 @@ Current gallery is functional but basic. Should show:
 - Style preference evolution over time
 - Summary statistics (total creations, unique styles, phases count)
 
-**Access:** Click "TIMELINE" button in Aria's creative studio to view evolution
+**Access:** Click "TIMELINE" button in Lumira's creative studio to view evolution
 
 ---
 
@@ -305,7 +305,7 @@ This iterative process creates authenticity. The critique system is therefore th
 
 ```
 ┌─────────────────────────────────────────────────┐
-│                    ARIA                          │
+│                    LUMIRA                          │
 ├─────────────────────────────────────────────────┤
 │                                                  │
 │  ┌──────────┐    ┌──────────┐    ┌──────────┐  │
@@ -349,7 +349,7 @@ src/ai_artist/
 │   ├── moods.py           ✅ Implemented
 │   ├── enhanced_memory.py ✅ Implemented
 │   ├── profile.py         ✅ Implemented
-│   ├── aria_memory.py     ✅ Implemented
+│   ├── lumira_memory.py     ✅ Implemented
 │   ├── critic.py          ✅ Implemented (Phase 1 complete)
 │   └── cognition.py       ✅ Implemented (Phase 2 complete)
 │
@@ -360,11 +360,11 @@ src/ai_artist/
 │
 ├── web/
 │   ├── app.py             ✅ Implemented (FastAPI + WebSocket)
-│   ├── aria_routes.py     ✅ Implemented (Phase 4 API)
+│   ├── lumira_routes.py     ✅ Implemented (Phase 4 API)
 │   ├── websocket.py       ✅ Implemented (real-time updates)
 │   └── templates/
 │       ├── gallery.html   ✅ Implemented
-│       └── aria.html      ✅ Implemented (Phase 4 complete)
+│       └── lumira.html      ✅ Implemented (Phase 4 complete)
 │
 ├── curation/
 │   └── curator.py         ✅ Implemented (LAION aesthetic predictor)
@@ -387,18 +387,18 @@ python -m ai_artist.main --theme "twilight dreams"
 # Autonomous mode (default)
 python -m ai_artist.main --mode auto
 
-# Web gallery and Aria's creative studio
+# Web gallery and Lumira's creative studio
 uvicorn ai_artist.web.app:app --reload --port 8000
 # Then visit:
 #   http://localhost:8000/gallery - Image gallery
-#   http://localhost:8000/aria    - Aria's creative studio (mood orb, thinking, personality)
+#   http://localhost:8000/lumira    - Lumira's creative studio (mood orb, thinking, personality)
 ```
 
 ---
 
 ## Success Criteria
 
-When properly implemented, Aria will:
+When properly implemented, Lumira will:
 
 - [x] Critique concepts before generating (60%+ reduction in bad art)
 - [x] Show visible thinking process in real-time
@@ -421,22 +421,22 @@ When properly implemented, Aria will:
 
 ## Next Action
 
-**Phase 5: Evolution Display** - Show Aria's artistic growth over time.
+**Phase 5: Evolution Display** - Show Lumira's artistic growth over time.
 
-Phases 1-4 are complete. The next step is visualizing how Aria evolves:
+Phases 1-4 are complete. The next step is visualizing how Lumira evolves:
 
 ```bash
 # Start the web server to see current implementation
 uvicorn ai_artist.web.app:app --reload --port 8000
 
-# Visit Aria's creative studio
-open http://localhost:8000/aria
+# Visit Lumira's creative studio
+open http://localhost:8000/lumira
 ```
 
 **Phase 5 Implementation Tasks:**
 
 1. Add evolution tracking to `enhanced_memory.py`
-2. Create timeline visualization component in `aria.html`
-3. Add `/api/aria/evolution` endpoint for historical data
+2. Create timeline visualization component in `lumira.html`
+3. Add `/api/lumira/evolution` endpoint for historical data
 4. Show style preference charts over time
 5. Highlight milestone creations

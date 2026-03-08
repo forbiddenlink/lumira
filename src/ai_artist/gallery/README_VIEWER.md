@@ -17,8 +17,8 @@ This tool provides a command-line interface for viewing and browsing the gallery
 The tool is registered as a console script in `pyproject.toml`:
 
 ```bash
-ai-artist-gallery --help
-ai-artist-gallery --gallery ./gallery --limit 20
+lumira-gallery --help
+lumira-gallery --gallery ./gallery --limit 20
 ```
 
 ## Why It's Not Integrated

@@ -2,7 +2,7 @@
 
 ## Welcome! 🎨
 
-Thank you for your interest in contributing to the AI Artist project. This guide will help you get started.
+Thank you for your interest in contributing to the Lumira project. This guide will help you get started.
 
 ---
 
@@ -12,8 +12,8 @@ Thank you for your interest in contributing to the AI Artist project. This guide
 
 ```bash
 # Fork the repository on GitHub, then:
-git clone https://github.com/YOUR_USERNAME/ai-artist.git
-cd ai-artist
+git clone https://github.com/YOUR_USERNAME/lumira.git
+cd lumira
 ```
 
 ### 2. Create Virtual Environment
@@ -282,7 +282,7 @@ Add screenshots for UI changes
 Understanding the codebase:
 
 ```
-ai-artist/
+lumira/
 ├── src/
 │   ├── inspiration/       # Image sourcing
 │   │   ├── __init__.py

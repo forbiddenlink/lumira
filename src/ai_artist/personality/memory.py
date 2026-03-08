@@ -1,4 +1,4 @@
-"""Aria's memory and journaling system."""
+"""Lumira's memory and journaling system."""
 
 import json
 from datetime import datetime
@@ -11,9 +11,9 @@ logger = get_logger(__name__)
 
 
 class ArtistMemory:
-    """Manages Aria's memory of her creative journey."""
+    """Manages Lumira's memory of her creative journey."""
 
-    def __init__(self, memory_file: Path = Path("data/aria_memory.json")):
+    def __init__(self, memory_file: Path = Path("data/lumira_memory.json")):
         self.memory_file = memory_file
         self.memory: dict[str, Any] = {
             "name": "Lumira",
@@ -73,7 +73,7 @@ class ArtistMemory:
         image_path: str,
         metadata: dict | None = None,
     ):
-        """Remember a piece Aria created."""
+        """Remember a piece Lumira created."""
         artwork = {
             "timestamp": datetime.now().isoformat(),
             "prompt": prompt,
@@ -108,7 +108,7 @@ class ArtistMemory:
         )
 
     def _update_preferences(self, subject: str, style: str, colors: list[str]):
-        """Update what Aria likes based on what she creates."""
+        """Update what Lumira likes based on what she creates."""
         # Track subject preferences
         self.memory["preferences"]["favorite_subjects"][subject] = (
             self.memory["preferences"]["favorite_subjects"].get(subject, 0) + 1
@@ -126,7 +126,7 @@ class ArtistMemory:
             )
 
     def add_reflection(self, reflection: str, about_painting: str | None = None):
-        """Aria reflects on her work or creative process."""
+        """Lumira reflects on her work or creative process."""
         reflection_entry = {
             "timestamp": datetime.now().isoformat(),
             "reflection": reflection,
@@ -141,33 +141,33 @@ class ArtistMemory:
         )
 
     def get_recent_works(self, limit: int = 10) -> list[dict]:
-        """Get Aria's recent artwork."""
+        """Get Lumira's recent artwork."""
         works: list[dict] = self.memory["paintings"][-limit:]
         return works
 
     def get_best_works(self, limit: int = 10) -> list[dict]:
-        """Get Aria's highest-scored artwork."""
+        """Get Lumira's highest-scored artwork."""
         sorted_works = sorted(
             self.memory["paintings"], key=lambda x: x.get("score", 0), reverse=True
         )
         return sorted_works[:limit]
 
     def get_favorite_subject(self) -> str | None:
-        """What subject does Aria paint most?"""
+        """What subject does Lumira paint most?"""
         subjects: dict[str, int] = self.memory["preferences"]["favorite_subjects"]
         if not subjects:
             return None
         return max(subjects, key=lambda k: subjects[k])
 
     def get_favorite_style(self) -> str | None:
-        """What style does Aria prefer?"""
+        """What style does Lumira prefer?"""
         styles: dict[str, int] = self.memory["preferences"]["favorite_styles"]
         if not styles:
             return None
         return max(styles, key=lambda k: styles[k])
 
     def has_painted_recently(self, subject: str, threshold: int = 5) -> bool:
-        """Check if Aria has painted this subject recently."""
+        """Check if Lumira has painted this subject recently."""
         recent = self.memory["paintings"][-threshold:]
         return any(p.get("subject") == subject for p in recent)
 
@@ -186,7 +186,7 @@ class ArtistMemory:
         return random.choice(reflections)
 
     def get_stats(self) -> dict:
-        """Get Aria's creative statistics."""
+        """Get Lumira's creative statistics."""
         return {
             "total_artworks": self.memory["stats"]["total_created"],
             "best_score": self.memory["stats"]["best_score"],

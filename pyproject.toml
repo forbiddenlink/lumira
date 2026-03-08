@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [
-    { name = "AI Artist Project" }
+    { name = "Lumira Project" }
 ]
 
 dependencies = [
@@ -43,11 +43,11 @@ dependencies = [
 ]
 
 [project.scripts]
-ai-artist = "ai_artist.main:main"
-ai-artist-gallery = "ai_artist.gallery.viewer:main"
-ai-artist-schedule = "ai_artist.scheduling.cli:main"
-ai-artist-web = "ai_artist.web.cli:main"
-ai-artist-worker = "ai_artist.queue.cli:main"
+lumira = "ai_artist.main:main"
+lumira-gallery = "ai_artist.gallery.viewer:main"
+lumira-schedule = "ai_artist.scheduling.cli:main"
+lumira-web = "ai_artist.web.cli:main"
+lumira-worker = "ai_artist.queue.cli:main"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]

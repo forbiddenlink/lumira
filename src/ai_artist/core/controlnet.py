@@ -132,7 +132,7 @@ class ControlNetPreprocessor:
             )
             raise RuntimeError(
                 "controlnet-aux is required for depth preprocessing. "
-                "Install with: pip install ai-artist[controlnet]"
+                "Install with: pip install lumira[controlnet]"
             ) from e
         except Exception as e:
             logger.error("depth_preprocessing_failed", error=str(e))
@@ -167,7 +167,7 @@ class ControlNetPreprocessor:
             )
             raise RuntimeError(
                 "controlnet-aux is required for pose preprocessing. "
-                "Install with: pip install ai-artist[controlnet]"
+                "Install with: pip install lumira[controlnet]"
             ) from e
         except Exception as e:
             logger.error("pose_preprocessing_failed", error=str(e))
@@ -202,7 +202,7 @@ class ControlNetPreprocessor:
             )
             raise RuntimeError(
                 "controlnet-aux is required for lineart preprocessing. "
-                "Install with: pip install ai-artist[controlnet]"
+                "Install with: pip install lumira[controlnet]"
             ) from e
         except Exception as e:
             logger.error("lineart_preprocessing_failed", error=str(e))
@@ -237,7 +237,7 @@ class ControlNetPreprocessor:
             )
             raise RuntimeError(
                 "controlnet-aux is required for softedge preprocessing. "
-                "Install with: pip install ai-artist[controlnet]"
+                "Install with: pip install lumira[controlnet]"
             ) from e
         except Exception as e:
             logger.error("softedge_preprocessing_failed", error=str(e))

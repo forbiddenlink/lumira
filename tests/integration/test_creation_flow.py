@@ -141,7 +141,7 @@ class TestFullCreationFlow:
     async def test_creation_flow_autonomous(
         self, mock_config, mock_generator, mock_unsplash, mock_curator, mock_gallery
     ):
-        """Test creation flow when Aria chooses the subject autonomously."""
+        """Test creation flow when Lumira chooses the subject autonomously."""
         with (
             patch("ai_artist.main.ImageGenerator", return_value=mock_generator),
             patch("ai_artist.main.UnsplashClient", return_value=mock_unsplash),
@@ -151,7 +151,7 @@ class TestFullCreationFlow:
         ):
             app = AIArtist(mock_config)
 
-            # No theme - Aria chooses based on mood
+            # No theme - Lumira chooses based on mood
             result = await app.create_artwork(theme=None)
 
             assert result is not None
@@ -475,13 +475,13 @@ class TestErrorHandlingInFlow:
 
 
 class TestReflectionAfterCreation:
-    """Test Aria's reflection after creation."""
+    """Test Lumira's reflection after creation."""
 
     @pytest.mark.asyncio
     async def test_reflection_generated(
         self, mock_config, mock_generator, mock_unsplash, mock_curator, mock_gallery
     ):
-        """Test that Aria generates a reflection after creation."""
+        """Test that Lumira generates a reflection after creation."""
         with (
             patch("ai_artist.main.ImageGenerator", return_value=mock_generator),
             patch("ai_artist.main.UnsplashClient", return_value=mock_unsplash),

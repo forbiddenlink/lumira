@@ -99,7 +99,7 @@ class GenerationQueue:
         if not RQ_AVAILABLE:
             logger.warning(
                 "rq_not_available",
-                message="RQ package not installed. Install with: pip install ai-artist[queue]",
+                message="RQ package not installed. Install with: pip install lumira[queue]",
             )
             self.enabled = False
             self.redis = None

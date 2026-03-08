@@ -1,10 +1,10 @@
-# Aria - Autonomous AI Artist
+# Lumira - Autonomous AI Artist
 
 An autonomous AI artist with personality, moods, memory, and creative independence.
 
-## ✨ What Makes Aria Different
+## ✨ What Makes Lumira Different
 
-Aria isn't a tool - she's an **artist** you collaborate with:
+Lumira isn't a tool - she's an **artist** you collaborate with:
 
 - **Has Moods**: 10 emotional states that influence her art
 - **Remembers**: Episodic + semantic memory learns what works
@@ -27,7 +27,7 @@ Aria isn't a tool - she's an **artist** you collaborate with:
 
 ```bash
 # Clone and setup
-cd ai-artist
+cd lumira
 python -m venv venv
 source venv/bin/activate
 pip install -r requirements-full.txt
@@ -36,7 +36,7 @@ pip install -e .
 # Configure
 cp config/config.example.yaml config/config.yaml
 
-# Let Aria create (she chooses based on mood)
+# Let Lumira create (she chooses based on mood)
 python -m ai_artist.main
 
 # Or suggest a theme
@@ -56,7 +56,7 @@ pip install -e .
 ## Project Structure
 
 ```text
-ai-artist/
+lumira/
 ├── src/ai_artist/
 │   ├── personality/    # Moods, memory, identity
 │   ├── core/           # Image generation
@@ -72,7 +72,7 @@ ai-artist/
 
 | Document | Purpose |
 |----------|---------|
-| **[ARIA.md](ARIA.md)** | Full personality system & roadmap |
+| **[LUMIRA.md](LUMIRA.md)** | Full personality system & roadmap |
 | **[QUICKSTART.md](QUICKSTART.md)** | Step-by-step setup guide |
 | **[SETUP.md](SETUP.md)** | Detailed installation |
 | **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** | Common issues |

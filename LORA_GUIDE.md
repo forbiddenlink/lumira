@@ -1,6 +1,6 @@
 # LoRA Training & Management Guide
 
-Complete guide for training and using custom LoRA styles with AI Artist.
+Complete guide for training and using custom LoRA styles with Lumira.
 
 ---
 
@@ -68,14 +68,14 @@ python scripts/train_all_loras.py webhero
 python scripts/manage_loras.py set webhero_style
 
 # 4. Generate images!
-ai-artist
+lumira
 ```
 
 ---
 
 ## Specialized Styles
 
-AI Artist provides three professionally configured LoRA profiles:
+Lumira provides three professionally configured LoRA profiles:
 
 ### 1. 🎨 Abstract Art
 
@@ -297,19 +297,19 @@ Switch between LoRAs for different project needs:
 ```bash
 # Morning: Create abstract art
 python scripts/manage_loras.py set abstract_style
-ai-artist  # Generates abstract images
+lumira  # Generates abstract images
 
 # Afternoon: Design website heroes
 python scripts/manage_loras.py set webhero_style
-ai-artist  # Generates professional heroes
+lumira  # Generates professional heroes
 
 # Evening: Create landscape backgrounds
 python scripts/manage_loras.py set landscape_style
-ai-artist  # Generates dramatic landscapes
+lumira  # Generates dramatic landscapes
 
 # Night: General exploration
 python scripts/manage_loras.py set none
-ai-artist  # Full flexibility
+lumira  # Full flexibility
 ```
 
 ### Manual Configuration

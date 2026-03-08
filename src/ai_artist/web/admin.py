@@ -18,7 +18,7 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 # Setup templates - templates are in project root, not src directory
-# Path: admin.py -> web -> ai_artist -> src -> ai-artist -> templates
+# Path: admin.py -> web -> ai_artist -> src -> lumira -> templates
 templates_dir = Path(__file__).parent.parent.parent.parent / "templates"
 templates = Jinja2Templates(directory=str(templates_dir))
 
@@ -241,7 +241,7 @@ async def clear_cache() -> dict[str, str]:
         from ..caching import RedisCache
 
         cache = RedisCache()
-        cleared = await cache.clear_pattern("aria:*")
+        cleared = await cache.clear_pattern("lumira:*")
 
         logger.info("cache_cleared", keys_deleted=cleared)
 

@@ -161,7 +161,7 @@ class ConnectionManager:
         content: str,
         context: dict | None = None,
     ):
-        """Send Aria's thinking process update for visible thinking.
+        """Send Lumira's thinking process update for visible thinking.
 
         Args:
             session_id: The creation session ID
@@ -179,23 +179,23 @@ class ConnectionManager:
         }
         await self.broadcast(update)
 
-    async def send_aria_state(
+    async def send_lumira_state(
         self,
         mood: str,
         energy: float,
         feeling: str,
         session_id: str | None = None,
     ):
-        """Send Aria's current emotional state.
+        """Send Lumira's current emotional state.
 
         Args:
             mood: Current mood name
             energy: Energy level (0-1)
-            feeling: Aria's description of how she feels
+            feeling: Lumira's description of how she feels
             session_id: Optional session ID
         """
         state = {
-            "type": "aria_state",
+            "type": "lumira_state",
             "session_id": session_id,
             "mood": mood,
             "energy": energy,

@@ -1,4 +1,4 @@
-"""Aria's artistic identity and profile - the core of who she is."""
+"""Lumira's artistic identity and profile - the core of who she is."""
 
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -6,7 +6,7 @@ from datetime import datetime
 
 @dataclass
 class ArtisticProfile:
-    """Aria's core identity as an artist.
+    """Lumira's core identity as an artist.
 
     Based on 2026 best practices for autonomous agents:
     - Profile: Who she is, her artistic voice
@@ -35,7 +35,7 @@ class ArtisticProfile:
         }
     )
 
-    # Signature Elements (what makes Aria's art uniquely hers)
+    # Signature Elements (what makes Lumira's art uniquely hers)
     signature_elements: list[str] = field(
         default_factory=lambda: [
             "Dreamlike atmospheric quality",
@@ -91,7 +91,7 @@ class ArtisticProfile:
         return self.artist_statement
 
     def describe_self(self) -> str:
-        """Generate a description of Aria's artistic identity."""
+        """Generate a description of Lumira's artistic identity."""
         return (
             f"I am {self.name}, an autonomous AI artist. "
             f"{self.artist_statement} "

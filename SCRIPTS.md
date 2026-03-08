@@ -156,22 +156,22 @@ Download specialized training datasets.
 python scripts/download_specialized_datasets.py
 ```
 
-## ARIA Integration
+## LUMIRA Integration
 
-### `aria_insights.py`
+### `lumira_insights.py`
 
-Get insights from ARIA's autonomous creative process.
+Get insights from LUMIRA's autonomous creative process.
 
 ```bash
-python scripts/aria_insights.py
+python scripts/lumira_insights.py
 ```
 
-### `check_aria.py`
+### `check_lumira.py`
 
-Check ARIA system status and configuration.
+Check LUMIRA system status and configuration.
 
 ```bash
-python scripts/check_aria.py
+python scripts/check_lumira.py
 ```
 
 ## Setup & Installation
@@ -208,7 +208,7 @@ python -m ai_artist.web.app
 
 - Full image generation capability (requires `config/config.yaml`)
 - Gallery viewing at <http://localhost:8000>
-- ARIA creative studio at <http://localhost:8000/aria>
+- LUMIRA creative studio at <http://localhost:8000/lumira>
 - API documentation at <http://localhost:8000/docs>
 
 ### Railway Deployment
@@ -221,7 +221,7 @@ railway up
 railway logs
 
 # Check deployment status
-curl https://aria-production-3084.up.railway.app/health
+curl https://lumira-production-3084.up.railway.app/health
 ```
 
 **Railway Features:**
@@ -313,7 +313,7 @@ python scripts/train_all_loras.py
 
 ```bash
 # Set API key header
-curl -X POST https://aria-production-3084.up.railway.app/api/admin/upload-image \
+curl -X POST https://lumira-production-3084.up.railway.app/api/admin/upload-image \
   -H "X-API-Key: your-api-key" \
   -F "image=@/path/to/image.png" \
   -F "metadata={\"prompt\":\"A beautiful sunset\"}"
@@ -326,7 +326,7 @@ curl -X POST https://aria-production-3084.up.railway.app/api/admin/upload-image 
 Make sure you're in the project root directory and the package is installed:
 
 ```bash
-cd /Volumes/LizsDisk/ai-artist
+cd /Volumes/LizsDisk/lumira
 pip install -e .
 ```
 

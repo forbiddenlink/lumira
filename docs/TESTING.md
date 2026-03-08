@@ -2,7 +2,7 @@
 
 ## Overview
 
-Comprehensive testing strategy for the AI Artist project to ensure reliability, quality, and maintainability.
+Comprehensive testing strategy for the Lumira project to ensure reliability, quality, and maintainability.
 
 ---
 
@@ -234,7 +234,7 @@ class TestFullWorkflow:
 
     @pytest.fixture
     def artist(self, tmp_path):
-        """Initialize AI Artist with test config"""
+        """Initialize Lumira with test config"""
         config_path = tmp_path / "config.yaml"
         # Write test config
         return AIArtist(config_path)

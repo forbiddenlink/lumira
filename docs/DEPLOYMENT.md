@@ -1,6 +1,6 @@
 # Deployment Guide
 
-Comprehensive guide for deploying AI Artist in production environments.
+Comprehensive guide for deploying Lumira in production environments.
 
 ## Table of Contents
 
@@ -143,7 +143,7 @@ CMD ["python", "src/main.py"]
 version: '3.8'
 
 services:
-  ai-artist:
+  lumira:
     build: .
     runtime: nvidia
     environment:
@@ -204,7 +204,7 @@ aws ec2 run-instances \
   --image-id ami-0c55b159cbfafe1f0 \
   --instance-type g4dn.xlarge \
   --key-name your-key \
-  --security-groups ai-artist-sg \
+  --security-groups lumira-sg \
   --user-data file://user-data.sh
 
 # user-data.sh
@@ -212,7 +212,7 @@ aws ec2 run-instances \
 apt-get update
 apt-get install -y docker.io nvidia-docker2
 systemctl restart docker
-docker run -d --gpus all your-registry/ai-artist:latest
+docker run -d --gpus all your-registry/lumira:latest
 ```
 
 #### Using SageMaker
@@ -221,7 +221,7 @@ docker run -d --gpus all your-registry/ai-artist:latest
 from sagemaker.estimator import Estimator
 
 estimator = Estimator(
-    image_uri="your-registry/ai-artist:latest",
+    image_uri="your-registry/lumira:latest",
     role="arn:aws:iam::account:role/SageMakerRole",
     instance_count=1,
     instance_type="ml.g4dn.xlarge",
@@ -242,7 +242,7 @@ estimator.fit(wait=False)
 
 ```bash
 # Create GKE cluster with GPU nodes
-gcloud container clusters create ai-artist-cluster \
+gcloud container clusters create lumira-cluster \
   --zone us-central1-a \
   --machine-type n1-standard-4 \
   --accelerator type=nvidia-tesla-t4,count=1 \
@@ -264,20 +264,20 @@ kubectl apply -f k8s/deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ai-artist
+  name: lumira
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ai-artist
+      app: lumira
   template:
     metadata:
       labels:
-        app: ai-artist
+        app: lumira
     spec:
       containers:
-      - name: ai-artist
-        image: gcr.io/your-project/ai-artist:latest
+      - name: lumira
+        image: gcr.io/your-project/lumira:latest
         resources:
           limits:
             nvidia.com/gpu: 1
@@ -322,7 +322,7 @@ ws = Workspace.from_config()
 compute_target = AmlCompute(ws, "gpu-cluster")
 
 # Create environment
-env = Environment.from_dockerfile("ai-artist-env", "Dockerfile")
+env = Environment.from_dockerfile("lumira-env", "Dockerfile")
 
 # Configure run
 config = ScriptRunConfig(
@@ -333,7 +333,7 @@ config = ScriptRunConfig(
 )
 
 # Submit experiment
-experiment = Experiment(ws, "ai-artist")
+experiment = Experiment(ws, "lumira")
 run = experiment.submit(config)
 ```
 
@@ -397,10 +397,10 @@ spec:
 apiVersion: keda.sh/v1alpha1
 kind: ScaledObject
 metadata:
-  name: ai-artist-scaler
+  name: lumira-scaler
 spec:
   scaleTargetRef:
-    name: ai-artist
+    name: lumira
   minReplicaCount: 0
   maxReplicaCount: 3
   triggers:
@@ -470,7 +470,7 @@ pip install alembic
 alembic init alembic
 
 # Edit alembic.ini
-sqlalchemy.url = sqlite:///data/ai_artist.db
+sqlalchemy.url = sqlite:///data/lumira.db
 ```
 
 #### Configuration (alembic/env.py)
@@ -637,7 +637,7 @@ jobs:
 3. **Backup before production migrations**
 
    ```bash
-   cp data/ai_artist.db data/ai_artist.db.backup.$(date +%Y%m%d_%H%M%S)
+   cp data/lumira.db data/lumira.db.backup.$(date +%Y%m%d_%H%M%S)
    alembic upgrade head
    ```
 
@@ -708,7 +708,7 @@ def generate_artwork():
 ```yaml
 # prometheus.yml
 scrape_configs:
-  - job_name: 'ai-artist'
+  - job_name: 'lumira'
     static_configs:
       - targets: ['localhost:8000']
     scrape_interval: 15s
@@ -721,7 +721,7 @@ scrape_configs:
 ```json
 {
   "dashboard": {
-    "title": "AI Artist Performance",
+    "title": "Lumira Performance",
     "panels": [
       {
         "title": "Generation Rate",
@@ -759,7 +759,7 @@ scrape_configs:
 ```yaml
 # alerts.yml
 groups:
-  - name: ai-artist
+  - name: lumira
     interval: 30s
     rules:
       - alert: HighErrorRate
@@ -861,7 +861,7 @@ services:
 #### What to Backup
 
 1. **Critical Data (Daily)**
-   - SQLite database (`data/ai_artist.db`)
+   - SQLite database (`data/lumira.db`)
    - Generated gallery images
    - Configuration files
 
@@ -880,7 +880,7 @@ services:
 # backup.sh
 
 DATE=$(date +%Y%m%d_%H%M%S)
-BACKUP_DIR="/backups/ai-artist"
+BACKUP_DIR="/backups/lumira"
 SOURCE_DIR="/app"
 
 # Create backup directory
@@ -888,7 +888,7 @@ mkdir -p "$BACKUP_DIR/$DATE"
 
 # Backup database
 echo "Backing up database..."
-sqlite3 "$SOURCE_DIR/data/ai_artist.db" ".backup '$BACKUP_DIR/$DATE/ai_artist.db'"
+sqlite3 "$SOURCE_DIR/data/lumira.db" ".backup '$BACKUP_DIR/$DATE/lumira.db'"
 
 # Backup gallery (incremental)
 echo "Backing up gallery..."
@@ -923,14 +923,14 @@ from datetime import datetime
 
 def backup_to_s3():
     s3 = boto3.client('s3')
-    bucket = 'ai-artist-backups'
+    bucket = 'lumira-backups'
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 
     # Upload database
     s3.upload_file(
-        'data/ai_artist.db',
+        'data/lumira.db',
         bucket,
-        f'backups/{timestamp}/ai_artist.db'
+        f'backups/{timestamp}/lumira.db'
     )
 
     # Upload models
@@ -949,20 +949,20 @@ def backup_to_s3():
 
 ```bash
 # Restore from backup
-cp /backups/ai-artist/20260115_120000/ai_artist.db data/ai_artist.db
+cp /backups/lumira/20260115_120000/lumira.db data/lumira.db
 
 # Verify integrity
-sqlite3 data/ai_artist.db "PRAGMA integrity_check;"
+sqlite3 data/lumira.db "PRAGMA integrity_check;"
 
 # Restart application
-docker-compose restart ai-artist
+docker-compose restart lumira
 ```
 
 #### Model Recovery
 
 ```bash
 # Restore models
-tar -xzf /backups/ai-artist/20260115_120000/models.tar.gz -C /app/
+tar -xzf /backups/lumira/20260115_120000/models.tar.gz -C /app/
 
 # Verify model files
 python -c "from safetensors import safe_open;
@@ -976,7 +976,7 @@ python -c "from safetensors import safe_open;
 # restore.sh
 
 BACKUP_DATE=$1  # e.g., 20260115_120000
-BACKUP_DIR="/backups/ai-artist/$BACKUP_DATE"
+BACKUP_DIR="/backups/lumira/$BACKUP_DATE"
 
 if [ ! -d "$BACKUP_DIR" ]; then
     echo "Backup not found: $BACKUP_DIR"
@@ -989,7 +989,7 @@ echo "Restoring from backup: $BACKUP_DATE"
 docker-compose down
 
 # Restore database
-cp "$BACKUP_DIR/ai_artist.db" data/ai_artist.db
+cp "$BACKUP_DIR/lumira.db" data/lumira.db
 
 # Restore gallery
 rsync -av "$BACKUP_DIR/gallery/" gallery/

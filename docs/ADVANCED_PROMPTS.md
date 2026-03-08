@@ -176,7 +176,7 @@ positive, negative = manager.apply_preset("Cinematic", emphasized)
 
 ## API Integration
 
-These features are designed to integrate with Aria's main workflow:
+These features are designed to integrate with Lumira's main workflow:
 
 ```python
 from ai_artist.main import AIArtist

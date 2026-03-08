@@ -53,7 +53,7 @@ from .helpers import (
     is_valid_image,
     load_image_metadata,
 )
-from .lumira_routes import router as aria_router
+from .lumira_routes import router as lumira_router
 from .metrics_routes import router as metrics_router
 from .middleware import (
     ErrorHandlingMiddleware,
@@ -365,7 +365,7 @@ app.add_middleware(ErrorHandlingMiddleware)
 
 # Include routers
 app.include_router(health_router)
-app.include_router(aria_router)
+app.include_router(lumira_router)
 app.include_router(prompt_router)
 app.include_router(feedback_router)
 app.include_router(gallery_router)
@@ -391,15 +391,15 @@ async def root(request: Request):
 
 
 @app.get("/lumira", response_class=HTMLResponse)
-async def aria_page(request: Request):
-    """Serve Aria's creative studio.
+async def lumira_page(request: Request):
+    """Serve Lumira's creative studio.
 
     Personality, mood, and creation interface.
     """
     return templates.TemplateResponse(
         request,
         "lumira.html",
-        {"title": "Aria | Autonomous AI Artist"},
+        {"title": "Lumira | Autonomous AI Artist"},
     )
 
 

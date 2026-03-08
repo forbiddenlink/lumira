@@ -1,4 +1,4 @@
-"""Aria API routes - personality, state, and creation endpoints."""
+"""Lumira API routes - personality, state, and creation endpoints."""
 
 import asyncio
 import io
@@ -33,14 +33,14 @@ logger = get_logger(__name__)
 limiter = Limiter(key_func=get_remote_address)
 
 # Create router
-router = APIRouter(prefix="/api/lumira", tags=["aria"])
+router = APIRouter(prefix="/api/lumira", tags=["lumira"])
 
-# Singleton state for Aria (initialized on first request)
-_aria_state: dict[str, Any] | None = None
+# Singleton state for Lumira (initialized on first request)
+_lumira_state: dict[str, Any] | None = None
 
 
-class AriaStateResponse(BaseModel):
-    """Aria's current state."""
+class LumiraStateResponse(BaseModel):
+    """Lumira's current state."""
 
     name: str
     mood: str
@@ -54,7 +54,7 @@ class AriaStateResponse(BaseModel):
     style_axes: dict[str, float] | None = None
 
 
-class AriaCreateResponse(BaseModel):
+class LumiraCreateResponse(BaseModel):
     """Response from creation endpoint."""
 
     success: bool
@@ -69,14 +69,14 @@ class AriaCreateResponse(BaseModel):
     error: str | None = None
 
 
-class AriaStatementResponse(BaseModel):
+class LumiraStatementResponse(BaseModel):
     """Artist statement response."""
 
     statement: str
     name: str
 
 
-class AriaEvolveResponse(BaseModel):
+class LumiraEvolveResponse(BaseModel):
     """Response from evolve endpoint."""
 
     mood: str
@@ -101,7 +101,7 @@ class PortfolioPainting(BaseModel):
     critique_history: list[dict[str, Any]] | None = None
 
 
-class AriaPortfolioResponse(BaseModel):
+class LumiraPortfolioResponse(BaseModel):
     """Response from portfolio endpoint."""
 
     count: int
@@ -117,7 +117,7 @@ class EvolutionSummary(BaseModel):
     phases_count: int
 
 
-class AriaEvolutionResponse(BaseModel):
+class LumiraEvolutionResponse(BaseModel):
     """Response from evolution endpoint."""
 
     phases: list[dict[str, Any]] = []
@@ -160,7 +160,7 @@ class CreateWithReferenceRequest(BaseModel):
 
 
 class MoodInfluenceRequest(BaseModel):
-    """Request to influence Aria's mood."""
+    """Request to influence Lumira's mood."""
 
     influence: str  # "energize", "calm", "provoke", "inspire"
     intensity: float = Field(
@@ -289,13 +289,13 @@ class BatchCreateResponse(BaseModel):
 REFERENCE_IMAGES_PATH = Path("gallery/references")
 
 
-def _get_aria_state() -> dict[str, Any]:
-    """Get or initialize Aria's state."""
-    global _aria_state
+def _get_lumira_state() -> dict[str, Any]:
+    """Get or initialize Lumira's state."""
+    global _lumira_state
 
-    if _aria_state is None:
+    if _lumira_state is None:
         # Initialize fresh state
-        _aria_state = {
+        _lumira_state = {
             "name": "Lumira",
             "mood_system": MoodSystem(),
             "memory": EnhancedMemorySystem(),
@@ -312,11 +312,11 @@ def _get_aria_state() -> dict[str, Any]:
             },
         }
         logger.info(
-            "aria_state_initialized",
-            mood=_aria_state["mood_system"].current_mood.value,
+            "lumira_state_initialized",
+            mood=_lumira_state["mood_system"].current_mood.value,
         )
 
-    return _aria_state
+    return _lumira_state
 
 
 async def _load_portfolio_from_gallery() -> list[dict]:
@@ -365,11 +365,11 @@ async def _load_portfolio_from_gallery() -> list[dict]:
     return portfolio[:50]  # Limit to 50 most recent
 
 
-@router.get("/state", response_model=AriaStateResponse)
+@router.get("/state", response_model=LumiraStateResponse)
 @limiter.limit("60/minute")
-async def get_aria_state(request: Request):
-    """Get Aria's current state including mood, energy, personality, and experience."""
-    state = _get_aria_state()
+async def get_lumira_state(request: Request):
+    """Get Lumira's current state including mood, energy, personality, and experience."""
+    state = _get_lumira_state()
     mood_system = state["mood_system"]
     memory = state["memory"]
 
@@ -389,7 +389,7 @@ async def get_aria_state(request: Request):
         mood_system.style_axes.to_dict() if hasattr(mood_system, "style_axes") else None
     )
 
-    return AriaStateResponse(
+    return LumiraStateResponse(
         name=state["name"],
         mood=mood_system.current_mood.value,
         mood_intensity=getattr(mood_system, "mood_intensity", 0.7),
@@ -403,10 +403,10 @@ async def get_aria_state(request: Request):
     )
 
 
-@router.post("/create", response_model=AriaCreateResponse)
+@router.post("/create", response_model=LumiraCreateResponse)
 @limiter.limit("5/minute")
 async def create_artwork(request: Request, db: Session = Depends(get_db)):
-    """Trigger Aria to create a new artwork with actual image generation.
+    """Trigger Lumira to create a new artwork with actual image generation.
 
     Returns concept info immediately and starts background generation.
     The session_id can be used to track progress via WebSocket.
@@ -415,7 +415,7 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
     from ..inspiration.autonomous import AutonomousInspiration
     from ..web.websocket import manager as ws_manager
 
-    state = _get_aria_state()
+    state = _get_lumira_state()
     mood_system = state["mood_system"]
     profile = state["profile"]
     personality = state["personality"]
@@ -495,7 +495,7 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
         )
 
         logger.info(
-            "aria_concept_created",
+            "lumira_concept_created",
             subject=subject,
             style=style,
             mood=mood.value,
@@ -642,7 +642,7 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
                     )
 
                     logger.info(
-                        "aria_image_generated",
+                        "lumira_image_generated",
                         session_id=session_id,
                         image_url=image_url,
                     )
@@ -665,7 +665,7 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
 
                 error_details = traceback.format_exc()
                 logger.error(
-                    "aria_generation_failed",
+                    "lumira_generation_failed",
                     error=str(e),
                     session_id=session_id,
                     traceback=error_details,
@@ -692,7 +692,7 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
 
         task.add_done_callback(handle_task_exception)
 
-        return AriaCreateResponse(
+        return LumiraCreateResponse(
             success=True,
             subject=subject,
             style=style,
@@ -704,15 +704,15 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
         )
 
     except Exception as e:
-        logger.error("aria_create_failed", error=str(e))
-        return AriaCreateResponse(success=False, error=str(e))
+        logger.error("lumira_create_failed", error=str(e))
+        return LumiraCreateResponse(success=False, error=str(e))
 
 
-@router.post("/evolve", response_model=AriaEvolveResponse)
+@router.post("/evolve", response_model=LumiraEvolveResponse)
 @limiter.limit("10/minute")
 async def evolve_state(request: Request):
-    """Force Aria's state to evolve."""
-    state = _get_aria_state()
+    """Force Lumira's state to evolve."""
+    state = _get_lumira_state()
     mood_system = state["mood_system"]
     personality = state["personality"]
 
@@ -727,13 +727,13 @@ async def evolve_state(request: Request):
         personality[trait] = max(0.0, min(1.0, personality[trait] + change))
 
     logger.info(
-        "aria_evolved",
+        "lumira_evolved",
         old_mood=old_mood.value,
         new_mood=new_mood.value,
         energy=mood_system.energy_level,
     )
 
-    return AriaEvolveResponse(
+    return LumiraEvolveResponse(
         mood=new_mood.value,
         energy=mood_system.energy_level,
         feeling=mood_system.describe_feeling(),
@@ -747,9 +747,9 @@ async def evolve_state(request: Request):
 async def influence_mood(
     request: Request, body: MoodInfluenceRequest
 ) -> MoodInfluenceResponse:
-    """Allow users to influence Aria's current mood.
+    """Allow users to influence Lumira's current mood.
 
-    This enables interactive engagement with Aria's emotional state.
+    This enables interactive engagement with Lumira's emotional state.
     The influence is probabilistic - higher intensity means more likely to shift.
 
     Influence types:
@@ -758,7 +758,7 @@ async def influence_mood(
     - provoke: Shift toward chaotic, rebellious, or restless moods
     - inspire: Shift toward playful, bold, or energized moods
     """
-    state = _get_aria_state()
+    state = _get_lumira_state()
     mood_system = state["mood_system"]
 
     previous_mood = mood_system.current_mood.value
@@ -816,8 +816,8 @@ async def influence_mood(
 @router.get("/memory", response_model=MemoryDashboardResponse)
 @limiter.limit("30/minute")
 async def get_memory_dashboard(request: Request) -> MemoryDashboardResponse:
-    """Get Aria's memory dashboard showing what she has learned."""
-    state = _get_aria_state()
+    """Get Lumira's memory dashboard showing what she has learned."""
+    state = _get_lumira_state()
 
     recent_memories: list[MemoryInsight] = []
     learned_preferences: dict[str, Any] = {}
@@ -898,8 +898,8 @@ async def get_memory_dashboard(request: Request) -> MemoryDashboardResponse:
 @router.get("/mood/evolution", response_model=MoodEvolutionResponse)
 @limiter.limit("30/minute")
 async def get_mood_evolution(request: Request) -> MoodEvolutionResponse:
-    """Get Aria's mood evolution history."""
-    state = _get_aria_state()
+    """Get Lumira's mood evolution history."""
+    state = _get_lumira_state()
 
     history: list[MoodHistoryEntry] = []
     mood_counts: dict[str, int] = {}
@@ -981,11 +981,11 @@ async def get_mood_evolution(request: Request) -> MoodEvolutionResponse:
     )
 
 
-@router.get("/statement", response_model=AriaStatementResponse)
+@router.get("/statement", response_model=LumiraStatementResponse)
 @limiter.limit("30/minute")
 async def get_artist_statement(request: Request):
-    """Get Aria's artist statement."""
-    state = _get_aria_state()
+    """Get Lumira's artist statement."""
+    state = _get_lumira_state()
     profile = state["profile"]
     mood_system = state["mood_system"]
 
@@ -1009,22 +1009,22 @@ async def get_artist_statement(request: Request):
 
     full_statement = statement + "\n\n" + mood_reflections.get(mood, "")
 
-    return AriaStatementResponse(statement=full_statement, name=state["name"])
+    return LumiraStatementResponse(statement=full_statement, name=state["name"])
 
 
-@router.get("/portfolio", response_model=AriaPortfolioResponse)
+@router.get("/portfolio", response_model=LumiraPortfolioResponse)
 @limiter.limit("30/minute")
 async def get_portfolio(request: Request, limit: int = 20):
-    """Get Aria's portfolio of creations."""
+    """Get Lumira's portfolio of creations."""
     portfolio_dicts = await _load_portfolio_from_gallery()
     paintings = [PortfolioPainting.model_validate(p) for p in portfolio_dicts[:limit]]
-    return AriaPortfolioResponse(count=len(portfolio_dicts), paintings=paintings)
+    return LumiraPortfolioResponse(count=len(portfolio_dicts), paintings=paintings)
 
 
-@router.get("/evolution", response_model=AriaEvolutionResponse)
+@router.get("/evolution", response_model=LumiraEvolutionResponse)
 @limiter.limit("30/minute")
 async def get_evolution(request: Request):
-    """Get Aria's artistic evolution timeline.
+    """Get Lumira's artistic evolution timeline.
 
     Returns:
         Evolution data including:
@@ -1034,7 +1034,7 @@ async def get_evolution(request: Request):
         - mood_distribution: Overall mood patterns
         - score_trend: Quality scores over time
     """
-    state = _get_aria_state()
+    state = _get_lumira_state()
     memory = state["memory"]
 
     # Get evolution data from enhanced memory
@@ -1065,7 +1065,7 @@ async def get_evolution(request: Request):
         milestones=len(evolution.get("milestones", [])),
     )
 
-    return AriaEvolutionResponse(
+    return LumiraEvolutionResponse(
         phases=evolution.get("phases", []),
         milestones=evolution.get("milestones", []),
         style_evolution=evolution.get("style_evolution", []),
@@ -1158,7 +1158,7 @@ async def generate_async(
             message="Job queue is not available. Please use sync /create endpoint instead.",
         )
 
-    state = _get_aria_state()
+    state = _get_lumira_state()
     mood_system = state["mood_system"]
 
     # Generate prompt if not provided (mood-based)
@@ -1206,7 +1206,7 @@ async def generate_async(
         priority=generation_request.priority,
         meta={
             "mood": mood_system.current_mood.value,
-            "source": "aria_api",
+            "source": "lumira_api",
         },
     )
 
@@ -1541,7 +1541,7 @@ async def delete_reference_image(request: Request, reference_id: str):
     )
 
 
-@router.post("/create-with-reference", response_model=AriaCreateResponse)
+@router.post("/create-with-reference", response_model=LumiraCreateResponse)
 @limiter.limit("5/minute")
 async def create_with_reference(
     request: Request,
@@ -1563,7 +1563,7 @@ async def create_with_reference(
     from ..inspiration.autonomous import AutonomousInspiration
     from ..web.websocket import manager as ws_manager
 
-    state = _get_aria_state()
+    state = _get_lumira_state()
     mood_system = state["mood_system"]
     profile = state["profile"]
     personality = state["personality"]
@@ -1585,7 +1585,7 @@ async def create_with_reference(
                 continue
 
     if reference_path is None or not reference_path.exists():
-        return AriaCreateResponse(
+        return LumiraCreateResponse(
             success=False,
             error=f"Reference image not found: {body.reference_id}",
         )
@@ -1649,7 +1649,7 @@ async def create_with_reference(
         )
 
         logger.info(
-            "aria_reference_concept_created",
+            "lumira_reference_concept_created",
             subject=subject,
             style=style,
             reference_id=body.reference_id,
@@ -1797,7 +1797,7 @@ async def create_with_reference(
 
                 error_details = traceback.format_exc()
                 logger.error(
-                    "aria_reference_generation_failed",
+                    "lumira_reference_generation_failed",
                     error=str(e),
                     session_id=session_id,
                     traceback=error_details,
@@ -1822,7 +1822,7 @@ async def create_with_reference(
 
         task.add_done_callback(handle_task_exception)
 
-        return AriaCreateResponse(
+        return LumiraCreateResponse(
             success=True,
             subject=subject,
             style=style,
@@ -1834,8 +1834,8 @@ async def create_with_reference(
         )
 
     except Exception as e:
-        logger.error("aria_create_with_reference_failed", error=str(e))
-        return AriaCreateResponse(success=False, error=str(e))
+        logger.error("lumira_create_with_reference_failed", error=str(e))
+        return LumiraCreateResponse(success=False, error=str(e))
 
 
 # =============================================================================
@@ -1843,13 +1843,13 @@ async def create_with_reference(
 # =============================================================================
 
 
-@router.post("/img2img", response_model=AriaCreateResponse)
+@router.post("/img2img", response_model=LumiraCreateResponse)
 @limiter.limit("10/minute")
 async def img2img_generation(
     request: Request,
     img2img_request: Img2ImgRequest,
     db: Session = Depends(get_db),
-) -> AriaCreateResponse:
+) -> LumiraCreateResponse:
     """Generate a new artwork based on an existing image.
 
     This endpoint supports two modes:
@@ -1865,7 +1865,7 @@ async def img2img_generation(
         img2img_request: Request with image source and generation parameters
 
     Returns:
-        AriaCreateResponse with the generated image URL
+        LumiraCreateResponse with the generated image URL
     """
     import base64
     from io import BytesIO
@@ -1911,8 +1911,8 @@ async def img2img_generation(
     if not prompt:
         prompt = "artistic interpretation, high quality"
 
-    # Get Aria's current state for the generation
-    state = _get_aria_state()
+    # Get Lumira's current state for the generation
+    state = _get_lumira_state()
     mood_system = state["mood_system"]
     mood = mood_system.current_mood
 
@@ -1994,7 +1994,7 @@ async def img2img_generation(
                 image_url=image_url,
             )
 
-            return AriaCreateResponse(
+            return LumiraCreateResponse(
                 success=True,
                 image_url=image_url,
                 prompt=prompt,
@@ -2052,7 +2052,7 @@ async def generate_variations(
     source_pil = Image.open(gallery_path)
     original_prompt = source_img.prompt or "artwork"
 
-    state = _get_aria_state()
+    state = _get_lumira_state()
     mood_system = state["mood_system"]
     mood = mood_system.current_mood
 

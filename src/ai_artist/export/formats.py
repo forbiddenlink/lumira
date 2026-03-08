@@ -141,7 +141,7 @@ class AdvancedExporter:
         image: Image.Image,
         output_path: Path,
         title: str | None = None,
-        author: str = "AI Artist (Aria)",
+        author: str = "Lumira",
     ) -> Path:
         """Export image as PDF with metadata.
 

@@ -1,7 +1,7 @@
-# AI Artist GPU-Enabled Dockerfile
+# Lumira GPU-Enabled Dockerfile
 # Requires nvidia-docker / NVIDIA Container Toolkit
-# Build: docker build -f Dockerfile.gpu -t ai-artist:gpu .
-# Run: docker run --gpus all -p 8000:8000 ai-artist:gpu
+# Build: docker build -f Dockerfile.gpu -t lumira:gpu .
+# Run: docker run --gpus all -p 8000:8000 lumira:gpu
 
 # ============================================
 # Stage 1: Builder

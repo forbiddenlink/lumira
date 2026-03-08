@@ -1,6 +1,6 @@
 # 🔧 Troubleshooting Guide
 
-Common issues and their solutions for AI Artist.
+Common issues and their solutions for Lumira.
 
 ---
 
@@ -210,10 +210,10 @@ generation:
 
 ```bash
 # Bad prompt
-ai-artist --theme "dog"
+lumira --theme "dog"
 
 # Good prompt
-ai-artist --theme "a majestic golden retriever, professional photography, detailed fur, natural lighting, 8k"
+lumira --theme "a majestic golden retriever, professional photography, detailed fur, natural lighting, 8k"
 ```
 
 **3. Use negative prompts:**
@@ -302,13 +302,13 @@ timeout = 30  # seconds
 
 ```bash
 # Find processes using the database
-lsof data/ai_artist.db
+lsof data/lumira.db
 
 # Kill the process
 kill -9 <PID>
 
 # Remove journal file
-rm data/ai_artist.db-journal
+rm data/lumira.db-journal
 
 # Restart application
 ```
@@ -330,13 +330,13 @@ alembic upgrade head
 
 ```bash
 # Backup first
-cp data/ai_artist.db data/ai_artist.db.backup
+cp data/lumira.db data/lumira.db.backup
 
 # Try to repair
-sqlite3 data/ai_artist.db "PRAGMA integrity_check"
+sqlite3 data/lumira.db "PRAGMA integrity_check"
 
 # If corrupted, restore from backup or recreate
-rm data/ai_artist.db
+rm data/lumira.db
 alembic upgrade head
 ```
 
@@ -353,7 +353,7 @@ alembic upgrade head
 **Option 1: Use different port**
 
 ```bash
-ai-artist-web --port 8080
+lumira-web --port 8080
 ```
 
 **Option 2: Kill process using port**
@@ -540,13 +540,13 @@ find gallery/ -type f -mtime +30 -delete
 
 ```bash
 # View recent logs
-tail -n 100 logs/ai_artist.log
+tail -n 100 logs/lumira.log
 
 # Watch logs in real-time
-tail -f logs/ai_artist.log
+tail -f logs/lumira.log
 
 # Search for errors
-grep ERROR logs/ai_artist.log
+grep ERROR logs/lumira.log
 ```
 
 ### 2. Enable Debug Mode
@@ -597,7 +597,7 @@ uname -a  # or `systemd` on Windows
 | Black images (MPS) | Set `dtype: "float32"` |
 | Rate limit | Wait or use Pexels |
 | Port in use | Use `--port 8080` |
-| Database locked | `rm data/ai_artist.db-journal` |
+| Database locked | `rm data/lumira.db-journal` |
 | Slow generation | Check device with `torch.cuda.is_available()` |
 | LoRA not working | Increase `lora_scale` to 1.0 |
 

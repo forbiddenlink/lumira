@@ -1,4 +1,4 @@
-"""Expanded tests for Aria's internal critic system.
+"""Expanded tests for Lumira's internal critic system.
 
 This file supplements tests/test_critic.py with additional coverage.
 """

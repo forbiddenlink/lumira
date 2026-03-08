@@ -1,4 +1,4 @@
-# Aria Major Enhancements Plan
+# Lumira Major Enhancements Plan
 
 **Created:** 2026-02-01
 **Status:** Phases 1-4 Complete (Core Technical Enhancements Done)

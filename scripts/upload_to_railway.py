@@ -126,7 +126,7 @@ def main():
     parser = argparse.ArgumentParser(description="Upload images to Railway deployment")
     parser.add_argument(
         "--railway-url",
-        default=os.getenv("RAILWAY_URL", "https://aria-production-3084.up.railway.app"),
+        default=os.getenv("RAILWAY_URL", "https://lumira-production-3084.up.railway.app"),
         help="Railway deployment URL",
     )
     parser.add_argument(

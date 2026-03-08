@@ -1,6 +1,6 @@
-"""Aria's visible thinking process - ReAct pattern for artistic decisions.
+"""Lumira's visible thinking process - ReAct pattern for artistic decisions.
 
-The cognition system makes Aria's creative process transparent:
+The cognition system makes Lumira's creative process transparent:
 - OBSERVE: What she notices about context and environment
 - REFLECT: Her thoughts and associations
 - DECIDE: Her choices with reasoning
@@ -20,7 +20,7 @@ logger = get_logger(__name__)
 
 
 class ThoughtType(str, Enum):
-    """Types of thoughts in Aria's thinking process."""
+    """Types of thoughts in Lumira's thinking process."""
 
     OBSERVE = "observe"  # Noticing something
     REFLECT = "reflect"  # Contemplating or associating
@@ -30,7 +30,7 @@ class ThoughtType(str, Enum):
 
 
 class Thought:
-    """A single thought in Aria's thinking process."""
+    """A single thought in Lumira's thinking process."""
 
     def __init__(
         self,
@@ -60,7 +60,7 @@ class Thought:
 
 class ThinkingProcess:
     """
-    Manages Aria's visible thinking during creative work.
+    Manages Lumira's visible thinking during creative work.
 
     Implements the ReAct pattern (Reason + Act) for artistic decisions:
     1. Observe context (environment, mood, memories)
@@ -114,7 +114,7 @@ class ThinkingProcess:
 
     def observe(self, context: dict[str, Any]) -> str:
         """
-        Observe and narrate what Aria notices about her context.
+        Observe and narrate what Lumira notices about her context.
 
         Args:
             context: Dictionary with keys like:
@@ -187,7 +187,7 @@ class ThinkingProcess:
         Reflect on a topic, drawing on memory and associations.
 
         Args:
-            topic: What Aria is reflecting on
+            topic: What Lumira is reflecting on
 
         Returns:
             The reflection as a string

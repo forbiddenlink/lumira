@@ -64,4 +64,4 @@ def test_get_attribution():
     attribution = client.get_attribution(photo)
     assert "Test User" in attribution
     assert "Unsplash" in attribution
-    assert "utm_source=ai-artist" in attribution
+    assert "utm_source=lumira" in attribution

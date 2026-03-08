@@ -135,7 +135,7 @@ class RedisCache:
         """Delete all keys matching pattern.
 
         Args:
-            pattern: Redis key pattern (e.g., "aria:*")
+            pattern: Redis key pattern (e.g., "lumira:*")
 
         Returns:
             Number of keys deleted
@@ -226,7 +226,7 @@ async def cache_generation(
     param_str = json.dumps(params, sort_keys=True)
     key_data = f"{prompt}:{param_str}"
     key_hash = hashlib.sha256(key_data.encode()).hexdigest()[:16]
-    return f"aria:gen:{key_hash}"
+    return f"lumira:gen:{key_hash}"
 
 
 async def cache_curation(
@@ -244,4 +244,4 @@ async def cache_curation(
     Returns:
         Cache key
     """
-    return f"aria:curation:{image_hash}"
+    return f"lumira:curation:{image_hash}"

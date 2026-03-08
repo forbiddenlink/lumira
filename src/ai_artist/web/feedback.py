@@ -93,7 +93,7 @@ async def submit_feedback(feedback: FeedbackRequest) -> FeedbackResponse:
 
         return FeedbackResponse(
             success=True,
-            message="Feedback recorded successfully. Aria is learning! 🧠",
+            message="Feedback recorded successfully. Lumira is learning! 🧠",
             learning_stats=stats,
         )
 
@@ -112,7 +112,7 @@ async def get_learning_stats() -> LearningStatsResponse:
     """
     Get current learning system statistics.
 
-    Shows what Aria has learned from user feedback.
+    Shows what Lumira has learned from user feedback.
     """
     try:
         learner = get_adaptive_learner()
@@ -134,7 +134,7 @@ async def get_suggestions(mood: str | None = None):
     Get AI suggestions based on learned preferences.
 
     Returns recommended model and parameters based on what
-    Aria has learned works best.
+    Lumira has learned works best.
     """
     try:
         learner = get_adaptive_learner()
