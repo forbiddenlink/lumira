@@ -20,6 +20,9 @@ logger = get_logger(__name__)
 # FLUX model identifiers
 FLUX_SCHNELL = "black-forest-labs/FLUX.1-schnell"  # Fast generation (4 steps)
 FLUX_DEV = "black-forest-labs/FLUX.1-dev"  # Higher quality (50 steps)
+# FLUX 2.x (Nov 2025, 32B params) - when available for local inference
+FLUX2_DEV = "black-forest-labs/FLUX.2-dev"  # Fast & efficient
+FLUX2_PRO = "black-forest-labs/FLUX.2-pro"  # Production balanced
 
 
 class FluxGenerator:
@@ -49,6 +52,16 @@ class FluxGenerator:
             "default_steps": 50,
             "uses_guidance": True,
             "description": "High quality generation",
+        },
+        FLUX2_DEV: {
+            "default_steps": 28,
+            "uses_guidance": True,
+            "description": "FLUX 2 fast & efficient (32B)",
+        },
+        FLUX2_PRO: {
+            "default_steps": 35,
+            "uses_guidance": True,
+            "description": "FLUX 2 production balanced (32B)",
         },
     }
 
@@ -416,14 +429,15 @@ class FluxGenerator:
             logger.info("flux_model_unloaded")
 
 
-def get_flux_model_for_mood(mood: str) -> str:
+def get_flux_model_for_mood(mood: str, use_flux2: bool = False) -> str:
     """Get the appropriate FLUX model for a given mood.
 
-    Contemplative/Introspective moods use FLUX.1-dev for higher quality.
-    Energized/Chaotic moods use FLUX.1-schnell for faster iteration.
+    Contemplative/Introspective moods use higher quality models.
+    Energized/Chaotic moods use faster models for iteration.
 
     Args:
         mood: The current mood (e.g., "contemplative", "chaotic")
+        use_flux2: Whether to prefer FLUX 2.x models (better quality, requires API)
 
     Returns:
         FLUX model identifier
@@ -448,10 +462,17 @@ def get_flux_model_for_mood(mood: str) -> str:
 
     mood_lower = mood.lower()
 
-    if mood_lower in quality_moods:
-        return FLUX_DEV
-    elif mood_lower in fast_moods:
-        return FLUX_SCHNELL
+    if use_flux2:
+        # FLUX 2.x models (32B params, Nov 2025)
+        if mood_lower in quality_moods:
+            return FLUX2_PRO  # Best quality for contemplative work
+        else:
+            return FLUX2_DEV  # Fast iteration for energetic moods
     else:
-        # Default to schnell for unknown moods (faster feedback)
-        return FLUX_SCHNELL
+        # FLUX 1.x models (local inference)
+        if mood_lower in quality_moods:
+            return FLUX_DEV
+        elif mood_lower in fast_moods:
+            return FLUX_SCHNELL
+        else:
+            return FLUX_SCHNELL

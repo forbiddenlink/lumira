@@ -5,6 +5,7 @@ Enhanced with:
 - Full reproducibility information (seed, model, parameters)
 - Mood, style axes, and experience level tracking
 - Metadata extraction utilities
+- C2PA content provenance (EU AI Act compliance)
 """
 
 import contextlib
@@ -16,6 +17,7 @@ from typing import Any
 from PIL import Image, PngImagePlugin
 
 from ..curation.curator import is_black_or_blank
+from ..export.provenance import ProvenanceManager
 from ..utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -50,9 +52,24 @@ METADATA_KEYS = {
 class GalleryManager:
     """Manage gallery storage and organization."""
 
-    def __init__(self, gallery_path: Path):
+    def __init__(self, gallery_path: Path, enable_c2pa: bool = True):
+        """Initialize gallery manager.
+
+        Args:
+            gallery_path: Path to gallery directory
+            enable_c2pa: Enable C2PA provenance metadata embedding
+        """
         self.gallery_path = gallery_path
         self.gallery_path.mkdir(parents=True, exist_ok=True)
+        self.enable_c2pa = enable_c2pa
+        self._provenance_manager: ProvenanceManager | None = None
+
+    @property
+    def provenance_manager(self) -> ProvenanceManager:
+        """Lazy-loaded provenance manager."""
+        if self._provenance_manager is None:
+            self._provenance_manager = ProvenanceManager()
+        return self._provenance_manager
 
     def save_image(
         self,
@@ -154,8 +171,41 @@ class GalleryManager:
         pnginfo.add_text("generator", "LUMIRA - Autonomous AI Artist")
         pnginfo.add_text("generation_timestamp", now.isoformat())
 
-        # Save image
+        # Save image with basic PNG metadata
         image.save(image_path, pnginfo=pnginfo)
+
+        # Embed C2PA provenance metadata (EU AI Act compliance)
+        if self.enable_c2pa:
+            try:
+                self.provenance_manager.set_model(
+                    model_name=metadata.get("model", "unknown"),
+                    model_version=metadata.get("model_version"),
+                )
+                self.provenance_manager.embed_provenance(
+                    image=image,
+                    output_path=image_path,
+                    prompt=prompt,
+                    negative_prompt=metadata.get("negative_prompt", ""),
+                    seed=metadata.get("seed"),
+                    steps=metadata.get("steps"),
+                    guidance_scale=metadata.get(
+                        "guidance_scale", metadata.get("cfg_scale")
+                    ),
+                    mood=lumira_state.get("mood") if lumira_state else None,
+                    style=lumira_state.get("style") if lumira_state else None,
+                    featured=featured,
+                    aesthetic_score=(
+                        lumira_state.get("aesthetic_score") if lumira_state else None
+                    ),
+                )
+                logger.debug("c2pa_provenance_embedded", path=str(image_path))
+            except Exception as e:
+                logger.warning(
+                    "c2pa_provenance_failed",
+                    path=str(image_path),
+                    error=str(e),
+                    message="Image saved without C2PA provenance",
+                )
 
         # Save sidecar metadata file (human-readable, complete)
         sidecar_data = {

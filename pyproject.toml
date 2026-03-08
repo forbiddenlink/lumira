@@ -40,6 +40,7 @@ dependencies = [
     "redis>=5.0.0",  # Required for caching and job queue
     "rq>=1.16.0",  # Redis job queue
     "replicate>=1.0.0",  # Cloud image generation via Replicate API
+    "anthropic>=0.84.0",
 ]
 
 [project.scripts]
@@ -95,6 +96,9 @@ flux = [
 ]
 controlnet = [
     "controlnet-aux>=0.0.9",
+]
+provenance = [
+    "c2pa-python>=0.6.0",  # C2PA content provenance (EU AI Act compliance)
 ]
 queue = [
     "rq-dashboard>=0.7.0",  # Optional admin UI (rq is now in core deps)

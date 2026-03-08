@@ -18,14 +18,28 @@ logger = get_logger(__name__)
 
 # Popular Replicate models
 REPLICATE_MODELS = {
+    # SDXL models
     "sdxl": "stability-ai/sdxl:7762fd07cf82c948538e41f63f77d685e02b063e37e496e96eefd46c929f9bdc",
+    "dreamshaper": "cjwbw/dreamshaper-xl-v2-turbo:0a1710e0187b01a255c57571dac757571241127397f37fc97d90f18460fc3383",
+    # FLUX 1.x models
     "flux-schnell": "black-forest-labs/flux-schnell",
     "flux-dev": "black-forest-labs/flux-dev",
     "flux-pro": "black-forest-labs/flux-1.1-pro",
-    "dreamshaper": "cjwbw/dreamshaper-xl-v2-turbo:0a1710e0187b01a255c57571dac757571241127397f37fc97d90f18460fc3383",
+    "flux-pro-ultra": "black-forest-labs/flux-1.1-pro-ultra",  # 4MP, enhanced photorealism
+    # FLUX 2.x models (Nov 2025, 32B params - state of the art)
+    "flux2-pro": "black-forest-labs/flux-2-pro",  # Production balanced (6s, $0.015)
+    "flux2-dev": "black-forest-labs/flux-2-dev",  # Fast & cheap (2.5s, $0.012/MP)
+    "flux2-flex": "black-forest-labs/flux-2-flex",  # Max quality (22s, $0.06/MP)
+    "flux2-max": "black-forest-labs/flux-2-max",  # Premium quality
+    # FLUX control models
+    "flux-canny": "black-forest-labs/flux-canny-pro",  # Edge-guided generation
+    "flux-depth": "black-forest-labs/flux-depth-pro",  # Depth-guided generation
+    "flux-fill": "black-forest-labs/flux-fill-pro",  # Inpainting
+    "flux-redux": "black-forest-labs/flux-redux-dev",  # Image variations
 }
 
-DEFAULT_MODEL = "flux-schnell"
+# Default to FLUX 2 Pro for best quality/speed balance
+DEFAULT_MODEL = "flux2-pro"
 
 
 class ReplicateGenerator:
@@ -134,6 +148,9 @@ class ReplicateGenerator:
         # Build input based on model type (check actual model_id, not original model_name)
         is_flux_model = "flux" in self.model_id.lower()
         is_flux_schnell = "schnell" in self.model_id.lower()
+        is_flux2 = (
+            "flux-2" in self.model_id.lower() or "flux2" in self.model_name.lower()
+        )
 
         if is_flux_model:
             # FLUX models use different parameters
@@ -144,13 +161,25 @@ class ReplicateGenerator:
                 "output_format": "png",
                 "output_quality": 90,
             }
-            # FLUX schnell only accepts up to 4 steps
-            if is_flux_schnell:
-                input_params["num_inference_steps"] = min(num_inference_steps, 4)
-            else:
-                # dev/pro models
+
+            if is_flux2:
+                # FLUX 2.x models (32B params, Nov 2025)
+                # Support higher steps and have better prompt understanding
                 input_params["num_inference_steps"] = min(num_inference_steps, 50)
                 input_params["guidance"] = guidance_scale
+                # FLUX 2 supports safety tolerance (1-5, higher = more permissive)
+                input_params["safety_tolerance"] = 3
+                # Enable raw mode for photorealistic outputs
+                if "ultra" in self.model_id.lower() or "max" in self.model_id.lower():
+                    input_params["raw"] = True
+            elif is_flux_schnell:
+                # FLUX schnell only accepts up to 4 steps
+                input_params["num_inference_steps"] = min(num_inference_steps, 4)
+            else:
+                # FLUX 1.x dev/pro models
+                input_params["num_inference_steps"] = min(num_inference_steps, 50)
+                input_params["guidance"] = guidance_scale
+
             if seed is not None:
                 input_params["seed"] = seed
         else:

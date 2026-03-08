@@ -20,6 +20,7 @@ from pydantic import BaseModel, Field
 
 from ..utils.logging import get_logger
 from .desire_engine import DesireEngine, get_desire_engine
+from .narrative_engine import NarrativeEngine, get_narrative_engine
 
 logger = get_logger(__name__)
 
@@ -79,11 +80,17 @@ class CreativeMind:
         self.model = model
         self._client = None
 
-        # Phase 4: internal creative drives
+        # Phase 6: narrative engine for thematic series
+        self.narrative_engine: NarrativeEngine = get_narrative_engine(
+            mood_system=mood_system,
+        )
+
+        # Phase 4: internal creative drives (connected to narrative for series)
         self.desire_engine: DesireEngine = get_desire_engine(
             mood_system=mood_system,
             memory_system=memory_system,
             learner=learner,
+            narrative_engine=self.narrative_engine,
         )
 
         # Resolve API key from parameter or env
