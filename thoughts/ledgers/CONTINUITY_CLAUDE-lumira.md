@@ -47,8 +47,17 @@ to make Lumira a more polished, feature-rich AI artist.
   - [x] Phase 5: Polish (2 features)
     - [x] 5.1 High contrast mode support
     - [x] 5.2 Page transitions and animations
-- Now: ✅ COMPLETE
-- Next: Testing and verification
+  - [x] Autonomy & Artistry Enhancement (5 phases, 87 tests)
+    - [x] Phase 1: Novelty scoring in desire_engine.py + creative_mind.py
+    - [x] Phase 2: RLAIF in adaptive_learner.py (source weights, critic reliability)
+    - [x] Phase 3: Hierarchical reflection system (new file: hierarchical_reflection.py)
+    - [x] Phase 4: Narrative engine for thematic series (new file: narrative_engine.py)
+    - [x] Phase 5: Desire-aware scheduling in scheduler.py
+    - [x] GET /api/lumira/artist-statement endpoint in lumira_routes.py
+    - [x] RLAIF wired up in /api/lumira/create (calls record_critic_evaluation)
+    - [x] Reflection scheduling in app.py lifespan (daily 11PM, weekly Sunday 10PM)
+- Now: ✅ All Phases Complete
+- Next: Manual testing and verification
 
 ## Files Modified
 
@@ -80,6 +89,34 @@ to make Lumira a more polished, feature-rich AI artist.
 - `src/ai_artist/core/generator.py` - Added method:
   - `generate_img2img()` - Image-to-image generation
 
+- `src/ai_artist/intelligence/desire_engine.py` - Autonomy enhancements:
+  - Novelty scoring (subject_usage, style_usage tracking)
+  - calculate_novelty_penalty(), get_balanced_drive(), get_novelty_context_for_llm()
+  - series_continuation as 7th creative drive
+
+- `src/ai_artist/intelligence/creative_mind.py` - Added:
+  - _apply_novelty_scoring() method
+  - Novelty context in LLM prompt
+
+- `src/ai_artist/learning/adaptive_learner.py` - RLAIF:
+  - SOURCE_WEIGHTS (user=1.0, critic=0.3)
+  - record_critic_evaluation(), track_alignment(), get_critic_reliability()
+
+- `src/ai_artist/personality/hierarchical_reflection.py` - NEW FILE:
+  - SessionReflection, DailyReflection, WeeklySynthesis, MonthlyInsight, ArtistStatement
+  - HierarchicalReflection class with LLM-powered and fallback generation
+
+- `src/ai_artist/intelligence/narrative_engine.py` - NEW FILE:
+  - ThematicSeries model with visual_threads, variations, mood_arc
+  - NarrativeEngine class for series lifecycle
+
+- `src/ai_artist/scheduling/scheduler.py` - Desire-aware scheduling:
+  - DesireAwareScheduler with TIME_RITUALS
+  - DesireAwareArtist wrapper
+
+- `src/ai_artist/web/lumira_routes.py` - Added:
+  - GET /api/lumira/artist-statement endpoint
+
 ### Frontend (HTML/CSS/JS)
 
 - `src/ai_artist/web/templates/lumira.html` - Many additions:
@@ -105,6 +142,7 @@ to make Lumira a more polished, feature-rich AI artist.
 | `/api/lumira/batch-create` | POST | Queue multiple creations |
 | `/api/lumira/memory` | GET | Memory dashboard data |
 | `/api/lumira/mood/evolution` | GET | Mood history graph |
+| `/api/lumira/artist-statement` | GET | Artist statement from reflections |
 | `/api/gallery/collections` | GET | List collections |
 | `/api/gallery/collections` | POST | Create collection |
 | `/api/gallery/collections/{id}` | GET | Collection details |
