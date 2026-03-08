@@ -29,6 +29,9 @@ from ..utils.logging import get_logger
 
 logger = get_logger(__name__)
 
+# Set to hold strong references to background tasks (prevent GC)
+_background_tasks: set[asyncio.Task] = set()
+
 # Rate limiter
 limiter = Limiter(key_func=get_remote_address)
 
@@ -63,10 +66,25 @@ class LumiraCreateResponse(BaseModel):
     prompt: str | None = None
     reflection: str | None = None
     thinking: str | None = None
+    reasoning: str | None = None
+    artistic_goals: list[str] | None = None
+    mood_alignment: str | None = None
     critique_history: list[dict] | None = None
     image_url: str | None = None
     session_id: str | None = None
     error: str | None = None
+
+
+class UserCreationRequest(BaseModel):
+    """Request for user-directed creation."""
+
+    prompt: str = Field(description="What the user wants Lumira to create")
+    style: str | None = Field(default=None, description="Optional style preference")
+    mood: str | None = Field(default=None, description="Optional mood preference")
+    allow_interpretation: bool = Field(
+        default=True,
+        description="Let Lumira add her own artistic interpretation",
+    )
 
 
 class LumiraStatementResponse(BaseModel):
@@ -408,77 +426,60 @@ async def get_lumira_state(request: Request):
 async def create_artwork(request: Request, db: Session = Depends(get_db)):
     """Trigger Lumira to create a new artwork with actual image generation.
 
+    Uses CreativeMind (LLM-powered when available) to decide what to create
+    based on current mood, learned preferences, and creative reasoning.
+    Falls back to mood-influenced random selection if LLM is unavailable.
+
     Returns concept info immediately and starts background generation.
     The session_id can be used to track progress via WebSocket.
     """
-    from ..core.replicate_generator import ReplicateGenerator as ImageGenerator
-    from ..inspiration.autonomous import AutonomousInspiration
+    from ..intelligence.creative_mind import get_creative_mind
+    from ..learning.adaptive_learner import get_adaptive_learner
     from ..web.websocket import manager as ws_manager
 
     state = _get_lumira_state()
     mood_system = state["mood_system"]
+    memory = state["memory"]
     profile = state["profile"]
-    personality = state["personality"]
     session_id = str(uuid.uuid4())
 
     try:
-        # Get mood influences for style and colors
-        mood = mood_system.current_mood
-        mood_influences = mood_system.mood_influences.get(
-            mood,
-            {
-                "styles": ["digital art"],
-                "subjects": ["abstract"],
-                "colors": ["vibrant colors"],
-            },
+        # Get creative mind (LLM-powered or fallback)
+        learner = get_adaptive_learner()
+        creative_mind = get_creative_mind(
+            mood_system=mood_system,
+            memory_system=memory,
+            learner=learner,
         )
 
-        # Use comprehensive subject list for variety (not mood-restricted)
-        autonomous = AutonomousInspiration()
-        subject = random.choice(autonomous.subjects)
+        # Let Lumira decide what to create
+        intent = await creative_mind.decide_what_to_create()
 
-        # Use comprehensive style list for variety (mix mood-influenced with autonomous)
-        # 70% chance to use autonomous styles, 30% chance to use mood-specific style
-        if random.random() < 0.7:
-            style = random.choice(autonomous.styles)
-        else:
-            style = random.choice(mood_influences.get("styles", ["digital art"]))
-
-        # Colors still influenced by mood for emotional coherence
-        colors = random.choice(mood_influences.get("colors", ["vibrant colors"]))
-
-        # Build prompt
-        prompt = f"{subject}, {style}, {colors}, masterpiece, highly detailed"
-        negative_prompt = "blurry, low quality, distorted, deformed"
-
-        # Generate thinking narrative based on personality
-        openness = personality.get("openness", 0.7)
-        neuroticism = personality.get("neuroticism", 0.5)
-
-        thinking_parts = []
-        if openness > 0.7:
-            thinking_parts.append(f"I feel drawn to explore {subject} today.")
-        else:
-            thinking_parts.append(f"I want to create something about {subject}.")
-
-        if neuroticism > 0.6:
-            thinking_parts.append(f"My {mood.value} mood colors everything.")
-        else:
-            thinking_parts.append(f"I'm feeling {mood.value} and it inspires me.")
-
-        thinking_parts.append(f"I'll use a {style} approach with {colors}.")
-        thinking = " ".join(thinking_parts)
+        subject = intent.subject
+        style = intent.style
+        prompt = intent.prompt
+        negative_prompt = intent.negative_prompt
+        thinking = intent.thinking_narrative
+        mood = mood_system.current_mood
 
         # Send thinking update to WebSocket clients
-        await ws_manager.send_thinking_update(
-            session_id=session_id, thought_type="observe", content=thinking
-        )
+        if thinking:
+            await ws_manager.send_thinking_update(
+                session_id=session_id, thought_type="observe", content=thinking
+            )
 
-        # Simple critique simulation
+        # Send reasoning as a decide thought
+        if intent.reasoning:
+            await ws_manager.send_thinking_update(
+                session_id=session_id, thought_type="decide", content=intent.reasoning
+            )
+
+        # Critique informed by intent
         critique_history = [
             {
                 "critic_name": "Inner Critic",
-                "critique": f"The {subject} concept aligns well with your {mood.value} mood.",
+                "critique": intent.mood_alignment
+                or f"The {subject} concept aligns with your {mood.value} mood.",
                 "approved": True,
                 "confidence": random.uniform(0.7, 0.95),
             }
@@ -500,11 +501,19 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
             style=style,
             mood=mood.value,
             session_id=session_id,
+            has_llm=creative_mind.has_llm,
         )
+
+        # Get mood-influenced generation parameters, refined by learner
+        gen_params = intent.generation_params or {}
+        gen_params = learner.suggest_parameters(gen_params)
+        num_steps = gen_params.get("num_inference_steps", 30)
+        guidance = gen_params.get("guidance_scale", 7.5)
 
         # Start background generation
         async def generate_task():
             generator = None
+            from ..core.replicate_generator import ReplicateGenerator as ImageGenerator
             from ..db.session import get_session_factory
 
             try:
@@ -547,20 +556,22 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
 
                 # Progress callback for WebSocket updates
                 def on_progress(step: int, total: int, latents: Any = None):
-                    asyncio.create_task(
+                    task = asyncio.create_task(
                         ws_manager.send_generation_progress(
                             session_id=session_id,
                             step=step,
                             total_steps=total,
                         )
                     )
+                    _background_tasks.add(task)
+                    task.add_done_callback(_background_tasks.discard)
 
-                # Generate image
+                # Generate image with mood-influenced parameters
                 images = generator.generate(
                     prompt=prompt,
                     negative_prompt=negative_prompt,
-                    num_inference_steps=30,
-                    guidance_scale=7.5,
+                    num_inference_steps=num_steps,
+                    guidance_scale=guidance,
                     width=768,
                     height=768,
                     num_images=1,
@@ -569,8 +580,6 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
 
                 # Save image
                 if images and len(images) > 0:
-                    import json as json_module
-
                     now = datetime.now()
                     date_path = gallery_path / now.strftime("%Y/%m/%d") / "archive"
                     date_path.mkdir(parents=True, exist_ok=True)
@@ -590,11 +599,14 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
                             "subject": subject,
                             "style": style,
                             "model": config.model.base_model,
+                            "reasoning": intent.reasoning,
+                            "artistic_goals": intent.artistic_goals,
+                            "has_llm": creative_mind.has_llm,
                         },
                         "created_at": now.isoformat(),
                         "featured": False,
                     }
-                    metadata_path.write_text(json_module.dumps(metadata_json, indent=2))
+                    metadata_path.write_text(json.dumps(metadata_json, indent=2))
 
                     image_url = f"/api/images/file/{now.strftime('%Y/%m/%d')}/archive/{filename}"
 
@@ -613,10 +625,11 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
                                     generation_params={
                                         "width": 768,
                                         "height": 768,
-                                        "steps": 30,
-                                        "guidance_scale": 7.5,
+                                        "steps": num_steps,
+                                        "guidance_scale": guidance,
                                         "subject": subject,
                                         "style": style,
+                                        "reasoning": intent.reasoning,
                                     },
                                     final_score=0.8,  # Default score
                                     tags=[mood.value, subject, style],
@@ -629,7 +642,88 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
                             logger.warning("database_not_configured_skipping_db_save")
                     except Exception as db_error:
                         logger.error("database_save_failed", error=str(db_error))
-                        # Don't fail the whole operation if DB save fails
+
+                    # Record feedback for learning system
+                    from ..learning.adaptive_learner import FeedbackSignal
+
+                    try:
+                        learner.record_feedback(
+                            FeedbackSignal(
+                                artwork_id=filename,
+                                user_action="like",
+                                generation_params={
+                                    "num_inference_steps": num_steps,
+                                    "guidance_scale": guidance,
+                                    "width": 768,
+                                    "height": 768,
+                                },
+                                prompt=prompt,
+                                model_id=config.model.base_model,
+                                mood=mood.value,
+                            )
+                        )
+                    except Exception as learn_err:
+                        logger.debug("learning_record_failed", error=str(learn_err))
+
+                    # RLAIF: Record critic evaluation for self-improvement
+                    try:
+                        critic_score = (
+                            critique_history[0]["confidence"]
+                            if critique_history
+                            else 0.75
+                        )
+                        critic_analysis = {
+                            "score": critic_score,
+                            "mood_alignment": intent.mood_alignment,
+                            "approved": (
+                                critique_history[0]["approved"]
+                                if critique_history
+                                else True
+                            ),
+                            "critique": (
+                                critique_history[0]["critique"]
+                                if critique_history
+                                else ""
+                            ),
+                        }
+                        learner.record_critic_evaluation(
+                            artwork_id=filename,
+                            critic_analysis=critic_analysis,
+                            params={
+                                "num_inference_steps": num_steps,
+                                "guidance_scale": guidance,
+                                "width": 768,
+                                "height": 768,
+                            },
+                            prompt=prompt,
+                            model_id=config.model.base_model,
+                        )
+                        logger.debug(
+                            "rlaif_critic_recorded",
+                            artwork_id=filename,
+                            score=critic_score,
+                        )
+                    except Exception as rlaif_err:
+                        logger.debug("rlaif_record_failed", error=str(rlaif_err))
+
+                    # Store creation in episodic memory
+                    try:
+                        memory.record_episode(
+                            event_type="creation",
+                            details={
+                                "prompt": prompt,
+                                "subject": subject,
+                                "style": style,
+                                "reasoning": intent.reasoning,
+                                "image_url": image_url,
+                            },
+                            emotional_state={
+                                "mood": mood.value,
+                                "mood_alignment": intent.mood_alignment,
+                            },
+                        )
+                    except Exception as mem_err:
+                        logger.debug("memory_record_failed", error=str(mem_err))
 
                     # Update mood after successful creation
                     mood_system.update_mood()
@@ -699,6 +793,9 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
             prompt=prompt,
             reflection=reflection,
             thinking=thinking,
+            reasoning=intent.reasoning,
+            artistic_goals=intent.artistic_goals,
+            mood_alignment=intent.mood_alignment,
             critique_history=critique_history,
             session_id=session_id,
         )
@@ -740,6 +837,303 @@ async def evolve_state(request: Request):
         personality=personality,
         evolved=old_mood != new_mood,
     )
+
+
+@router.post("/request", response_model=LumiraCreateResponse)
+@limiter.limit("5/minute")
+async def user_request_creation(
+    request: Request,
+    body: UserCreationRequest,
+    db: Session = Depends(get_db),
+):
+    """Ask Lumira to create something specific.
+
+    Lumira interprets the request through her current mood and artistic
+    perspective. Set allow_interpretation=False for faithful execution.
+    """
+    from ..intelligence.creative_mind import get_creative_mind
+    from ..learning.adaptive_learner import get_adaptive_learner
+    from ..web.websocket import manager as ws_manager
+
+    state = _get_lumira_state()
+    mood_system = state["mood_system"]
+    memory = state["memory"]
+    profile = state["profile"]
+    session_id = str(uuid.uuid4())
+
+    try:
+        learner = get_adaptive_learner()
+        creative_mind = get_creative_mind(
+            mood_system=mood_system,
+            memory_system=memory,
+            learner=learner,
+        )
+
+        # Process user request through Lumira's creative lens
+        intent = await creative_mind.process_user_request(
+            user_prompt=body.prompt,
+            style=body.style,
+            mood=body.mood,
+            allow_interpretation=body.allow_interpretation,
+        )
+
+        subject = intent.subject
+        style = intent.style
+        prompt = intent.prompt
+        negative_prompt = intent.negative_prompt
+        thinking = intent.thinking_narrative
+        mood = mood_system.current_mood
+
+        # Stream thinking to WebSocket
+        if thinking:
+            await ws_manager.send_thinking_update(
+                session_id=session_id, thought_type="observe", content=thinking
+            )
+        if intent.reasoning:
+            await ws_manager.send_thinking_update(
+                session_id=session_id, thought_type="decide", content=intent.reasoning
+            )
+
+        critique_history = [
+            {
+                "critic_name": "Inner Critic",
+                "critique": intent.mood_alignment
+                or f"Interpreting '{body.prompt}' through my {mood.value} lens.",
+                "approved": True,
+                "confidence": random.uniform(0.7, 0.95),
+            }
+        ]
+
+        reflection = profile.reflect_on_creation(
+            {"subject": subject, "style": style, "mood": mood.value}
+        )
+
+        await ws_manager.send_thinking_update(
+            session_id=session_id, thought_type="reflect", content=reflection
+        )
+
+        logger.info(
+            "lumira_user_request",
+            user_prompt=body.prompt[:100],
+            subject=subject,
+            style=style,
+            mood=mood.value,
+            session_id=session_id,
+            has_llm=creative_mind.has_llm,
+        )
+
+        # Get mood-influenced generation parameters, refined by learner
+        gen_params = intent.generation_params or {}
+        gen_params = learner.suggest_parameters(gen_params)
+        num_steps = gen_params.get("num_inference_steps", 30)
+        guidance = gen_params.get("guidance_scale", 7.5)
+
+        # Start background generation (reuses same pattern as /create)
+        async def generate_task():
+            generator = None
+            from ..core.replicate_generator import ReplicateGenerator as ImageGenerator
+            from ..db.session import get_session_factory
+
+            try:
+                config_path = Path("config/config.yaml")
+                config = load_config(config_path)
+                gallery_path = Path("gallery")
+
+                await ws_manager.send_generation_start(
+                    session_id=session_id, prompt=prompt
+                )
+                await ws_manager.send_thinking_update(
+                    session_id=session_id,
+                    thought_type="create",
+                    content=f"Bringing your vision to life... '{body.prompt}'",
+                )
+
+                dtype = (
+                    torch.float32 if config.model.dtype == "float32" else torch.float16
+                )
+
+                generator = ImageGenerator(
+                    model_id=config.model.base_model,
+                    device=config.model.device,
+                    dtype=dtype,
+                )
+                generator.load_model()
+
+                def on_progress(step: int, total: int, latents: Any = None):
+                    t = asyncio.create_task(
+                        ws_manager.send_generation_progress(
+                            session_id=session_id,
+                            step=step,
+                            total_steps=total,
+                        )
+                    )
+                    _background_tasks.add(t)
+                    t.add_done_callback(_background_tasks.discard)
+
+                images = generator.generate(
+                    prompt=prompt,
+                    negative_prompt=negative_prompt,
+                    num_inference_steps=num_steps,
+                    guidance_scale=guidance,
+                    width=768,
+                    height=768,
+                    num_images=1,
+                    on_progress=on_progress,
+                )
+
+                if images and len(images) > 0:
+                    now = datetime.now()
+                    date_path = gallery_path / now.strftime("%Y/%m/%d") / "archive"
+                    date_path.mkdir(parents=True, exist_ok=True)
+                    filename = f"{now.strftime('%Y%m%d_%H%M%S')}_noseed.png"
+                    save_path = date_path / filename
+
+                    images[0].save(save_path)
+
+                    metadata_path = save_path.with_suffix(".json")
+                    metadata_json = {
+                        "prompt": prompt,
+                        "user_request": body.prompt,
+                        "metadata": {
+                            "mood": mood.value,
+                            "subject": subject,
+                            "style": style,
+                            "model": config.model.base_model,
+                            "reasoning": intent.reasoning,
+                            "is_user_request": True,
+                        },
+                        "created_at": now.isoformat(),
+                        "featured": False,
+                    }
+                    metadata_path.write_text(json.dumps(metadata_json, indent=2))
+
+                    image_url = f"/api/images/file/{now.strftime('%Y/%m/%d')}/archive/{filename}"
+
+                    try:
+                        session_factory = get_session_factory()
+                        if session_factory:
+                            with session_factory() as db_session:
+                                db_image = GeneratedImage(
+                                    filename=str(save_path),
+                                    prompt=prompt,
+                                    negative_prompt=negative_prompt,
+                                    status=mood.value,
+                                    seed=None,
+                                    model_id=config.model.base_model,
+                                    generation_params={
+                                        "width": 768,
+                                        "height": 768,
+                                        "steps": num_steps,
+                                        "guidance_scale": guidance,
+                                        "subject": subject,
+                                        "style": style,
+                                        "user_request": body.prompt,
+                                    },
+                                    final_score=0.8,
+                                    tags=[mood.value, subject, style, "user_request"],
+                                    created_at=now,
+                                )
+                                db_session.add(db_image)
+                                db_session.commit()
+                    except Exception as db_error:
+                        logger.error("database_save_failed", error=str(db_error))
+
+                    # Record for learning
+                    import contextlib
+
+                    from ..learning.adaptive_learner import FeedbackSignal
+
+                    with contextlib.suppress(Exception):
+                        learner.record_feedback(
+                            FeedbackSignal(
+                                artwork_id=filename,
+                                user_action="like",
+                                generation_params={
+                                    "num_inference_steps": num_steps,
+                                    "guidance_scale": guidance,
+                                    "width": 768,
+                                    "height": 768,
+                                },
+                                prompt=prompt,
+                                model_id=config.model.base_model,
+                                mood=mood.value,
+                            )
+                        )
+
+                    # Store in memory
+                    with contextlib.suppress(Exception):
+                        memory.record_episode(
+                            event_type="user_request",
+                            details={
+                                "prompt": prompt,
+                                "user_request": body.prompt,
+                                "subject": subject,
+                                "style": style,
+                            },
+                            emotional_state={
+                                "mood": mood.value,
+                            },
+                        )
+
+                    mood_system.update_mood()
+
+                    await ws_manager.send_generation_complete(
+                        session_id=session_id,
+                        image_paths=[image_url],
+                        metadata={"prompt": prompt, "mood": mood.value},
+                    )
+                else:
+                    await ws_manager.send_generation_error(
+                        session_id=session_id,
+                        error="No valid images generated.",
+                    )
+
+            except Exception as e:
+                import traceback
+
+                logger.error(
+                    "lumira_request_generation_failed",
+                    error=str(e),
+                    session_id=session_id,
+                    traceback=traceback.format_exc(),
+                )
+                await ws_manager.send_generation_error(
+                    session_id=session_id,
+                    error=f"Generation failed: {str(e)}",
+                )
+            finally:
+                if generator:
+                    generator.clear_vram()
+
+        task = asyncio.create_task(generate_task())
+
+        def handle_task_exception(task):
+            try:
+                task.result()
+            except Exception as e:
+                logger.error(
+                    "background_task_exception", error=str(e), session_id=session_id
+                )
+
+        task.add_done_callback(handle_task_exception)
+
+        return LumiraCreateResponse(
+            success=True,
+            subject=subject,
+            style=style,
+            prompt=prompt,
+            reflection=reflection,
+            thinking=thinking,
+            reasoning=intent.reasoning,
+            artistic_goals=intent.artistic_goals,
+            mood_alignment=intent.mood_alignment,
+            critique_history=critique_history,
+            session_id=session_id,
+        )
+
+    except Exception as e:
+        logger.error("lumira_request_failed", error=str(e))
+        return LumiraCreateResponse(success=False, error=str(e))
 
 
 @router.post("/mood/influence", response_model=MoodInfluenceResponse)
@@ -1077,6 +1471,66 @@ async def get_evolution(request: Request):
 
 
 # =============================================================================
+# Artist Statement Endpoint
+# =============================================================================
+
+
+class ArtistStatementResponse(BaseModel):
+    """Artist statement response."""
+
+    version: int
+    identity: str
+    philosophy: str
+    themes: list[str]
+    aspirations: str
+    signature_style: str
+    full_statement: str
+    generated_at: datetime
+
+
+@router.get("/artist-statement", response_model=ArtistStatementResponse)
+@limiter.limit("10/minute")
+async def get_hierarchical_artist_statement(request: Request, regenerate: bool = False):
+    """Get Lumira's artist statement.
+
+    The artist statement is synthesized from hierarchical reflections -
+    session, daily, weekly, and monthly reflections all feed into a
+    cohesive artistic philosophy.
+
+    Args:
+        regenerate: If True, generate a fresh statement. Otherwise return cached.
+
+    Returns:
+        Lumira's current artist statement with identity, philosophy, themes, etc.
+    """
+    from ..personality.hierarchical_reflection import get_hierarchical_reflection
+
+    state = _get_lumira_state()
+    memory = state["memory"]
+    reflection_system = get_hierarchical_reflection()
+
+    # Check if we have a recent statement
+    latest = reflection_system.get_latest_artist_statement()
+
+    if latest is None or regenerate:
+        # Generate a new statement
+        statement = reflection_system.generate_artist_statement(memory_system=memory)
+    else:
+        statement = latest
+
+    return ArtistStatementResponse(
+        version=statement.version,
+        identity=statement.identity,
+        philosophy=statement.philosophy,
+        themes=statement.themes,
+        aspirations=statement.aspirations,
+        signature_style=statement.signature_style,
+        full_statement=statement.full_statement,
+        generated_at=statement.timestamp,
+    )
+
+
+# =============================================================================
 # Async Job Queue Endpoints
 # =============================================================================
 
@@ -1161,31 +1615,21 @@ async def generate_async(
     state = _get_lumira_state()
     mood_system = state["mood_system"]
 
-    # Generate prompt if not provided (mood-based)
+    # Generate prompt if not provided (use CreativeMind)
     prompt = generation_request.prompt
     if not prompt:
-        from ..inspiration.autonomous import AutonomousInspiration
+        from ..intelligence.creative_mind import get_creative_mind
+        from ..learning.adaptive_learner import get_adaptive_learner
 
-        mood = mood_system.current_mood
-        mood_influences = mood_system.mood_influences.get(
-            mood,
-            {
-                "styles": ["digital art"],
-                "subjects": ["abstract"],
-                "colors": ["vibrant colors"],
-            },
+        memory = state.get("memory")
+        learner = get_adaptive_learner()
+        creative_mind = get_creative_mind(
+            mood_system=mood_system,
+            memory_system=memory,
+            learner=learner,
         )
-
-        autonomous = AutonomousInspiration()
-        subject = random.choice(autonomous.subjects)
-
-        if random.random() < 0.7:
-            style = random.choice(autonomous.styles)
-        else:
-            style = random.choice(mood_influences.get("styles", ["digital art"]))
-
-        colors = random.choice(mood_influences.get("colors", ["vibrant colors"]))
-        prompt = f"{subject}, {style}, {colors}, masterpiece, highly detailed"
+        intent = await creative_mind.decide_what_to_create()
+        prompt = intent.prompt
 
     # Prepare generation parameters
     params = {
@@ -1264,8 +1708,6 @@ async def get_job_status(request: Request, job_id: str):
     - finished: Complete - check result field
     - failed: Failed - check error field
     """
-    from fastapi import HTTPException
-
     from ..queue import get_queue
 
     queue = get_queue()
@@ -1298,8 +1740,6 @@ async def cancel_job(request: Request, job_id: str):
     Only queued jobs can be cancelled. Jobs that are already started
     will continue to completion.
     """
-    from fastapi import HTTPException
-
     from ..queue import get_queue
 
     queue = get_queue()
@@ -1692,13 +2132,15 @@ async def create_with_reference(
                 generator.load_model()
 
                 def on_progress(step: int, total: int, latents=None):
-                    asyncio.create_task(
+                    task = asyncio.create_task(
                         ws_manager.send_generation_progress(
                             session_id=session_id,
                             step=step,
                             total_steps=total,
                         )
                     )
+                    _background_tasks.add(task)
+                    task.add_done_callback(_background_tasks.discard)
 
                 # Generate with reference image
                 images = generator.generate(
@@ -1715,8 +2157,6 @@ async def create_with_reference(
                 )
 
                 if images and len(images) > 0:
-                    import json as json_module
-
                     now = datetime.now()
                     date_path = gallery_path / now.strftime("%Y/%m/%d") / "archive"
                     date_path.mkdir(parents=True, exist_ok=True)
@@ -1740,7 +2180,7 @@ async def create_with_reference(
                         "created_at": now.isoformat(),
                         "featured": False,
                     }
-                    metadata_path.write_text(json_module.dumps(metadata_json, indent=2))
+                    metadata_path.write_text(json.dumps(metadata_json, indent=2))
 
                     image_url = f"/api/images/file/{now.strftime('%Y/%m/%d')}/archive/{filename}"
 

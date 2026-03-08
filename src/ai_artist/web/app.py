@@ -318,11 +318,63 @@ async def lifespan(app: FastAPI):
         # Use default config (no auth required)
         set_web_config(WebConfig())
 
+    # Initialize reflection scheduling for Lumira's hierarchical reflection system
+    reflection_scheduler = None
+    try:
+        from ..personality.hierarchical_reflection import get_hierarchical_reflection
+        from ..scheduling.scheduler import CreationScheduler
+
+        reflection_system = get_hierarchical_reflection()
+        reflection_scheduler = CreationScheduler()
+
+        # Schedule daily reflection at 11 PM
+        async def daily_reflection_task():
+            from ..personality.enhanced_memory import get_memory_system
+
+            memory = get_memory_system()
+            episodes = memory.get_recent_episodes(limit=50)
+            reflection_system.generate_daily_reflection(episodes=episodes)
+            logger.info("daily_reflection_generated")
+
+        reflection_scheduler.add_daily_job(
+            daily_reflection_task,
+            hour=23,
+            minute=0,
+            job_id="lumira_daily_reflection",
+        )
+
+        # Schedule weekly synthesis on Sundays at 10 PM
+        async def weekly_synthesis_task():
+            from ..personality.enhanced_memory import get_memory_system
+
+            memory = get_memory_system()
+            episodes = memory.get_recent_episodes(limit=200)
+            reflection_system.generate_weekly_synthesis(episodes=episodes)
+            logger.info("weekly_synthesis_generated")
+
+        reflection_scheduler.add_weekly_job(
+            weekly_synthesis_task,
+            day_of_week="sun",
+            hour=22,
+            minute=0,
+            job_id="lumira_weekly_synthesis",
+        )
+
+        reflection_scheduler.start()
+        logger.info(
+            "reflection_scheduling_initialized",
+            jobs=len(reflection_scheduler.list_jobs()),
+        )
+    except Exception as e:
+        logger.warning("reflection_scheduling_failed", error=str(e))
+
     yield
 
     # Shutdown
     logger.info("web_gallery_shutdown")
-    # Cleanup resources here if needed
+    if reflection_scheduler:
+        reflection_scheduler.shutdown()
+        logger.info("reflection_scheduler_shutdown")
 
 
 # Initialize FastAPI app with lifespan

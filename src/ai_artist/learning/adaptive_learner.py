@@ -14,7 +14,7 @@ Date: February 2026
 
 import json
 from collections import defaultdict
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -25,15 +25,16 @@ logger = structlog.get_logger(__name__)
 
 
 class FeedbackSignal(BaseModel):
-    """User feedback on generated artwork."""
+    """User or critic feedback on generated artwork."""
 
     artwork_id: str
     user_action: str  # "like", "love", "download", "share", "delete", "skip"
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
     generation_params: dict[str, Any]
     prompt: str
     model_id: str
     mood: str | None = None
+    source: str = "user"  # "user" or "critic"
 
 
 class ParameterScore(BaseModel):
@@ -43,14 +44,27 @@ class ParameterScore(BaseModel):
     total_score: float = 0.0
     num_samples: int = 0
     avg_score: float = 0.0
-    last_updated: datetime = Field(default_factory=datetime.utcnow)
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
+class CriticEvaluation(BaseModel):
+    """Critic's evaluation of an artwork."""
+
+    artwork_id: str
+    critic_score: float  # 0.0-1.0
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    generation_params: dict[str, Any]
+    prompt: str
+    model_id: str
+    analysis: str | None = None
 
 
 class AdaptiveLearner:
     """
-    Learns from user feedback to optimize generation parameters.
+    Learns from user feedback and critic evaluations to optimize generation parameters.
 
     Uses multi-armed bandit approach with exploration/exploitation balance.
+    Implements RLAIF by incorporating critic feedback weighted lower than user feedback.
     """
 
     # Action weights for feedback signals
@@ -61,6 +75,12 @@ class AdaptiveLearner:
         "share": 0.8,
         "skip": -0.3,
         "delete": -1.0,
+    }
+
+    # Source weights: user feedback is trusted more than critic
+    SOURCE_WEIGHTS = {
+        "user": 1.0,
+        "critic": 0.3,  # Critic feedback weighted at 30%
     }
 
     # Exploration rate (epsilon-greedy)
@@ -79,36 +99,53 @@ class AdaptiveLearner:
         )
         self.prompt_patterns: dict[str, float] = defaultdict(float)
 
+        # RLAIF: Track critic-user alignment for reliability scoring
+        self.alignment_history: list[dict[str, Any]] = []
+        self._critic_reliability: float = 0.5  # Start neutral
+
         self._load_state()
         logger.info(
             "adaptive_learner_initialized",
             models_tracked=len(self.model_scores),
             param_combos=len(self.param_scores),
+            critic_reliability=round(self._critic_reliability, 2),
         )
 
     def record_feedback(self, feedback: FeedbackSignal) -> None:
-        """Record user feedback and update learning models."""
+        """Record user or critic feedback and update learning models."""
         score = self.ACTION_WEIGHTS.get(feedback.user_action, 0.0)
 
         if score == 0.0:
             logger.debug("unknown_action_ignored", action=feedback.user_action)
             return
 
+        # Apply source weighting (critic feedback is weighted lower)
+        source_weight = self.SOURCE_WEIGHTS.get(feedback.source, 1.0)
+
+        # If critic, also adjust by reliability
+        if feedback.source == "critic":
+            source_weight *= self._critic_reliability
+
+        weighted_score = score * source_weight
+
         # Update model scores
-        self._update_model_score(feedback.model_id, score)
+        self._update_model_score(feedback.model_id, weighted_score)
 
         # Update parameter combination scores
         param_hash = self._hash_params(feedback.generation_params)
-        self._update_param_score(param_hash, score, feedback.generation_params)
+        self._update_param_score(param_hash, weighted_score, feedback.generation_params)
 
         # Update mood preferences
         if feedback.mood:
             self._update_mood_preferences(
-                feedback.mood, feedback.model_id, feedback.generation_params, score
+                feedback.mood,
+                feedback.model_id,
+                feedback.generation_params,
+                weighted_score,
             )
 
         # Track successful prompt patterns
-        self._update_prompt_patterns(feedback.prompt, score)
+        self._update_prompt_patterns(feedback.prompt, weighted_score)
 
         # Persist state
         self._save_state()
@@ -116,7 +153,9 @@ class AdaptiveLearner:
         logger.info(
             "feedback_recorded",
             action=feedback.user_action,
-            score=score,
+            source=feedback.source,
+            raw_score=score,
+            weighted_score=round(weighted_score, 3),
             model=feedback.model_id,
         )
 
@@ -215,7 +254,143 @@ class AdaptiveLearner:
             "exploration_rate": self.EXPLORATION_RATE,
             "exploration_samples": explore_samples,
             "exploitation_samples": total_samples - explore_samples,
+            "critic_reliability": round(self._critic_reliability, 3),
+            "alignment_samples": len(self.alignment_history),
         }
+
+    # ------------------------------------------------------------------
+    # RLAIF: Critic-Informed Learning
+    # ------------------------------------------------------------------
+
+    def record_critic_evaluation(
+        self,
+        artwork_id: str,
+        critic_analysis: dict[str, Any],
+        params: dict[str, Any],
+        prompt: str,
+        model_id: str,
+    ) -> None:
+        """Record a critic's evaluation of an artwork.
+
+        The critic score is treated as implicit feedback, weighted lower than user feedback.
+        """
+        # Extract critic score from analysis
+        critic_score = critic_analysis.get("overall_score", 0.5)
+
+        # Convert to action-like score (-1 to 1)
+        # Critic scores above 0.6 are treated as positive, below 0.4 as negative
+        if critic_score >= 0.7:
+            action = "like"
+        elif critic_score >= 0.85:
+            action = "love"
+        elif critic_score <= 0.3:
+            action = "delete"
+        elif critic_score <= 0.45:
+            action = "skip"
+        else:
+            # Neutral scores don't create feedback
+            logger.debug(
+                "critic_evaluation_neutral",
+                artwork_id=artwork_id,
+                score=critic_score,
+            )
+            return
+
+        feedback = FeedbackSignal(
+            artwork_id=artwork_id,
+            user_action=action,
+            generation_params=params,
+            prompt=prompt,
+            model_id=model_id,
+            source="critic",
+        )
+
+        self.record_feedback(feedback)
+
+        logger.info(
+            "critic_evaluation_recorded",
+            artwork_id=artwork_id,
+            critic_score=round(critic_score, 2),
+            implied_action=action,
+        )
+
+    def track_alignment(
+        self,
+        artwork_id: str,
+        critic_score: float,
+        user_score: float,
+    ) -> None:
+        """Track how well critic evaluations align with user feedback.
+
+        This is used to adjust critic reliability over time.
+        """
+        # Calculate alignment: how close is critic to user?
+        # Both scores normalized to 0-1
+        alignment = 1.0 - abs(critic_score - user_score)
+
+        self.alignment_history.append(
+            {
+                "artwork_id": artwork_id,
+                "critic_score": critic_score,
+                "user_score": user_score,
+                "alignment": alignment,
+                "timestamp": datetime.now(UTC).isoformat(),
+            }
+        )
+
+        # Keep only last 100 alignments
+        if len(self.alignment_history) > 100:
+            self.alignment_history = self.alignment_history[-100:]
+
+        # Update critic reliability based on recent alignment
+        self._update_critic_reliability()
+
+        logger.info(
+            "alignment_tracked",
+            artwork_id=artwork_id,
+            critic=round(critic_score, 2),
+            user=round(user_score, 2),
+            alignment=round(alignment, 2),
+            reliability=round(self._critic_reliability, 2),
+        )
+
+        self._save_state()
+
+    def _update_critic_reliability(self) -> None:
+        """Update critic reliability based on recent alignment history."""
+        if not self.alignment_history:
+            return
+
+        # Use exponential moving average of recent alignments
+        recent = self.alignment_history[-20:]
+        alignments = [entry["alignment"] for entry in recent]
+
+        if alignments:
+            # Weighted average favoring recent entries
+            weights = [0.5**i for i in range(len(alignments) - 1, -1, -1)]
+            total_weight = sum(weights)
+            weighted_avg = (
+                sum(a * w for a, w in zip(alignments, weights, strict=False))
+                / total_weight
+            )
+
+            # Smoothly update reliability (EMA)
+            self._critic_reliability = (
+                0.8 * self._critic_reliability + 0.2 * weighted_avg
+            )
+
+            # Keep reliability in bounds
+            self._critic_reliability = max(0.1, min(0.9, self._critic_reliability))
+
+    def get_critic_reliability(self) -> float:
+        """Get current critic reliability score."""
+        return self._critic_reliability
+
+    def convert_user_action_to_score(self, action: str) -> float:
+        """Convert a user action to a normalized score (0-1)."""
+        raw = self.ACTION_WEIGHTS.get(action, 0.0)
+        # Normalize from -1..1 to 0..1
+        return (raw + 1.0) / 2.0
 
     def _update_model_score(self, model_id: str, score: float) -> None:
         """Update running average for model performance."""
@@ -231,7 +406,7 @@ class AdaptiveLearner:
             model_score.total_score += score
             model_score.num_samples += 1
             model_score.avg_score = model_score.total_score / model_score.num_samples
-            model_score.last_updated = datetime.utcnow()
+            model_score.last_updated = datetime.now(UTC)
 
     def _update_param_score(
         self, param_hash: str, score: float, params: dict[str, Any]
@@ -249,7 +424,7 @@ class AdaptiveLearner:
             param_score.total_score += score
             param_score.num_samples += 1
             param_score.avg_score = param_score.total_score / param_score.num_samples
-            param_score.last_updated = datetime.utcnow()
+            param_score.last_updated = datetime.now(UTC)
 
     def _update_mood_preferences(
         self, mood: str, model_id: str, params: dict[str, Any], score: float
@@ -297,7 +472,10 @@ class AdaptiveLearner:
             "param_scores": {k: v.model_dump() for k, v in self.param_scores.items()},
             "mood_preferences": dict(self.mood_preferences),
             "prompt_patterns": dict(self.prompt_patterns),
-            "last_updated": datetime.utcnow().isoformat(),
+            "last_updated": datetime.now(UTC).isoformat(),
+            # RLAIF state
+            "alignment_history": self.alignment_history,
+            "critic_reliability": self._critic_reliability,
         }
 
         try:
@@ -333,10 +511,15 @@ class AdaptiveLearner:
             # Restore prompt patterns
             self.prompt_patterns = defaultdict(float, state.get("prompt_patterns", {}))
 
+            # Restore RLAIF state
+            self.alignment_history = state.get("alignment_history", [])
+            self._critic_reliability = state.get("critic_reliability", 0.5)
+
             logger.info(
                 "learning_state_loaded",
                 models=len(self.model_scores),
                 param_combos=len(self.param_scores),
+                critic_reliability=round(self._critic_reliability, 2),
             )
 
         except Exception as e:

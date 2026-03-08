@@ -933,3 +933,289 @@ class MoodSystem:
             True if FLUX is the preferred model for current mood
         """
         return self.get_preferred_model_type() in ("flux-schnell", "flux-dev")
+
+
+# ---------------------------------------------------------------------------
+# Phase 3: Fine-grained mood → creation affinity data
+# ---------------------------------------------------------------------------
+
+MOOD_SUBJECT_AFFINITY: dict[Mood, dict[str, float]] = {
+    Mood.SERENE: {
+        "still lake at dawn": 0.9,
+        "zen garden": 0.85,
+        "cloud formations": 0.8,
+        "sleeping forest": 0.75,
+        "gentle waves": 0.7,
+        "snow-covered valley": 0.65,
+    },
+    Mood.ENERGIZED: {
+        "vibrant cityscape": 0.9,
+        "dancing figures": 0.85,
+        "sunlit market": 0.8,
+        "wildflower meadow in wind": 0.75,
+        "fireworks display": 0.7,
+        "crashing surf": 0.65,
+    },
+    Mood.MELANCHOLIC: {
+        "rain-soaked streets": 0.9,
+        "abandoned places": 0.85,
+        "solitary figures": 0.8,
+        "autumn landscapes": 0.75,
+        "misty forests": 0.7,
+        "fading photographs": 0.65,
+    },
+    Mood.CHAOTIC: {
+        "stormy seas": 0.9,
+        "shattered glass": 0.85,
+        "colliding galaxies": 0.8,
+        "urban destruction": 0.75,
+        "tangled roots": 0.7,
+        "electric storm": 0.65,
+        "fractured mirrors": 0.6,
+    },
+    Mood.CONTEMPLATIVE: {
+        "open book by candlelight": 0.9,
+        "winding path through fog": 0.85,
+        "ancient temple ruins": 0.8,
+        "still life with hourglass": 0.75,
+        "solitary tree on a hill": 0.7,
+        "moonlit observatory": 0.65,
+    },
+    Mood.REBELLIOUS: {
+        "graffiti-covered walls": 0.9,
+        "protest march": 0.85,
+        "broken chains": 0.8,
+        "burning effigy": 0.75,
+        "punk concert": 0.7,
+        "crumbling monument": 0.65,
+    },
+    Mood.PLAYFUL: {
+        "carnival at night": 0.9,
+        "kite festival": 0.85,
+        "children playing in rain": 0.8,
+        "candy-colored houses": 0.75,
+        "paper boats on a stream": 0.7,
+        "street performers": 0.65,
+        "hot air balloons": 0.6,
+    },
+    Mood.RESTLESS: {
+        "crossroads at dusk": 0.9,
+        "train station platform": 0.85,
+        "shifting sand dunes": 0.8,
+        "birds in flight": 0.75,
+        "unfinished construction": 0.7,
+        "winding staircase": 0.65,
+    },
+    Mood.INTROSPECTIVE: {
+        "mirror reflections": 0.9,
+        "labyrinth from above": 0.85,
+        "library interior": 0.8,
+        "tide pools": 0.75,
+        "self-portrait shadows": 0.7,
+        "dream sequences": 0.65,
+    },
+    Mood.BOLD: {
+        "mountain summit": 0.9,
+        "roaring lion": 0.85,
+        "towering skyscraper": 0.8,
+        "volcanic eruption": 0.75,
+        "warrior in armor": 0.7,
+        "blazing sunset": 0.65,
+    },
+}
+
+MOOD_COLOR_PALETTE: dict[Mood, dict[str, Any]] = {
+    Mood.SERENE: {
+        "primary_colors": ["soft blue", "pale mint", "ivory"],
+        "avoid_colors": ["neon red", "electric yellow"],
+        "saturation": "low",
+        "brightness": "moderate",
+    },
+    Mood.ENERGIZED: {
+        "primary_colors": ["bright orange", "sunny yellow", "vivid green"],
+        "avoid_colors": ["gray", "muted brown"],
+        "saturation": "high",
+        "brightness": "bright",
+    },
+    Mood.MELANCHOLIC: {
+        "primary_colors": ["deep blue", "silver gray", "muted violet"],
+        "avoid_colors": ["bright red", "neon yellow"],
+        "saturation": "low",
+        "brightness": "dim",
+    },
+    Mood.CHAOTIC: {
+        "primary_colors": ["electric magenta", "acid green", "clashing orange"],
+        "avoid_colors": ["pastel pink", "soft beige"],
+        "saturation": "high",
+        "brightness": "bright",
+    },
+    Mood.CONTEMPLATIVE: {
+        "primary_colors": ["warm amber", "dusty rose", "soft gray"],
+        "avoid_colors": ["neon green", "hot pink"],
+        "saturation": "medium",
+        "brightness": "moderate",
+    },
+    Mood.REBELLIOUS: {
+        "primary_colors": ["stark black", "blood red", "neon cyan"],
+        "avoid_colors": ["pastel lavender", "soft peach"],
+        "saturation": "high",
+        "brightness": "moderate",
+    },
+    Mood.PLAYFUL: {
+        "primary_colors": ["candy pink", "sky blue", "lemon yellow"],
+        "avoid_colors": ["dark gray", "black"],
+        "saturation": "high",
+        "brightness": "bright",
+    },
+    Mood.RESTLESS: {
+        "primary_colors": ["burnt sienna", "stormy teal", "faded gold"],
+        "avoid_colors": ["calm blue", "soft white"],
+        "saturation": "medium",
+        "brightness": "moderate",
+    },
+    Mood.INTROSPECTIVE: {
+        "primary_colors": ["deep teal", "warm brown", "twilight purple"],
+        "avoid_colors": ["bright orange", "neon anything"],
+        "saturation": "medium",
+        "brightness": "dim",
+    },
+    Mood.BOLD: {
+        "primary_colors": ["commanding gold", "power red", "jet black"],
+        "avoid_colors": ["washed-out pastels", "muted tones"],
+        "saturation": "high",
+        "brightness": "bright",
+    },
+}
+
+MOOD_STYLE_PREFERENCES: dict[Mood, dict[str, Any]] = {
+    Mood.SERENE: {
+        "preferred_styles": ["impressionism", "soft focus photography", "watercolor"],
+        "preferred_lighting": ["soft", "diffused", "golden hour"],
+        "preferred_techniques": ["watercolor", "soft pastel", "ink wash"],
+        "composition": "symmetric",
+    },
+    Mood.ENERGIZED: {
+        "preferred_styles": ["pop art", "dynamic composition", "vivid realism"],
+        "preferred_lighting": ["bright", "direct", "high-key"],
+        "preferred_techniques": ["acrylic", "digital painting", "screen print"],
+        "composition": "dynamic",
+    },
+    Mood.MELANCHOLIC: {
+        "preferred_styles": ["impressionism", "expressionism", "muted realism"],
+        "preferred_lighting": ["overcast", "low-key", "twilight"],
+        "preferred_techniques": ["oil painting", "charcoal", "wet-on-wet"],
+        "composition": "asymmetric",
+    },
+    Mood.CHAOTIC: {
+        "preferred_styles": ["abstract expressionism", "glitch art", "cubism"],
+        "preferred_lighting": ["harsh", "strobe", "neon"],
+        "preferred_techniques": ["splatter", "digital collage", "mixed media"],
+        "composition": "dynamic",
+    },
+    Mood.CONTEMPLATIVE: {
+        "preferred_styles": ["minimalism", "atmospheric realism", "symbolism"],
+        "preferred_lighting": ["candlelight", "soft ambient", "dusk"],
+        "preferred_techniques": ["graphite", "ink", "mezzotint"],
+        "composition": "centered",
+    },
+    Mood.REBELLIOUS: {
+        "preferred_styles": ["street art", "punk collage", "neo-expressionism"],
+        "preferred_lighting": ["harsh contrast", "spotlight", "underlit"],
+        "preferred_techniques": ["spray paint", "stencil", "woodcut"],
+        "composition": "asymmetric",
+    },
+    Mood.PLAYFUL: {
+        "preferred_styles": ["illustration", "cartoon", "naive art"],
+        "preferred_lighting": ["bright", "even", "colorful"],
+        "preferred_techniques": ["gouache", "crayon", "vector art"],
+        "composition": "dynamic",
+    },
+    Mood.RESTLESS: {
+        "preferred_styles": ["futurism", "motion blur photography", "sketch"],
+        "preferred_lighting": ["shifting", "dappled", "transitional"],
+        "preferred_techniques": ["quick sketch", "monotype", "gestural mark-making"],
+        "composition": "asymmetric",
+    },
+    Mood.INTROSPECTIVE: {
+        "preferred_styles": ["surrealism", "symbolic realism", "chiaroscuro"],
+        "preferred_lighting": ["Rembrandt", "single source", "dramatic shadow"],
+        "preferred_techniques": ["oil painting", "etching", "silverpoint"],
+        "composition": "centered",
+    },
+    Mood.BOLD: {
+        "preferred_styles": ["heroic realism", "high contrast", "art deco"],
+        "preferred_lighting": ["dramatic", "rim light", "golden"],
+        "preferred_techniques": ["palette knife", "bold brushwork", "linocut"],
+        "composition": "symmetric",
+    },
+}
+
+
+def get_mood_preferred_subjects(mood: Mood, count: int = 5) -> list[str]:
+    """Return top subjects for a mood, weighted by affinity for variety.
+
+    Uses ``random.choices`` so higher-affinity subjects appear more often
+    but lower-affinity ones still have a chance.
+
+    Args:
+        mood: The mood to query.
+        count: Number of subjects to return.
+
+    Returns:
+        A list of subject strings (may contain duplicates removed).
+    """
+    affinities = MOOD_SUBJECT_AFFINITY.get(mood, {})
+    if not affinities:
+        return []
+
+    subjects = list(affinities.keys())
+    weights = [affinities[s] for s in subjects]
+
+    # Sample with replacement, then deduplicate while preserving order
+    chosen = random.choices(subjects, weights=weights, k=count * 2)
+    seen: set[str] = set()
+    result: list[str] = []
+    for s in chosen:
+        if s not in seen:
+            seen.add(s)
+            result.append(s)
+        if len(result) >= count:
+            break
+    return result
+
+
+def get_mood_color_palette(mood: Mood) -> dict[str, Any]:
+    """Return color guidance for a mood.
+
+    Returns:
+        Dict with keys ``primary_colors``, ``avoid_colors``,
+        ``saturation`` (low/medium/high), and ``brightness`` (dim/moderate/bright).
+    """
+    return MOOD_COLOR_PALETTE.get(
+        mood,
+        {
+            "primary_colors": ["neutral gray", "white"],
+            "avoid_colors": [],
+            "saturation": "medium",
+            "brightness": "moderate",
+        },
+    )
+
+
+def get_mood_style_preferences(mood: Mood) -> dict[str, Any]:
+    """Return style/lighting/technique preferences for a mood.
+
+    Returns:
+        Dict with keys ``preferred_styles``, ``preferred_lighting``,
+        ``preferred_techniques``, and ``composition``
+        (symmetric/asymmetric/centered/dynamic).
+    """
+    return MOOD_STYLE_PREFERENCES.get(
+        mood,
+        {
+            "preferred_styles": ["digital art"],
+            "preferred_lighting": ["natural"],
+            "preferred_techniques": ["digital painting"],
+            "composition": "centered",
+        },
+    )

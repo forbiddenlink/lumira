@@ -2,6 +2,7 @@
 
 import asyncio
 from collections.abc import Callable
+from datetime import UTC
 from typing import Literal
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -326,3 +327,342 @@ class ScheduledArtist:
         """List all scheduled jobs."""
         jobs: list[dict] = self.scheduler.list_jobs()
         return jobs
+
+
+# =============================================================================
+# Desire-Aware Scheduler
+# =============================================================================
+
+
+class DesireAwareScheduler(CreationScheduler):
+    """Scheduler that creates based on internal desires rather than fixed schedules.
+
+    Makes scheduled creation feel intentional:
+    - Creates when desire urgency is high ("Strong creative urge")
+    - Creates when mood intensity is high ("Intense feeling to express")
+    - Respects time-of-day rituals (morning = fresh ideas, evening = reflection)
+    """
+
+    # Time-of-day creative rituals
+    TIME_RITUALS = {
+        "morning": {  # 5-12
+            "mood_bias": ["energized", "playful"],
+            "creation_type": "fresh_ideas",
+            "description": "Fresh morning energy for new explorations",
+        },
+        "afternoon": {  # 12-17
+            "mood_bias": ["rebellious", "chaotic"],
+            "creation_type": "experimental",
+            "description": "Afternoon intensity for experimental work",
+        },
+        "evening": {  # 17-21
+            "mood_bias": ["serene", "melancholic"],
+            "creation_type": "reflection",
+            "description": "Evening calm for reflective pieces",
+        },
+        "night": {  # 21-5
+            "mood_bias": ["introspective", "contemplative"],
+            "creation_type": "deep_work",
+            "description": "Night stillness for introspective creation",
+        },
+    }
+
+    # Thresholds for desire-driven creation
+    DESIRE_URGENCY_THRESHOLD = 0.8
+    MOOD_INTENSITY_THRESHOLD = 0.7
+
+    def __init__(
+        self,
+        mood_system=None,
+        desire_engine=None,
+        autonomous_mode: bool = True,
+    ):
+        super().__init__(autonomous_mode=autonomous_mode)
+        self.mood_system = mood_system
+        self.desire_engine = desire_engine
+        self._last_creation_check = None
+
+        logger.info("desire_aware_scheduler_initialized")
+
+    def _get_time_period(self) -> str:
+        """Get current time period based on hour."""
+        from datetime import datetime
+
+        hour = datetime.now(UTC).hour
+        if 5 <= hour < 12:
+            return "morning"
+        elif 12 <= hour < 17:
+            return "afternoon"
+        elif 17 <= hour < 21:
+            return "evening"
+        else:
+            return "night"
+
+    def should_create_now(self) -> tuple[bool, str]:
+        """Determine if Lumira should create right now based on internal state.
+
+        Returns:
+            (should_create, reason) tuple
+        """
+        reasons = []
+
+        # Check desire urgency
+        if self.desire_engine:
+            desire = self.desire_engine.get_strongest_desire()
+            if desire.urgency > self.DESIRE_URGENCY_THRESHOLD:
+                reasons.append(
+                    f"Strong {desire.drive_name} drive ({desire.urgency:.2f})"
+                )
+
+        # Check mood intensity
+        if self.mood_system:
+            intensity = getattr(self.mood_system, "mood_intensity", 0.5)
+            mood = self.mood_system.current_mood.value
+            if intensity > self.MOOD_INTENSITY_THRESHOLD:
+                reasons.append(f"Intense {mood} feeling ({intensity:.2f})")
+
+        # Check time-of-day alignment
+        period = self._get_time_period()
+        ritual = self.TIME_RITUALS.get(period, {})
+        mood_bias = ritual.get("mood_bias", [])
+
+        if self.mood_system and self.mood_system.current_mood.value in mood_bias:
+            reasons.append(
+                f"Time ritual alignment ({ritual.get('description', period)})"
+            )
+
+        # Decide
+        if reasons:
+            should = True
+            reason = "; ".join(reasons)
+        else:
+            should = False
+            reason = "No strong creative impulse right now"
+
+        logger.debug(
+            "should_create_check",
+            should=should,
+            reason=reason,
+            period=period,
+        )
+
+        return should, reason
+
+    def get_ritual_context(self) -> dict:
+        """Get current time ritual context for creative decisions."""
+        period = self._get_time_period()
+        ritual = self.TIME_RITUALS.get(period, {})
+
+        return {
+            "period": period,
+            "mood_bias": ritual.get("mood_bias", []),
+            "creation_type": ritual.get("creation_type", "general"),
+            "description": ritual.get("description", ""),
+        }
+
+    def add_desire_driven_job(
+        self,
+        job_func: Callable,
+        check_interval_minutes: int = 30,
+        job_id: str = "desire_driven_creation",
+    ):
+        """Add a job that only runs when internal desires warrant it.
+
+        Instead of creating at fixed times, this checks every `check_interval_minutes`
+        and only triggers creation if should_create_now() returns True.
+        """
+
+        async def conditional_job():
+            should_create, reason = self.should_create_now()
+            if should_create:
+                logger.info(
+                    "desire_driven_creation_triggered",
+                    reason=reason,
+                )
+                await job_func()
+            else:
+                logger.debug(
+                    "desire_driven_creation_skipped",
+                    reason=reason,
+                )
+
+        self.add_interval_job(
+            conditional_job,
+            minutes=check_interval_minutes,
+            job_id=job_id,
+        )
+
+        logger.info(
+            "desire_driven_job_added",
+            check_interval=check_interval_minutes,
+            job_id=job_id,
+        )
+
+    def add_reflection_job(
+        self,
+        reflection_func: Callable,
+        job_id: str = "daily_reflection",
+    ):
+        """Add a job for daily reflection at end of day."""
+        # Schedule reflection for 10 PM
+        self.add_daily_job(
+            reflection_func,
+            hour=22,
+            minute=0,
+            job_id=job_id,
+        )
+
+        logger.info("reflection_job_added", job_id=job_id)
+
+    def add_weekly_synthesis_job(
+        self,
+        synthesis_func: Callable,
+        job_id: str = "weekly_synthesis",
+    ):
+        """Add a job for weekly artistic synthesis."""
+        self.add_weekly_job(
+            synthesis_func,
+            day_of_week="sun",
+            hour=20,
+            minute=0,
+            job_id=job_id,
+        )
+
+        logger.info("weekly_synthesis_job_added", job_id=job_id)
+
+
+class DesireAwareArtist:
+    """Artist wrapper that creates based on internal desires."""
+
+    def __init__(
+        self,
+        artist,
+        mood_system=None,
+        desire_engine=None,
+        reflection_system=None,
+    ):
+        self.artist = artist
+        self.mood_system = mood_system
+        self.desire_engine = desire_engine
+        self.reflection_system = reflection_system
+        self.scheduler = DesireAwareScheduler(
+            mood_system=mood_system,
+            desire_engine=desire_engine,
+        )
+
+        logger.info("desire_aware_artist_initialized")
+
+    async def create_when_inspired(self):
+        """Create artwork only when internal state warrants it."""
+        should, reason = self.scheduler.should_create_now()
+
+        if not should:
+            logger.info("creation_deferred", reason=reason)
+            return None
+
+        # Get context from time ritual
+        ritual_context = self.scheduler.get_ritual_context()
+
+        # Create with ritual-aligned theme if available
+        theme = None
+        if ritual_context["creation_type"] == "fresh_ideas":
+            theme = "exploring something new"
+        elif ritual_context["creation_type"] == "experimental":
+            theme = "pushing boundaries"
+        elif ritual_context["creation_type"] == "reflection":
+            theme = "quiet contemplation"
+        elif ritual_context["creation_type"] == "deep_work":
+            theme = "introspective journey"
+
+        logger.info(
+            "inspired_creation_started",
+            reason=reason,
+            ritual=ritual_context["period"],
+            theme=theme,
+        )
+
+        try:
+            result = await self.artist.create_artwork(theme=theme)
+            logger.info("inspired_creation_complete")
+            return result
+        except Exception as e:
+            logger.error("inspired_creation_failed", error=str(e))
+            return None
+
+    async def perform_daily_reflection(self):
+        """Perform end-of-day reflection."""
+        if not self.reflection_system:
+            logger.warning("no_reflection_system_available")
+            return
+
+        logger.info("daily_reflection_started")
+
+        try:
+            # End any current session
+            if self.reflection_system._current_session_id:
+                self.reflection_system.record_session_end()
+
+            # Generate daily reflection
+            reflection = self.reflection_system.generate_daily_reflection()
+
+            logger.info(
+                "daily_reflection_complete",
+                date=reflection.date,
+                patterns=len(reflection.patterns_noticed),
+            )
+
+            return reflection
+        except Exception as e:
+            logger.error("daily_reflection_failed", error=str(e))
+            return None
+
+    async def perform_weekly_synthesis(self):
+        """Perform weekly artistic synthesis."""
+        if not self.reflection_system:
+            logger.warning("no_reflection_system_available")
+            return
+
+        logger.info("weekly_synthesis_started")
+
+        try:
+            synthesis = self.reflection_system.generate_weekly_synthesis()
+
+            logger.info(
+                "weekly_synthesis_complete",
+                week=synthesis.week_start,
+                period_name=synthesis.period_name,
+            )
+
+            return synthesis
+        except Exception as e:
+            logger.error("weekly_synthesis_failed", error=str(e))
+            return None
+
+    def schedule_desire_driven_creation(
+        self,
+        check_interval_minutes: int = 30,
+    ):
+        """Schedule creation that only triggers on strong internal desires."""
+        self.scheduler.add_desire_driven_job(
+            self.create_when_inspired,
+            check_interval_minutes=check_interval_minutes,
+        )
+
+    def schedule_reflections(self):
+        """Schedule daily and weekly reflections."""
+        self.scheduler.add_reflection_job(self.perform_daily_reflection)
+        self.scheduler.add_weekly_synthesis_job(self.perform_weekly_synthesis)
+
+    def start(self):
+        """Start the scheduler."""
+        self.scheduler.start()
+        logger.info("desire_aware_artist_started")
+
+    def shutdown(self):
+        """Shutdown the scheduler."""
+        self.scheduler.shutdown()
+        logger.info("desire_aware_artist_shutdown")
+
+    def list_jobs(self) -> list[dict]:
+        """List all scheduled jobs."""
+        return self.scheduler.list_jobs()
