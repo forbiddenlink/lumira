@@ -117,6 +117,8 @@ class ReplicateGenerator:
         num_images: int = 1,
         seed: int | None = None,
         on_progress=None,  # Not supported by Replicate API
+        lora_url: str | None = None,
+        lora_scale: float = 1.0,
     ) -> list[Image.Image]:
         """Generate images using Replicate API.
 
@@ -130,6 +132,8 @@ class ReplicateGenerator:
             num_images: Number of images to generate
             seed: Random seed for reproducibility
             on_progress: Callback for progress updates (not supported)
+            lora_url: URL to LoRA weights file (e.g., from Replicate training)
+            lora_scale: LoRA influence strength (0.0-1.0, default 1.0)
 
         Returns:
             List of PIL Image objects
@@ -182,6 +186,16 @@ class ReplicateGenerator:
 
             if seed is not None:
                 input_params["seed"] = seed
+
+            # Add LoRA support for FLUX models
+            if lora_url:
+                input_params["hf_lora"] = lora_url
+                input_params["lora_scale"] = lora_scale
+                logger.info(
+                    "using_lora",
+                    lora_url=lora_url[:50] + "..." if len(lora_url) > 50 else lora_url,
+                    scale=lora_scale,
+                )
         else:
             # SDXL and other models
             input_params = {

@@ -1,0 +1,57 @@
+{
+  "universal": {
+    "quality": "blurry, low quality, low resolution, pixelated, jpeg artifacts, compression artifacts, noise, grainy",
+    "anatomy": "bad anatomy, deformed, disfigured, mutation, mutated, extra limbs, missing limbs, floating limbs, disconnected limbs, malformed hands, extra fingers, fused fingers, too many fingers",
+    "face": "ugly face, distorted face, asymmetrical face, cross-eyed, lazy eye, duplicate faces",
+    "composition": "cropped, out of frame, cut off, poorly composed, cluttered background, watermark, signature, text, logo",
+    "technical": "overexposed, underexposed, oversaturated, washed out, bad lighting, harsh shadows"
+  },
+  "portrait": {
+    "base": "bad anatomy, deformed face, ugly, disfigured, bad proportions, extra limbs, cloned face, gross proportions, malformed limbs, missing arms, missing legs, extra arms, extra legs, mutated hands, fused fingers, too many fingers, long neck",
+    "realism": "plastic skin, mannequin, doll-like, uncanny valley, fake looking, artificial",
+    "expression": "dead eyes, lifeless, vacant expression, frozen expression"
+  },
+  "landscape": {
+    "base": "ugly, tiling, poorly drawn, out of frame, watermark, signature, blurry, grainy",
+    "nature": "artificial looking, plastic trees, fake sky, unrealistic colors",
+    "composition": "boring composition, centered horizon, no focal point"
+  },
+  "digital_art": {
+    "base": "low quality, amateur, beginner, poorly rendered, unfinished, sketch, rough draft",
+    "style": "inconsistent style, clashing elements, overworked, muddy colors"
+  },
+  "traditional": {
+    "painting": "digital looking, too smooth, no texture, flat, lifeless brushwork",
+    "drawing": "smudged, dirty, messy lines, uncontrolled marks"
+  },
+  "photography": {
+    "base": "fake, artificial, cgi, rendered, illustrated, painting, drawing",
+    "technical": "motion blur, out of focus, camera shake, lens flare, chromatic aberration, vignetting"
+  },
+  "mood_specific": {
+    "contemplative": "chaotic, busy, cluttered, aggressive, loud colors, harsh",
+    "chaotic": "orderly, calm, minimal, static, boring, predictable",
+    "melancholic": "cheerful, bright, vibrant, colorful, happy, excited",
+    "energized": "dull, muted, tired, lifeless, static, boring",
+    "rebellious": "conventional, safe, corporate, boring, conservative",
+    "serene": "chaotic, aggressive, dark, disturbing, harsh, loud",
+    "restless": "static, calm, peaceful, still, unchanging",
+    "playful": "serious, dark, heavy, depressing, somber, grim",
+    "introspective": "superficial, shallow, loud, external, busy",
+    "bold": "timid, weak, faded, uncertain, hesitant, soft"
+  },
+  "by_subject": {
+    "animals": "deformed animals, extra legs, wrong proportions, unnatural poses, floating",
+    "architecture": "impossible geometry, floating buildings, broken perspective, warped structures",
+    "food": "unappetizing, rotten, moldy, artificial, plastic looking",
+    "vehicles": "broken, impossible mechanics, wrong proportions, floating wheels",
+    "nature": "plastic plants, fake flowers, artificial grass, dead nature"
+  },
+  "style_specific": {
+    "anime": "realistic, photographic, 3d, western cartoon, uncanny, bad anatomy",
+    "realistic": "cartoon, anime, stylized, abstract, painted",
+    "abstract": "representational, photographic, literal, detailed, realistic",
+    "vintage": "modern, digital, clean, high-tech, futuristic",
+    "futuristic": "ancient, rustic, vintage, old, weathered, natural"
+  }
+}

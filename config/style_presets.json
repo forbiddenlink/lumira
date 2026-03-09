@@ -1,122 +1,443 @@
 {
   "Cinematic": {
     "name": "Cinematic",
-    "positive": "cinematic lighting, dramatic shadows, film grain, depth of field, bokeh",
-    "negative": "flat lighting, overexposed, amateur",
+    "positive": "cinematic lighting, dramatic shadows, film grain, depth of field, bokeh, anamorphic lens flare",
+    "negative": "flat lighting, overexposed, amateur, low quality",
     "description": "Movie-like quality with dramatic lighting",
     "category": "photography",
-    "tags": [
-      "dramatic",
-      "professional",
-      "film"
-    ]
+    "tags": ["dramatic", "professional", "film"],
+    "mood_affinity": ["bold", "melancholic", "rebellious"]
   },
   "Dreamy": {
     "name": "Dreamy",
-    "positive": "soft focus, ethereal, pastel colors, dreamlike atmosphere, gentle lighting",
-    "negative": "harsh, realistic, sharp details",
+    "positive": "soft focus, ethereal, pastel colors, dreamlike atmosphere, gentle lighting, hazy glow",
+    "negative": "harsh, realistic, sharp details, high contrast",
     "description": "Soft and dreamlike aesthetic",
     "category": "art",
-    "tags": [
-      "soft",
-      "fantasy",
-      "atmospheric"
-    ]
+    "tags": ["soft", "fantasy", "atmospheric"],
+    "mood_affinity": ["serene", "contemplative", "introspective"]
   },
   "Vibrant": {
     "name": "Vibrant",
-    "positive": "vibrant colors, high saturation, bold contrasts, energetic, vivid",
-    "negative": "muted, desaturated, dull, washed out",
+    "positive": "vibrant colors, high saturation, bold contrasts, energetic, vivid, dynamic composition",
+    "negative": "muted, desaturated, dull, washed out, monochrome",
     "description": "Bold and colorful",
     "category": "art",
-    "tags": [
-      "colorful",
-      "bold",
-      "energetic"
-    ]
+    "tags": ["colorful", "bold", "energetic"],
+    "mood_affinity": ["energized", "playful", "chaotic"]
   },
   "Minimalist": {
     "name": "Minimalist",
-    "positive": "minimalist, clean composition, negative space, simple, elegant",
-    "negative": "cluttered, busy, complex, ornate",
+    "positive": "minimalist, clean composition, negative space, simple, elegant, geometric",
+    "negative": "cluttered, busy, complex, ornate, detailed",
     "description": "Clean and simple aesthetic",
     "category": "art",
-    "tags": [
-      "simple",
-      "clean",
-      "modern"
-    ]
+    "tags": ["simple", "clean", "modern"],
+    "mood_affinity": ["contemplative", "serene", "introspective"]
   },
   "Oil Painting": {
     "name": "Oil Painting",
-    "positive": "oil painting, brushstrokes visible, canvas texture, {prompt}, masterpiece",
-    "negative": "digital art, photography, 3d render, smooth",
+    "positive": "oil painting, visible brushstrokes, canvas texture, impasto technique, masterpiece quality",
+    "negative": "digital art, photography, 3d render, smooth, photorealistic",
     "description": "Traditional oil painting style",
-    "category": "art",
-    "tags": [
-      "traditional",
-      "painting",
-      "classic"
-    ]
+    "category": "traditional",
+    "tags": ["traditional", "painting", "classic"],
+    "mood_affinity": ["contemplative", "melancholic", "bold"]
   },
   "Studio Portrait": {
     "name": "Studio Portrait",
-    "positive": "professional studio lighting, soft box lighting, {prompt}, high resolution, detailed",
-    "negative": "amateur, poorly lit, blurry, distorted",
+    "positive": "professional studio lighting, soft box lighting, high resolution, detailed, rembrandt lighting",
+    "negative": "amateur, poorly lit, blurry, distorted, harsh shadows",
     "description": "Professional portrait photography",
     "category": "photography",
-    "tags": [
-      "portrait",
-      "professional",
-      "studio"
-    ]
+    "tags": ["portrait", "professional", "studio"],
+    "mood_affinity": ["serene", "bold", "introspective"]
   },
   "Watercolor": {
     "name": "Watercolor",
-    "positive": "watercolor painting, soft blends, flowing colors, translucent, {prompt}",
-    "negative": "digital, sharp edges, opaque, photographic",
+    "positive": "watercolor painting, soft blends, flowing colors, translucent washes, wet-on-wet technique",
+    "negative": "digital, sharp edges, opaque, photographic, harsh lines",
     "description": "Soft watercolor painting style",
-    "category": "art",
-    "tags": [
-      "painting",
-      "traditional",
-      "soft"
-    ]
+    "category": "traditional",
+    "tags": ["painting", "traditional", "soft"],
+    "mood_affinity": ["serene", "melancholic", "contemplative"]
   },
   "Dark Moody": {
     "name": "Dark Moody",
-    "positive": "dark atmosphere, moody lighting, dramatic shadows, cinematic, {prompt}",
-    "negative": "bright, cheerful, flat lighting, overexposed",
+    "positive": "dark atmosphere, moody lighting, dramatic shadows, cinematic, chiaroscuro, noir",
+    "negative": "bright, cheerful, flat lighting, overexposed, pastel",
     "description": "Dark and atmospheric mood",
     "category": "photography",
-    "tags": [
-      "dark",
-      "atmospheric",
-      "dramatic"
-    ]
+    "tags": ["dark", "atmospheric", "dramatic"],
+    "mood_affinity": ["melancholic", "rebellious", "introspective"]
   },
   "Anime": {
     "name": "Anime",
-    "positive": "anime style, cel shaded, vibrant colors, {prompt}, detailed",
-    "negative": "realistic, photographic, western cartoon, 3d",
+    "positive": "anime style, cel shaded, vibrant colors, detailed, studio ghibli inspired",
+    "negative": "realistic, photographic, western cartoon, 3d, uncanny",
     "description": "Japanese anime art style",
-    "category": "art",
-    "tags": [
-      "anime",
-      "illustration",
-      "stylized"
-    ]
+    "category": "illustration",
+    "tags": ["anime", "illustration", "stylized"],
+    "mood_affinity": ["playful", "energized", "chaotic"]
   },
   "Retro Vintage": {
     "name": "Retro Vintage",
-    "positive": "retro, vintage aesthetic, faded colors, film grain, 1970s, nostalgic",
-    "negative": "modern, digital, crisp, high tech",
+    "positive": "retro aesthetic, vintage, faded colors, film grain, 1970s, nostalgic, warm tones",
+    "negative": "modern, digital, crisp, high tech, clean",
     "description": "Vintage 70s aesthetic",
     "category": "photography",
-    "tags": [
-      "vintage",
-      "retro",
-      "nostalgic"
-    ]
+    "tags": ["vintage", "retro", "nostalgic"],
+    "mood_affinity": ["melancholic", "contemplative", "serene"]
+  },
+  "Renaissance": {
+    "name": "Renaissance",
+    "positive": "renaissance painting, classical composition, sfumato technique, religious iconography, masterwork",
+    "negative": "modern, abstract, digital, cartoonish, flat",
+    "description": "Classical Renaissance master style",
+    "category": "traditional",
+    "tags": ["classical", "masterwork", "historic"],
+    "mood_affinity": ["contemplative", "serene", "introspective"]
+  },
+  "Impressionist": {
+    "name": "Impressionist",
+    "positive": "impressionist style, visible brushwork, light and color study, en plein air, monet inspired",
+    "negative": "sharp details, photorealistic, dark, monochrome",
+    "description": "French Impressionist style",
+    "category": "traditional",
+    "tags": ["impressionist", "painting", "light"],
+    "mood_affinity": ["serene", "playful", "contemplative"]
+  },
+  "Art Nouveau": {
+    "name": "Art Nouveau",
+    "positive": "art nouveau style, organic flowing lines, decorative borders, alphonse mucha inspired, ornate",
+    "negative": "geometric, minimalist, photographic, harsh angles",
+    "description": "Decorative Art Nouveau aesthetic",
+    "category": "illustration",
+    "tags": ["decorative", "flowing", "ornate"],
+    "mood_affinity": ["serene", "playful", "contemplative"]
+  },
+  "Art Deco": {
+    "name": "Art Deco",
+    "positive": "art deco style, geometric patterns, gold accents, 1920s glamour, symmetrical, luxurious",
+    "negative": "organic, natural, rustic, minimalist, muted",
+    "description": "1920s Art Deco glamour",
+    "category": "illustration",
+    "tags": ["geometric", "glamour", "vintage"],
+    "mood_affinity": ["bold", "energized", "rebellious"]
+  },
+  "Cyberpunk": {
+    "name": "Cyberpunk",
+    "positive": "cyberpunk aesthetic, neon lights, rain-slicked streets, holographic displays, blade runner inspired",
+    "negative": "natural, pastoral, bright daylight, organic, rustic",
+    "description": "Futuristic cyberpunk dystopia",
+    "category": "digital",
+    "tags": ["futuristic", "neon", "dystopian"],
+    "mood_affinity": ["rebellious", "chaotic", "restless"]
+  },
+  "Vaporwave": {
+    "name": "Vaporwave",
+    "positive": "vaporwave aesthetic, pink and cyan, greek statues, 80s nostalgia, glitch effects, sunset gradients",
+    "negative": "natural, realistic, dark, monochrome, traditional",
+    "description": "Retro-futuristic vaporwave",
+    "category": "digital",
+    "tags": ["retro", "aesthetic", "surreal"],
+    "mood_affinity": ["playful", "restless", "chaotic"]
+  },
+  "Gothic": {
+    "name": "Gothic",
+    "positive": "gothic aesthetic, dark romantic, cathedral architecture, ravens, moonlight, victorian elements",
+    "negative": "bright, cheerful, modern, minimalist, colorful",
+    "description": "Dark romantic gothic style",
+    "category": "art",
+    "tags": ["dark", "romantic", "victorian"],
+    "mood_affinity": ["melancholic", "introspective", "rebellious"]
+  },
+  "Surrealist": {
+    "name": "Surrealist",
+    "positive": "surrealist painting, impossible geometry, dreamscape, dali inspired, melting forms, subconscious",
+    "negative": "realistic, logical, conventional, photographic",
+    "description": "Mind-bending surrealism",
+    "category": "art",
+    "tags": ["surreal", "dreamlike", "impossible"],
+    "mood_affinity": ["chaotic", "introspective", "restless"]
+  },
+  "Abstract Expressionist": {
+    "name": "Abstract Expressionist",
+    "positive": "abstract expressionism, action painting, emotional brushwork, rothko color fields, pollock drips",
+    "negative": "representational, photographic, controlled, minimal",
+    "description": "Emotional abstract expressionism",
+    "category": "art",
+    "tags": ["abstract", "emotional", "expressive"],
+    "mood_affinity": ["chaotic", "energized", "rebellious"]
+  },
+  "Baroque": {
+    "name": "Baroque",
+    "positive": "baroque style, dramatic lighting, rich colors, caravaggio inspired, chiaroscuro, opulent",
+    "negative": "flat, modern, minimal, pastel, simplistic",
+    "description": "Dramatic Baroque grandeur",
+    "category": "traditional",
+    "tags": ["dramatic", "classical", "opulent"],
+    "mood_affinity": ["bold", "melancholic", "contemplative"]
+  },
+  "Ukiyo-e": {
+    "name": "Ukiyo-e",
+    "positive": "ukiyo-e woodblock print, hokusai inspired, flat colors, bold outlines, japanese aesthetic",
+    "negative": "3d, photographic, western, realistic shading",
+    "description": "Traditional Japanese woodblock style",
+    "category": "traditional",
+    "tags": ["japanese", "woodblock", "traditional"],
+    "mood_affinity": ["serene", "contemplative", "introspective"]
+  },
+  "Steampunk": {
+    "name": "Steampunk",
+    "positive": "steampunk aesthetic, brass gears, victorian machinery, clockwork, airships, copper pipes",
+    "negative": "modern, digital, sleek, minimalist, natural",
+    "description": "Victorian-era science fiction",
+    "category": "digital",
+    "tags": ["victorian", "mechanical", "retro-futuristic"],
+    "mood_affinity": ["bold", "energized", "restless"]
+  },
+  "Fantasy Illustration": {
+    "name": "Fantasy Illustration",
+    "positive": "fantasy art, epic scene, magical lighting, detailed environment, concept art quality",
+    "negative": "mundane, realistic, minimalist, abstract",
+    "description": "Epic fantasy concept art",
+    "category": "illustration",
+    "tags": ["fantasy", "epic", "magical"],
+    "mood_affinity": ["bold", "energized", "playful"]
+  },
+  "Noir Photography": {
+    "name": "Noir Photography",
+    "positive": "film noir, black and white, dramatic shadows, venetian blinds, fedora, cigarette smoke",
+    "negative": "colorful, bright, cheerful, outdoor daylight",
+    "description": "Classic film noir aesthetic",
+    "category": "photography",
+    "tags": ["noir", "monochrome", "dramatic"],
+    "mood_affinity": ["melancholic", "introspective", "rebellious"]
+  },
+  "Psychedelic": {
+    "name": "Psychedelic",
+    "positive": "psychedelic art, kaleidoscopic patterns, vibrant colors, optical illusions, 1960s poster art",
+    "negative": "realistic, muted, minimal, conventional, dark",
+    "description": "Mind-expanding psychedelic visuals",
+    "category": "art",
+    "tags": ["psychedelic", "colorful", "trippy"],
+    "mood_affinity": ["chaotic", "playful", "energized"]
+  },
+  "Botanical Illustration": {
+    "name": "Botanical Illustration",
+    "positive": "botanical illustration, scientific accuracy, delicate linework, vintage naturalism, specimen study",
+    "negative": "abstract, cartoonish, impressionistic, bold",
+    "description": "Scientific botanical drawings",
+    "category": "illustration",
+    "tags": ["botanical", "scientific", "delicate"],
+    "mood_affinity": ["contemplative", "serene", "introspective"]
+  },
+  "Pop Art": {
+    "name": "Pop Art",
+    "positive": "pop art style, bold colors, ben-day dots, warhol inspired, comic book aesthetic, high contrast",
+    "negative": "subtle, muted, realistic, classical, natural",
+    "description": "Bold Warhol-inspired pop art",
+    "category": "art",
+    "tags": ["pop", "bold", "graphic"],
+    "mood_affinity": ["energized", "playful", "rebellious"]
+  },
+  "Pointillism": {
+    "name": "Pointillism",
+    "positive": "pointillism technique, seurat inspired, dots of color, optical blending, impressionist",
+    "negative": "smooth blending, photographic, sharp lines, digital",
+    "description": "Dot-based pointillist painting",
+    "category": "traditional",
+    "tags": ["pointillism", "dots", "impressionist"],
+    "mood_affinity": ["contemplative", "serene", "playful"]
+  },
+  "Low Poly": {
+    "name": "Low Poly",
+    "positive": "low poly 3d art, geometric shapes, triangulated surfaces, clean facets, modern minimal",
+    "negative": "organic, detailed, photorealistic, painterly, complex",
+    "description": "Geometric low polygon 3D style",
+    "category": "digital",
+    "tags": ["geometric", "3d", "modern"],
+    "mood_affinity": ["contemplative", "serene", "bold"]
+  },
+  "Glitch Art": {
+    "name": "Glitch Art",
+    "positive": "glitch art, data corruption, pixel sorting, chromatic aberration, digital artifacts, vhs aesthetic",
+    "negative": "clean, pristine, natural, organic, traditional",
+    "description": "Digital glitch aesthetics",
+    "category": "digital",
+    "tags": ["glitch", "digital", "corrupted"],
+    "mood_affinity": ["chaotic", "rebellious", "restless"]
+  },
+  "Ink Wash": {
+    "name": "Ink Wash",
+    "positive": "chinese ink wash painting, sumi-e, expressive brushwork, mountains and mist, zen aesthetic",
+    "negative": "colorful, detailed, western, photographic, sharp",
+    "description": "Traditional Asian ink painting",
+    "category": "traditional",
+    "tags": ["ink", "asian", "zen"],
+    "mood_affinity": ["serene", "contemplative", "introspective"]
+  },
+  "Street Art": {
+    "name": "Street Art",
+    "positive": "street art, urban graffiti, stencil art, banksy inspired, spray paint texture, raw urban",
+    "negative": "refined, classical, natural, minimalist, digital",
+    "description": "Urban street art aesthetic",
+    "category": "art",
+    "tags": ["urban", "graffiti", "rebellious"],
+    "mood_affinity": ["rebellious", "chaotic", "energized"]
+  },
+  "Ethereal Light": {
+    "name": "Ethereal Light",
+    "positive": "ethereal lighting, god rays, volumetric fog, heavenly glow, atmospheric, transcendent",
+    "negative": "dark, harsh shadows, mundane, flat lighting",
+    "description": "Divine ethereal lighting",
+    "category": "photography",
+    "tags": ["ethereal", "light", "atmospheric"],
+    "mood_affinity": ["serene", "contemplative", "introspective"]
+  },
+  "Moody Landscape": {
+    "name": "Moody Landscape",
+    "positive": "moody landscape, dramatic skies, storm clouds, golden hour, atmospheric perspective, epic vista",
+    "negative": "flat, midday sun, clear sky, mundane, close-up",
+    "description": "Dramatic atmospheric landscapes",
+    "category": "photography",
+    "tags": ["landscape", "moody", "dramatic"],
+    "mood_affinity": ["melancholic", "contemplative", "bold"]
+  },
+  "Double Exposure": {
+    "name": "Double Exposure",
+    "positive": "double exposure effect, overlapping images, silhouette with nature, surreal composite, dreamlike",
+    "negative": "single image, clear, simple, conventional, sharp",
+    "description": "Artistic double exposure",
+    "category": "photography",
+    "tags": ["double exposure", "surreal", "composite"],
+    "mood_affinity": ["introspective", "contemplative", "melancholic"]
+  },
+  "Macro Nature": {
+    "name": "Macro Nature",
+    "positive": "macro photography, extreme close-up, water droplets, intricate details, shallow depth of field",
+    "negative": "wide angle, landscape, distant, low detail",
+    "description": "Detailed macro nature shots",
+    "category": "photography",
+    "tags": ["macro", "nature", "detailed"],
+    "mood_affinity": ["contemplative", "serene", "playful"]
+  },
+  "Concept Art": {
+    "name": "Concept Art",
+    "positive": "concept art, professional illustration, detailed environment design, cinematic composition, AAA quality",
+    "negative": "amateur, simple, minimalist, abstract, sketch",
+    "description": "Professional concept artwork",
+    "category": "illustration",
+    "tags": ["concept", "professional", "detailed"],
+    "mood_affinity": ["bold", "energized", "contemplative"]
+  },
+  "Charcoal Drawing": {
+    "name": "Charcoal Drawing",
+    "positive": "charcoal drawing, dramatic shading, textured paper, expressive marks, figure study, classical",
+    "negative": "colorful, digital, clean, smooth, photographic",
+    "description": "Expressive charcoal artwork",
+    "category": "traditional",
+    "tags": ["charcoal", "drawing", "expressive"],
+    "mood_affinity": ["melancholic", "introspective", "bold"]
+  },
+  "Stained Glass": {
+    "name": "Stained Glass",
+    "positive": "stained glass window, lead lines, jewel tones, backlit, cathedral aesthetic, radiant",
+    "negative": "modern, minimal, photographic, natural, subtle",
+    "description": "Cathedral stained glass style",
+    "category": "art",
+    "tags": ["stained glass", "religious", "colorful"],
+    "mood_affinity": ["contemplative", "serene", "bold"]
+  },
+  "Soft Pastel": {
+    "name": "Soft Pastel",
+    "positive": "soft pastel drawing, chalky texture, gentle blending, muted palette, delicate, romantic",
+    "negative": "harsh, high contrast, digital, sharp, bold",
+    "description": "Gentle pastel artwork",
+    "category": "traditional",
+    "tags": ["pastel", "soft", "romantic"],
+    "mood_affinity": ["serene", "contemplative", "playful"]
+  },
+  "Hyperrealism": {
+    "name": "Hyperrealism",
+    "positive": "hyperrealistic, photorealistic painting, extreme detail, lifelike, museum quality",
+    "negative": "abstract, stylized, impressionistic, loose, sketchy",
+    "description": "Ultra-realistic painting",
+    "category": "traditional",
+    "tags": ["hyperrealistic", "detailed", "photographic"],
+    "mood_affinity": ["contemplative", "bold", "introspective"]
+  },
+  "Neon Dreams": {
+    "name": "Neon Dreams",
+    "positive": "neon lighting, glowing colors, night scene, electric atmosphere, synthwave, ultraviolet",
+    "negative": "natural light, daylight, muted, earthy, traditional",
+    "description": "Electric neon nightscape",
+    "category": "digital",
+    "tags": ["neon", "glowing", "night"],
+    "mood_affinity": ["energized", "rebellious", "restless"]
+  },
+  "Ethereal Portrait": {
+    "name": "Ethereal Portrait",
+    "positive": "ethereal portrait, soft lighting, flowing fabric, wind-blown hair, dreamlike, angelic",
+    "negative": "harsh, urban, gritty, dark, stark",
+    "description": "Dreamy ethereal portraits",
+    "category": "photography",
+    "tags": ["portrait", "ethereal", "dreamy"],
+    "mood_affinity": ["serene", "contemplative", "melancholic"]
+  },
+  "Industrial Decay": {
+    "name": "Industrial Decay",
+    "positive": "industrial decay, abandoned factory, rust and patina, urban exploration, atmospheric, gritty",
+    "negative": "pristine, new, clean, natural, colorful",
+    "description": "Atmospheric industrial ruins",
+    "category": "photography",
+    "tags": ["industrial", "decay", "urban"],
+    "mood_affinity": ["melancholic", "restless", "rebellious"]
+  },
+  "Cosmic": {
+    "name": "Cosmic",
+    "positive": "cosmic scene, nebula colors, star fields, galaxies, space art, interstellar, cosmic dust",
+    "negative": "earthly, mundane, indoor, close-up, urban",
+    "description": "Vast cosmic space imagery",
+    "category": "digital",
+    "tags": ["space", "cosmic", "nebula"],
+    "mood_affinity": ["contemplative", "introspective", "serene"]
+  },
+  "Geometric Abstract": {
+    "name": "Geometric Abstract",
+    "positive": "geometric abstraction, mondrian inspired, primary colors, clean lines, bauhaus, mathematical",
+    "negative": "organic, natural, photographic, detailed, chaotic",
+    "description": "Clean geometric abstract art",
+    "category": "art",
+    "tags": ["geometric", "abstract", "bauhaus"],
+    "mood_affinity": ["contemplative", "serene", "bold"]
+  },
+  "Vintage Botanical": {
+    "name": "Vintage Botanical",
+    "positive": "vintage botanical print, aged paper texture, victorian era, hand-colored engraving, specimen",
+    "negative": "modern, digital, abstract, minimalist, bold",
+    "description": "Victorian botanical illustrations",
+    "category": "illustration",
+    "tags": ["botanical", "vintage", "scientific"],
+    "mood_affinity": ["contemplative", "serene", "introspective"]
+  },
+  "Brutalist Architecture": {
+    "name": "Brutalist Architecture",
+    "positive": "brutalist architecture, concrete forms, dramatic angles, monumental scale, raw concrete",
+    "negative": "ornate, decorative, natural, colorful, delicate",
+    "description": "Bold brutalist concrete forms",
+    "category": "photography",
+    "tags": ["brutalist", "architecture", "concrete"],
+    "mood_affinity": ["bold", "rebellious", "contemplative"]
+  },
+  "Muted Earth Tones": {
+    "name": "Muted Earth Tones",
+    "positive": "earth tones palette, muted colors, ochre and umber, natural warmth, organic, grounded",
+    "negative": "vibrant, neon, artificial, cold, digital",
+    "description": "Warm earthy color palette",
+    "category": "art",
+    "tags": ["earthy", "muted", "natural"],
+    "mood_affinity": ["contemplative", "serene", "melancholic"]
   }
 }

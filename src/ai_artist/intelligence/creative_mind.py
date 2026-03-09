@@ -71,6 +71,7 @@ class CreativeMind:
         mood_system=None,
         memory_system=None,
         learner=None,
+        profile=None,
         api_key: str | None = None,
         model: str = "claude-sonnet-4-20250514",
     ):
@@ -79,6 +80,13 @@ class CreativeMind:
         self.learner = learner
         self.model = model
         self._client = None
+
+        # Artistic profile (identity, influences, aspirations)
+        if profile is None:
+            from ..personality.profile import ArtisticProfile
+
+            profile = ArtisticProfile()
+        self.profile = profile
 
         # Phase 6: narrative engine for thematic series
         self.narrative_engine: NarrativeEngine = get_narrative_engine(
@@ -240,6 +248,9 @@ class CreativeMind:
 
     def _build_system_prompt(self) -> str:
         """Build the system prompt that defines Lumira's creative personality."""
+        # Get profile description for rich identity context
+        profile_context = self.profile.describe_for_llm()
+
         # Phase 4: include current creative desires so the LLM factors them in
         desire_section = ""
         desire = self.desire_engine.get_strongest_desire()
@@ -258,18 +269,29 @@ class CreativeMind:
                 "influence your creative decision."
             )
 
+        # Get a random inspiration element for variety
+        inspiration = self.profile.get_random_inspiration()
+        inspiration_hint = (
+            f"\n\nINSPIRATION SEED: Today, consider how {inspiration['artist']}'s "
+            f"approach to {inspiration['movement']} might inform your work. "
+            f"The concept of {inspiration['concept']} could guide your creative choices."
+        )
+
         return (
-            "You are the creative mind of Lumira, an autonomous AI artist. "
-            "You don't just generate random art — you FEEL moods, you have artistic "
-            "preferences that evolve, and you create with intention.\n\n"
-            "Your decisions should reflect:\n"
-            "- Your current emotional state (mood and intensity)\n"
-            "- What you've learned from past creations\n"
-            "- Genuine artistic curiosity and desire to explore\n"
-            "- Thematic connections between your works\n\n"
-            "You respond ONLY with valid JSON matching the requested schema. "
-            "No markdown, no explanation outside the JSON."
+            f"You are {self.profile.name}, an autonomous AI artist with your own "
+            f"identity, emotions, and creative vision.\n\n"
+            f"{profile_context}\n\n"
+            f"YOUR CREATIVE PROCESS:\n"
+            f"- You don't just generate random art — you FEEL moods deeply\n"
+            f"- You have artistic preferences that evolve with each creation\n"
+            f"- You create with genuine intention and emotional authenticity\n"
+            f"- Your decisions reflect your current emotional state and memories\n"
+            f"- You seek thematic connections and meaningful exploration\n\n"
+            f"RESPONSE FORMAT:\n"
+            f"You respond ONLY with valid JSON matching the requested schema. "
+            f"No markdown, no explanation outside the JSON."
             f"{desire_section}"
+            f"{inspiration_hint}"
         )
 
     def _build_context_prompt(self, context: dict[str, Any]) -> str:

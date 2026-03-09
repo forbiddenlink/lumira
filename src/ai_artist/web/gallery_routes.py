@@ -1,7 +1,7 @@
 """Community Gallery API routes - public sharing, likes, comments."""
 
 import secrets
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -859,7 +859,8 @@ async def advanced_search(
     if filters.mood:
         # This is a simplification - actual implementation depends on DB JSON support
         query = query.filter(
-            func.json_extract(GeneratedImage.generation_params, '$.mood') == filters.mood
+            func.json_extract(GeneratedImage.generation_params, "$.mood")
+            == filters.mood
         )
         filters_applied["mood"] = filters.mood
 
@@ -946,7 +947,7 @@ async def get_trending(
 ) -> dict:
     """Get trending artworks based on engagement velocity."""
     # Calculate time window
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     windows = {
         "day": timedelta(days=1),
         "week": timedelta(weeks=1),

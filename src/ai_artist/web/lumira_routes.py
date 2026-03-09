@@ -19,6 +19,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
+from ..caching import get_generation_cache
 from ..db.models import GeneratedImage
 from ..db.session import get_db
 from ..personality.enhanced_memory import EnhancedMemorySystem
@@ -26,6 +27,7 @@ from ..personality.moods import Mood, MoodSystem
 from ..personality.profile import ArtisticProfile
 from ..utils.config import load_config
 from ..utils.logging import get_logger
+from ..utils.negative_prompts import get_negative_prompt_library
 
 logger = get_logger(__name__)
 
@@ -84,6 +86,10 @@ class UserCreationRequest(BaseModel):
     allow_interpretation: bool = Field(
         default=True,
         description="Let Lumira add her own artistic interpretation",
+    )
+    use_lora: bool = Field(
+        default=False,
+        description="Apply Lumira's trained style LoRA",
     )
 
 
@@ -452,15 +458,94 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
             learner=learner,
         )
 
-        # Let Lumira decide what to create
-        intent = await creative_mind.decide_what_to_create()
+        # Get caching and negative prompt library
+        gen_cache = get_generation_cache()
+        neg_prompt_lib = get_negative_prompt_library()
+        mood = mood_system.current_mood
+
+        # Determine time of day for cache key
+        hour = datetime.now().hour
+        if 5 <= hour < 12:
+            time_of_day = "morning"
+        elif 12 <= hour < 17:
+            time_of_day = "afternoon"
+        elif 17 <= hour < 21:
+            time_of_day = "evening"
+        else:
+            time_of_day = "night"
+
+        # Get recent subjects from memory to avoid repetition
+        recent_subjects = []
+        if memory:
+            try:
+                recent = memory.recall_recent_creations(limit=10)
+                recent_subjects = [
+                    c.get("subject", "") for c in recent if c.get("subject")
+                ]
+            except Exception:
+                pass
+
+        # Check cache for creative intent (cost optimization)
+        cached_intent = await gen_cache.get_creative_intent(
+            mood=mood.value,
+            energy=getattr(mood_system, "mood_intensity", 0.7),
+            time_of_day=time_of_day,
+            recent_subjects=recent_subjects,
+        )
+
+        if cached_intent:
+            # Reconstruct CreativeIntent from cached data
+            from ..intelligence.creative_mind import CreativeIntent
+
+            intent = CreativeIntent(
+                subject=cached_intent.get("subject", "abstract composition"),
+                style=cached_intent.get("style", "digital art"),
+                mood_alignment=cached_intent.get("mood_alignment", ""),
+                reasoning=cached_intent.get("reasoning", ""),
+                prompt=cached_intent.get("prompt", ""),
+                negative_prompt=cached_intent.get("negative_prompt", ""),
+                artistic_goals=cached_intent.get("artistic_goals", []),
+                thinking_narrative=cached_intent.get("thinking_narrative", ""),
+                generation_params=cached_intent.get("generation_params", {}),
+            )
+            logger.info("creative_intent_cache_hit", mood=mood.value)
+        else:
+            # Let Lumira decide what to create
+            intent = await creative_mind.decide_what_to_create()
+
+            # Cache the intent for cost optimization
+            await gen_cache.set_creative_intent(
+                mood=mood.value,
+                energy=getattr(mood_system, "mood_intensity", 0.7),
+                time_of_day=time_of_day,
+                intent={
+                    "subject": intent.subject,
+                    "style": intent.style,
+                    "mood_alignment": intent.mood_alignment,
+                    "reasoning": intent.reasoning,
+                    "prompt": intent.prompt,
+                    "negative_prompt": intent.negative_prompt,
+                    "artistic_goals": intent.artistic_goals,
+                    "thinking_narrative": intent.thinking_narrative,
+                    "generation_params": intent.generation_params,
+                },
+            )
+            logger.info("creative_intent_cached", mood=mood.value)
 
         subject = intent.subject
         style = intent.style
         prompt = intent.prompt
-        negative_prompt = intent.negative_prompt
+
+        # Compose enhanced negative prompt using library
+        negative_prompt = neg_prompt_lib.compose(
+            base_negative=intent.negative_prompt,
+            mood=mood.value,
+            style=style,
+            subject=subject,
+            include_universal=True,
+        )
+
         thinking = intent.thinking_narrative
-        mood = mood_system.current_mood
 
         # Send thinking update to WebSocket clients
         if thinking:
@@ -638,6 +723,27 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
                                 db_session.add(db_image)
                                 db_session.commit()
                                 logger.info("image_saved_to_database", id=db_image.id)
+
+                                # Add to vector memory for semantic search
+                                try:
+                                    from ..personality.vector_memory import (
+                                        get_vector_memory,
+                                    )
+
+                                    vector_mem = get_vector_memory()
+                                    vector_mem.add_creation(
+                                        creation_id=str(db_image.id),
+                                        prompt=prompt,
+                                        subject=subject,
+                                        style=style,
+                                        mood=mood.value,
+                                        reasoning=intent.reasoning,
+                                        quality_score=0.8,
+                                    )
+                                except Exception as vec_err:
+                                    logger.debug(
+                                        "vector_memory_add_failed", error=str(vec_err)
+                                    )
                         else:
                             logger.warning("database_not_configured_skipping_db_save")
                     except Exception as db_error:
@@ -926,9 +1032,19 @@ async def user_request_creation(
         subject = intent.subject
         style = intent.style
         prompt = intent.prompt
-        negative_prompt = intent.negative_prompt
-        thinking = intent.thinking_narrative
         mood = mood_system.current_mood
+
+        # Compose enhanced negative prompt using library
+        neg_prompt_lib = get_negative_prompt_library()
+        negative_prompt = neg_prompt_lib.compose(
+            base_negative=intent.negative_prompt,
+            mood=mood.value,
+            style=style,
+            subject=subject,
+            include_universal=True,
+        )
+
+        thinking = intent.thinking_narrative
 
         # Stream thinking to WebSocket
         if thinking:
@@ -1016,8 +1132,37 @@ async def user_request_creation(
                     _background_tasks.add(t)
                     t.add_done_callback(_background_tasks.discard)
 
+                # Load LoRA config if requested
+                lora_url = None
+                lora_scale = 0.8
+                final_prompt = prompt
+                if body.use_lora:
+                    lora_config_path = Path("config/lora_models.json")
+                    if lora_config_path.exists():
+                        import json
+
+                        lora_config = json.loads(lora_config_path.read_text())
+                        default_model = lora_config.get(
+                            "default_model", "lumira-style-v1"
+                        )
+                        model_info = lora_config.get("models", {}).get(
+                            default_model, {}
+                        )
+                        if model_info.get("status") == "ready" and model_info.get(
+                            "url"
+                        ):
+                            lora_url = model_info["url"]
+                            lora_scale = model_info.get("scale", 0.8)
+                            trigger = model_info.get("trigger_word", "lumira style")
+                            # Prepend trigger word if not already present
+                            if trigger.lower() not in prompt.lower():
+                                final_prompt = f"{trigger}, {prompt}"
+                            logger.info(
+                                "lora_enabled", lora_url=lora_url[:50], trigger=trigger
+                            )
+
                 images = generator.generate(
-                    prompt=prompt,
+                    prompt=final_prompt,
                     negative_prompt=negative_prompt,
                     num_inference_steps=num_steps,
                     guidance_scale=guidance,
@@ -1025,6 +1170,8 @@ async def user_request_creation(
                     height=768,
                     num_images=1,
                     on_progress=on_progress,
+                    lora_url=lora_url,
+                    lora_scale=lora_scale,
                 )
 
                 if images and len(images) > 0:
@@ -1333,6 +1480,86 @@ async def get_memory_dashboard(request: Request) -> MemoryDashboardResponse:
         style_evolution=style_evolution,
         total_memories=len(recent_memories),
     )
+
+
+class SemanticSearchRequest(BaseModel):
+    """Request for semantic search over creations."""
+
+    query: str = Field(description="Natural language search query")
+    n_results: int = Field(default=5, ge=1, le=20)
+    mood: str | None = Field(default=None, description="Filter by mood")
+    style: str | None = Field(default=None, description="Filter by style")
+
+
+class SemanticSearchResult(BaseModel):
+    """A single semantic search result."""
+
+    id: str
+    prompt: str
+    subject: str
+    style: str
+    mood: str
+    similarity: float
+
+
+class SemanticSearchResponse(BaseModel):
+    """Response from semantic search."""
+
+    results: list[SemanticSearchResult]
+    query: str
+    total_indexed: int
+
+
+@router.post("/memory/search", response_model=SemanticSearchResponse)
+@limiter.limit("30/minute")
+async def semantic_search(
+    request: Request,
+    body: SemanticSearchRequest,
+) -> SemanticSearchResponse:
+    """Search Lumira's creations by semantic meaning.
+
+    Find artworks similar to a natural language description.
+    """
+    from ..personality.vector_memory import get_vector_memory
+
+    try:
+        vector_mem = get_vector_memory()
+
+        results = vector_mem.search_creations(
+            query=body.query,
+            n_results=body.n_results,
+            mood_filter=body.mood,
+            style_filter=body.style,
+        )
+
+        formatted_results = []
+        for r in results:
+            meta = r.get("metadata", {})
+            formatted_results.append(
+                SemanticSearchResult(
+                    id=r["id"],
+                    prompt=r.get("document", "")[:200],
+                    subject=meta.get("subject", ""),
+                    style=meta.get("style", ""),
+                    mood=meta.get("mood", ""),
+                    similarity=1.0
+                    - r.get("distance", 0),  # Convert distance to similarity
+                )
+            )
+
+        return SemanticSearchResponse(
+            results=formatted_results,
+            query=body.query,
+            total_indexed=vector_mem.get_stats()["creations_count"],
+        )
+
+    except Exception as e:
+        logger.error("semantic_search_failed", error=str(e))
+        return SemanticSearchResponse(
+            results=[],
+            query=body.query,
+            total_indexed=0,
+        )
 
 
 @router.get("/mood/evolution", response_model=MoodEvolutionResponse)
@@ -2987,7 +3214,9 @@ async def get_artwork_context(request: Request, artwork_id: str):
     context = graph.get_artwork_context(artwork_id)
 
     if not context:
-        raise HTTPException(status_code=404, detail="Artwork not found in knowledge graph")
+        raise HTTPException(
+            status_code=404, detail="Artwork not found in knowledge graph"
+        )
 
     return ArtworkContextResponse(
         id=artwork_id,
@@ -3110,7 +3339,9 @@ async def post_to_social(request: Request, post_request: SocialPostRequest):
         if image is None:
             raise HTTPException(status_code=404, detail="Artwork not found in gallery")
     else:
-        raise HTTPException(status_code=400, detail="Either artwork_id or image_path required")
+        raise HTTPException(
+            status_code=400, detail="Either artwork_id or image_path required"
+        )
 
     # Post to platforms
     results = poster.post_artwork(

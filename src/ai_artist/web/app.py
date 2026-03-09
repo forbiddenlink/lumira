@@ -27,6 +27,7 @@ from fastapi import (
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Response
 from fastapi.security import APIKeyHeader
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 from slowapi import Limiter
@@ -430,6 +431,7 @@ templates = Jinja2Templates(directory=str(templates_dir))
 
 # Static files directory
 static_dir = Path(__file__).parent.parent.parent / "static"
+app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 
 @app.get("/", response_class=HTMLResponse)

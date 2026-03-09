@@ -12,7 +12,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
+    <link rel="icon" type="image/png" sizes="512x512" href="/static/icons/icon-512x512.png">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192x192.png">
 
     <style>
         :root {
@@ -722,6 +723,7 @@
             position: fixed;
             inset: 0;
             background: rgba(0, 0, 0, 0.85);
+            -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
             display: flex;
             justify-content: center;
@@ -755,6 +757,7 @@
             position: fixed;
             inset: 0;
             background: rgba(0, 0, 0, 0.95);
+            -webkit-backdrop-filter: blur(20px);
             backdrop-filter: blur(20px);
             z-index: 1000;
             display: flex;
@@ -932,6 +935,7 @@
             position: fixed;
             inset: 0;
             background: rgba(0, 0, 0, 0.9);
+            -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
             display: flex;
             justify-content: center;
@@ -1018,6 +1022,137 @@
             transform: none;
         }
 
+        /* Semantic Search */
+        .semantic-search-container {
+            margin: 1rem 0;
+            position: relative;
+        }
+
+        .semantic-search-input {
+            width: 100%;
+            padding: 0.8rem 1rem 0.8rem 2.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            font-family: 'Space Mono', monospace;
+            transition: all 0.2s ease;
+        }
+
+        .semantic-search-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .semantic-search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .semantic-search-icon {
+            position: absolute;
+            left: 0.8rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .semantic-search-results {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            display: none;
+        }
+
+        .semantic-search-results.active {
+            display: block;
+        }
+
+        .semantic-search-result {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .semantic-search-result:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .semantic-search-result img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .semantic-search-result-info {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .semantic-search-result-subject {
+            font-size: 0.85rem;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .semantic-search-result-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .semantic-search-result-similarity {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.4rem;
+            background: var(--accent);
+            color: #000;
+            border-radius: 4px;
+        }
+
+        .similar-artworks-section {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .similar-artworks-header {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .similar-artworks-grid {
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+        }
+
+        .similar-artwork-thumb {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .similar-artwork-thumb:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
         /* Variations Modal */
         .variations-grid {
             display: grid;
@@ -1073,6 +1208,256 @@
             .mind-panel { padding: 1rem; }
             h1 { font-size: 1.5rem; }
             .orb { width: 50px; height: 50px; }
+        }
+
+        /* === REQUEST CREATION SECTION === */
+        .request-divider {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 2rem 0;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-family: 'Space Mono', monospace;
+        }
+        .request-divider::before,
+        .request-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+        }
+
+        .request-section {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .request-header {
+            margin-bottom: 1.25rem;
+        }
+        .request-header h2 {
+            font-family: 'Space Mono', monospace;
+            font-size: 1rem;
+            margin: 0 0 0.3rem 0;
+            background: linear-gradient(45deg, var(--accent), #6c63ff);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .request-header .request-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .request-field {
+            margin-bottom: 1rem;
+        }
+        .request-field label {
+            display: block;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.4rem;
+            font-family: 'Space Mono', monospace;
+        }
+
+        .request-textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.85rem;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+        .request-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--focus-ring);
+        }
+        .request-textarea::placeholder {
+            color: var(--text-muted);
+            opacity: 0.6;
+        }
+
+        .request-select {
+            width: 100%;
+            padding: 0.6rem 0.75rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239a9a9a' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+        }
+        .request-select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--focus-ring);
+        }
+        .request-select option {
+            background: var(--bg-panel);
+            color: var(--text-main);
+        }
+
+        .request-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .request-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 0;
+        }
+        .request-toggle input[type="checkbox"] {
+            appearance: none;
+            width: 36px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+        .request-toggle input[type="checkbox"]::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.2s;
+        }
+        .request-toggle input[type="checkbox"]:checked {
+            background: var(--accent);
+        }
+        .request-toggle input[type="checkbox"]:checked::after {
+            transform: translateX(16px);
+        }
+        .request-toggle input[type="checkbox"]:focus-visible {
+            box-shadow: 0 0 0 3px var(--focus-ring);
+        }
+        .request-toggle .toggle-label {
+            font-size: 0.8rem;
+            color: var(--text-main);
+        }
+        .request-toggle .toggle-desc {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        .request-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+        .btn-request {
+            background: linear-gradient(135deg, var(--accent), #6c63ff);
+            color: #fff;
+            border: none;
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            font-family: 'Space Mono', monospace;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            flex: 1;
+            transition: transform 0.15s, box-shadow 0.2s;
+        }
+        .btn-request:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px var(--accent-glow);
+        }
+        .btn-request:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-request:focus-visible {
+            box-shadow: 0 0 0 3px var(--focus-ring);
+        }
+
+        .btn-autonomous {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .btn-autonomous:hover {
+            border-color: var(--accent);
+            color: var(--accent-hover);
+        }
+
+        /* Request Result */
+        .request-result {
+            display: none;
+            margin-top: 1.25rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+            animation: fadeIn 0.4s ease;
+        }
+        .request-result.visible {
+            display: block;
+        }
+        .request-result-img {
+            width: 100%;
+            display: block;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .request-result-body {
+            padding: 1rem;
+        }
+        .request-result-reasoning {
+            font-size: 0.8rem;
+            line-height: 1.6;
+            color: var(--text-main);
+            margin-bottom: 0.75rem;
+            white-space: pre-wrap;
+        }
+        .request-result-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+        .request-result-tag {
+            font-size: 0.6rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 20px;
+            background: rgba(187, 134, 252, 0.15);
+            color: var(--accent);
+            font-family: 'Space Mono', monospace;
         }
     </style>
 </head>
@@ -1177,6 +1562,104 @@
 
     <!-- RIGHT PANEL: GALLERY -->
     <main class="gallery-panel" role="main" aria-label="Artwork gallery">
+
+        <!-- Request a Creation Section -->
+        <section class="request-section" aria-label="Request a creation from Lumira">
+            <div class="request-header">
+                <h2>Request a Creation</h2>
+                <p class="request-subtitle">Tell Lumira what you'd like, and she'll create it with her own artistic touch</p>
+            </div>
+
+            <div class="request-field">
+                <label for="request-prompt">Your Vision</label>
+                <textarea id="request-prompt" class="request-textarea" placeholder="Describe what you'd like Lumira to create..." aria-label="Describe what you'd like Lumira to create" maxlength="2000"></textarea>
+            </div>
+
+            <div class="request-row">
+                <div class="request-field">
+                    <label for="request-style">Style</label>
+                    <select id="request-style" class="request-select" aria-label="Select art style">
+                        <option value="">Let Lumira choose</option>
+                        <option value="Impressionism">Impressionism</option>
+                        <option value="Surrealism">Surrealism</option>
+                        <option value="Photorealistic">Photorealistic</option>
+                        <option value="Abstract">Abstract</option>
+                        <option value="Watercolor">Watercolor</option>
+                        <option value="Oil Painting">Oil Painting</option>
+                        <option value="Digital Art">Digital Art</option>
+                        <option value="Anime">Anime</option>
+                        <option value="Minimalist">Minimalist</option>
+                        <option value="Fantasy">Fantasy</option>
+                        <option value="Cyberpunk">Cyberpunk</option>
+                        <option value="Art Nouveau">Art Nouveau</option>
+                    </select>
+                </div>
+                <div class="request-field">
+                    <label for="request-mood">Mood</label>
+                    <select id="request-mood" class="request-select" aria-label="Select mood">
+                        <option value="">Match current mood</option>
+                        <option value="SERENE">Serene</option>
+                        <option value="EUPHORIC">Euphoric</option>
+                        <option value="MELANCHOLIC">Melancholic</option>
+                        <option value="CHAOTIC">Chaotic</option>
+                        <option value="CONTEMPLATIVE">Contemplative</option>
+                        <option value="PASSIONATE">Passionate</option>
+                        <option value="MYSTERIOUS">Mysterious</option>
+                        <option value="PLAYFUL">Playful</option>
+                        <option value="NOSTALGIC">Nostalgic</option>
+                        <option value="TRANSCENDENT">Transcendent</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="request-toggle">
+                <input type="checkbox" id="request-interpretation" checked aria-label="Allow Lumira to interpret and enhance your prompt">
+                <div>
+                    <div class="toggle-label">Allow Interpretation</div>
+                    <div class="toggle-desc">Lumira can creatively enhance and reinterpret your prompt</div>
+                </div>
+            </div>
+
+            <div class="request-toggle">
+                <input type="checkbox" id="request-lora" aria-label="Apply Lumira's signature style">
+                <div>
+                    <div class="toggle-label">Lumira Style</div>
+                    <div class="toggle-desc">Apply Lumira's trained artistic style to the creation</div>
+                </div>
+            </div>
+
+            <div class="request-actions">
+                <button id="request-create-btn" class="btn-request" onclick="submitCreationRequest()" aria-label="Submit creation request to Lumira">
+                    Create for Me
+                </button>
+                <button class="btn-autonomous" onclick="triggerCreate()" aria-label="Let Lumira create autonomously">
+                    Or let Lumira decide
+                </button>
+            </div>
+
+            <!-- Result display -->
+            <div id="request-result" class="request-result" role="region" aria-live="polite" aria-label="Creation result">
+                <img id="request-result-img" class="request-result-img" src="" alt="Lumira's creation" style="display:none;">
+                <div class="request-result-body">
+                    <div id="request-result-reasoning" class="request-result-reasoning"></div>
+                    <div id="request-result-meta" class="request-result-meta"></div>
+                </div>
+            </div>
+        </section>
+
+        <div class="request-divider">Recent Creations</div>
+
+        <!-- Semantic Search -->
+        <div class="semantic-search-container">
+            <span class="semantic-search-icon">🔍</span>
+            <input type="text"
+                   id="semantic-search"
+                   class="semantic-search-input"
+                   placeholder="Search by meaning... (e.g., 'peaceful nature scenes', 'vibrant abstract')"
+                   aria-label="Semantic search through artworks">
+            <div id="semantic-search-results" class="semantic-search-results" role="listbox" aria-label="Search results"></div>
+        </div>
+
         <div id="gallery-grid" class="masonry-grid" role="list" aria-label="Recent artworks">
             <!-- Art cards injected here -->
         </div>
@@ -1206,12 +1689,20 @@
                         <button class="action-btn" onclick="generateVariations()" title="Generate Variations">
                             <span>&#127912;</span> Variations
                         </button>
+                        <button class="action-btn" onclick="findSimilarArtworks()" title="Find Similar">
+                            <span>🔍</span> Similar
+                        </button>
                         <button class="action-btn" onclick="downloadArtwork()" title="Download">
                             <span>&#11015;&#65039;</span> Download
                         </button>
                         <button class="action-btn" onclick="shareArtwork()" title="Share">
                             <span>&#128279;</span> Share
                         </button>
+                    </div>
+                    <!-- Similar Artworks Section -->
+                    <div id="similar-artworks-section" class="similar-artworks-section" style="display: none;">
+                        <div class="similar-artworks-header">Similar Artworks</div>
+                        <div id="similar-artworks-grid" class="similar-artworks-grid"></div>
                     </div>
                     <div class="lb-meta">
                         <div class="lb-label" id="reflection-label">Reflection</div>
@@ -2550,6 +3041,170 @@
             }
         }
 
+        // === SEMANTIC SEARCH ===
+        var searchDebounceTimer = null;
+
+        document.getElementById('semantic-search').addEventListener('input', function(e) {
+            var query = e.target.value.trim();
+            clearTimeout(searchDebounceTimer);
+
+            if (query.length < 2) {
+                document.getElementById('semantic-search-results').classList.remove('active');
+                return;
+            }
+
+            searchDebounceTimer = setTimeout(function() {
+                performSemanticSearch(query);
+            }, 300);
+        });
+
+        async function performSemanticSearch(query) {
+            try {
+                var response = await fetch('/api/lumira/memory/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: query, n_results: 8 })
+                });
+
+                if (!response.ok) throw new Error('Search failed');
+
+                var data = await response.json();
+                displaySearchResults(data.results);
+            } catch (err) {
+                console.error('Semantic search error:', err);
+            }
+        }
+
+        function displaySearchResults(results) {
+            var container = document.getElementById('semantic-search-results');
+            container.innerHTML = '';
+
+            if (results.length === 0) {
+                container.innerHTML = '<div style="padding: 0.5rem; color: var(--text-muted);">No matching artworks found</div>';
+                container.classList.add('active');
+                return;
+            }
+
+            results.forEach(function(result) {
+                var painting = Object.values(paintingsData).find(function(p) {
+                    return String(p.id) === result.id;
+                });
+
+                var el = document.createElement('div');
+                el.className = 'semantic-search-result';
+                el.setAttribute('role', 'option');
+                el.innerHTML = `
+                    <img src="${painting ? painting.thumbnail : '/static/placeholder.png'}" alt="${result.subject}">
+                    <div class="semantic-search-result-info">
+                        <div class="semantic-search-result-subject">${result.subject || 'Untitled'}</div>
+                        <div class="semantic-search-result-meta">${result.style} · ${result.mood}</div>
+                    </div>
+                    <span class="semantic-search-result-similarity">${Math.round(result.similarity * 100)}%</span>
+                `;
+
+                el.onclick = function() {
+                    // Find the painting's index in the gallery
+                    if (painting) {
+                        var cards = Array.from(galleryCards());
+                        var idx = cards.findIndex(function(card) {
+                            return card.dataset.id == painting.id;
+                        });
+                        if (idx >= 0) {
+                            openLightbox(idx);
+                        }
+                    }
+                    container.classList.remove('active');
+                    document.getElementById('semantic-search').value = '';
+                };
+
+                container.appendChild(el);
+            });
+
+            container.classList.add('active');
+        }
+
+        // Close search results when clicking outside
+        document.addEventListener('click', function(e) {
+            var searchContainer = document.querySelector('.semantic-search-container');
+            if (searchContainer && !searchContainer.contains(e.target)) {
+                document.getElementById('semantic-search-results').classList.remove('active');
+            }
+        });
+
+        // Find similar artworks in lightbox
+        async function findSimilarArtworks() {
+            if (currentLightboxId === null) return;
+
+            var painting = paintingsData[currentLightboxId];
+            if (!painting) return;
+
+            var section = document.getElementById('similar-artworks-section');
+            var grid = document.getElementById('similar-artworks-grid');
+            grid.innerHTML = '<span style="color: var(--text-muted);">Finding similar artworks...</span>';
+            section.style.display = 'block';
+
+            try {
+                // Search using the painting's prompt/subject as query
+                var query = painting.reflection || painting.subject || 'abstract art';
+                var response = await fetch('/api/lumira/memory/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: query, n_results: 6 })
+                });
+
+                if (!response.ok) throw new Error('Search failed');
+
+                var data = await response.json();
+
+                // Filter out current painting
+                var similar = data.results.filter(function(r) {
+                    return String(r.id) !== String(painting.id);
+                }).slice(0, 5);
+
+                grid.innerHTML = '';
+
+                if (similar.length === 0) {
+                    grid.innerHTML = '<span style="color: var(--text-muted);">No similar artworks found</span>';
+                    return;
+                }
+
+                similar.forEach(function(result) {
+                    var similarPainting = Object.values(paintingsData).find(function(p) {
+                        return String(p.id) === result.id;
+                    });
+
+                    if (similarPainting) {
+                        var thumb = document.createElement('img');
+                        thumb.className = 'similar-artwork-thumb';
+                        thumb.src = similarPainting.thumbnail;
+                        thumb.alt = result.subject || 'Similar artwork';
+                        thumb.title = result.subject + ' (' + Math.round(result.similarity * 100) + '% similar)';
+                        thumb.onclick = function() {
+                            var cards = Array.from(galleryCards());
+                            var idx = cards.findIndex(function(card) {
+                                return card.dataset.id == similarPainting.id;
+                            });
+                            if (idx >= 0) {
+                                openLightbox(idx);
+                            }
+                        };
+                        grid.appendChild(thumb);
+                    }
+                });
+            } catch (err) {
+                console.error('Find similar error:', err);
+                grid.innerHTML = '<span style="color: var(--text-muted);">Error finding similar artworks</span>';
+            }
+        }
+
+        // Reset similar artworks when opening new lightbox
+        var originalOpenLightbox = openLightbox;
+        openLightbox = function(index) {
+            document.getElementById('similar-artworks-section').style.display = 'none';
+            document.getElementById('similar-artworks-grid').innerHTML = '';
+            originalOpenLightbox(index);
+        };
+
         // Mobile touch gestures for lightbox
         var touchStartX = 0;
         var touchEndX = 0;
@@ -2578,9 +3233,157 @@
             }
         }
 
+        // === USER CREATION REQUEST ===
+        function submitCreationRequest() {
+            var promptEl = document.getElementById('request-prompt');
+            var prompt = promptEl.value.trim();
+            if (!prompt) {
+                promptEl.focus();
+                addLog('SYSTEM', 'Please describe what you\'d like Lumira to create');
+                return;
+            }
+
+            var styleEl = document.getElementById('request-style');
+            var moodEl = document.getElementById('request-mood');
+            var interpEl = document.getElementById('request-interpretation');
+            var loraEl = document.getElementById('request-lora');
+            var btn = document.getElementById('request-create-btn');
+            var resultEl = document.getElementById('request-result');
+            var resultImg = document.getElementById('request-result-img');
+            var resultReasoning = document.getElementById('request-result-reasoning');
+            var resultMeta = document.getElementById('request-result-meta');
+            var overlay = document.getElementById('creating-overlay');
+
+            // Save LoRA preference
+            localStorage.setItem('lumira-use-lora', loraEl.checked);
+
+            var body = {
+                prompt: prompt,
+                style: styleEl.value || null,
+                mood: moodEl.value || null,
+                allow_interpretation: interpEl.checked,
+                use_lora: loraEl.checked
+            };
+
+            btn.disabled = true;
+            overlay.classList.add('active');
+            document.getElementById('loader-text').textContent = 'INTERPRETING...';
+            document.getElementById('loader-status').textContent = 'Lumira is considering your request...';
+            addLog('SYSTEM', 'Processing your creation request...');
+
+            // Hide previous result
+            resultEl.classList.remove('visible');
+            resultImg.style.display = 'none';
+
+            var progressSteps = [
+                'Reading your vision...',
+                'Finding artistic inspiration...',
+                'Blending with current mood...',
+                'Composing the piece...',
+                'Refining details...'
+            ];
+            var stepIndex = 0;
+            var progressInterval = setInterval(function() {
+                if (stepIndex < progressSteps.length) {
+                    document.getElementById('loader-status').textContent = progressSteps[stepIndex];
+                    stepIndex++;
+                }
+            }, 3000);
+
+            fetch('/api/lumira/request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            })
+            .then(function(res) {
+                clearInterval(progressInterval);
+                if (!res.ok) {
+                    return res.json().then(function(err) {
+                        throw new Error(err.detail || 'Creation request failed');
+                    });
+                }
+                return res.json();
+            })
+            .then(function(data) {
+                // Log thinking/reasoning
+                if (data.thinking) {
+                    addLog('THINKING', data.thinking);
+                }
+                if (data.reasoning) {
+                    addLog('REASONING', data.reasoning);
+                }
+
+                if (data.critique_history && data.critique_history.length > 0) {
+                    data.critique_history.forEach(function(c) {
+                        var status = c.approved ? 'APPROVED' : 'REVISION';
+                        addLog('CRITIQUE', '[' + status + '] ' + c.critique);
+                    });
+                }
+
+                addLog('LUMIRA', data.reflection || 'Creation complete');
+
+                // Display result
+                resultReasoning.textContent = data.reasoning || data.thinking || data.reflection || '';
+
+                resultMeta.textContent = '';
+                if (data.mood_alignment) {
+                    var moodTag = document.createElement('span');
+                    moodTag.className = 'request-result-tag';
+                    moodTag.textContent = 'Mood: ' + data.mood_alignment;
+                    resultMeta.appendChild(moodTag);
+                }
+                if (data.style) {
+                    var styleTag = document.createElement('span');
+                    styleTag.className = 'request-result-tag';
+                    styleTag.textContent = data.style;
+                    resultMeta.appendChild(styleTag);
+                }
+                if (data.artistic_goals && data.artistic_goals.length > 0) {
+                    data.artistic_goals.forEach(function(goal) {
+                        var goalTag = document.createElement('span');
+                        goalTag.className = 'request-result-tag';
+                        goalTag.textContent = goal;
+                        resultMeta.appendChild(goalTag);
+                    });
+                }
+
+                if (data.image_url) {
+                    var imgSrc = data.image_url;
+                    if (imgSrc.indexOf('http') !== 0 && imgSrc.indexOf('/') !== 0 && imgSrc.indexOf('data:') !== 0) {
+                        imgSrc = '/' + imgSrc;
+                    }
+                    resultImg.src = imgSrc;
+                    resultImg.style.display = 'block';
+                }
+
+                resultEl.classList.add('visible');
+
+                // Refresh gallery
+                fetchState(true);
+            })
+            .catch(function(err) {
+                clearInterval(progressInterval);
+                addLog('ERROR', err.message);
+            })
+            .finally(function() {
+                overlay.classList.remove('active');
+                btn.disabled = false;
+            });
+        }
+
+        // Initialize LoRA preference from localStorage
+        function initLoraPreference() {
+            const savedLora = localStorage.getItem('lumira-use-lora');
+            const loraEl = document.getElementById('request-lora');
+            if (loraEl && savedLora === 'true') {
+                loraEl.checked = true;
+            }
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             initTheme();
+            initLoraPreference();
             fetchState(true);
             connectWebSocket();
             setInterval(function() { fetchState(false); }, 10000);

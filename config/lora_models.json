@@ -1,0 +1,21 @@
+{
+  "description": "Trained LoRA models for Lumira",
+  "models": {
+    "lumira-style-v1": {
+      "url": "https://replicate.delivery/xezq/I89foDR9dCRmCybzRaKYe8fF2PHmNpee6zMKn3z2EJn1LZ5xC/flux-lora.tar",
+      "version": "forbiddenlink/lumira-style-v1:dc727532abe6ebb099b1bbab4072df97b5a963b6ea58cdd75875560cb84cbdba",
+      "trigger_word": "lumira style",
+      "scale": 0.8,
+      "description": "Lumira's signature artistic style",
+      "training_date": "2026-03-09",
+      "image_count": 30,
+      "status": "ready"
+    }
+  },
+  "default_model": "lumira-style-v1",
+  "usage_notes": [
+    "Include trigger word in prompt: 'lumira style, [your prompt]'",
+    "Adjust scale (0.5-1.0) to control style influence",
+    "Works best with FLUX models"
+  ]
+}

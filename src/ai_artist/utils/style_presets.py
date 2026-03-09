@@ -23,10 +23,13 @@ class StylePreset:
     description: str = ""
     category: str = "general"  # art, photography, abstract, etc.
     tags: list[str] | None = None
+    mood_affinity: list[str] | None = None  # Moods this style works well with
 
     def __post_init__(self):
         if self.tags is None:
             self.tags = []
+        if self.mood_affinity is None:
+            self.mood_affinity = []
 
     def apply_to_prompt(self, base_prompt: str) -> str:
         """
@@ -227,6 +230,51 @@ class StylePresetsManager:
         """Get all unique categories."""
         categories = {preset.category for preset in self.presets.values()}
         return sorted(categories)
+
+    def get_presets_for_mood(self, mood: str, limit: int = 5) -> list[StylePreset]:
+        """Get presets that have affinity for a specific mood.
+
+        Args:
+            mood: The mood to match (e.g., 'contemplative', 'chaotic')
+            limit: Maximum number of presets to return
+
+        Returns:
+            List of StylePresets with matching mood affinity
+        """
+        mood_lower = mood.lower()
+        matching = []
+
+        for preset in self.presets.values():
+            if preset.mood_affinity:
+                # Check if mood matches any affinity
+                for affinity in preset.mood_affinity:
+                    if mood_lower in affinity.lower() or affinity.lower() in mood_lower:
+                        matching.append(preset)
+                        break
+
+        # Sort by how early the mood appears in the affinity list (stronger match first)
+        def sort_key(p: StylePreset) -> int:
+            if not p.mood_affinity:
+                return 999
+            for i, aff in enumerate(p.mood_affinity):
+                if mood_lower in aff.lower() or aff.lower() in mood_lower:
+                    return i
+            return 999
+
+        matching.sort(key=sort_key)
+        return matching[:limit]
+
+    def suggest_style_for_mood(self, mood: str) -> StylePreset | None:
+        """Suggest a single style that best matches the given mood.
+
+        Args:
+            mood: The current mood
+
+        Returns:
+            Best matching StylePreset or None
+        """
+        presets = self.get_presets_for_mood(mood, limit=1)
+        return presets[0] if presets else None
 
     def delete_preset(self, name: str):
         """Delete a preset."""

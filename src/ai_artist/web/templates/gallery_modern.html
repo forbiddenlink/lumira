@@ -12,18 +12,18 @@
     <meta property="og:title" content="AI Artist Gallery - Modern Collection">
     <meta property="og:description" content="Browse and explore a curated collection of AI-generated artwork. Discover unique digital art created with cutting-edge AI models.">
     <meta property="og:url" content="{{ request.url }}">
-    <meta property="og:image" content="{{ request.url.scheme }}://{{ request.url.netloc }}/api/images/og-preview.png">
+    <meta property="og:image" content="{{ request.url.scheme }}://{{ request.url.netloc }}/static/images/og-preview.png">
     <meta property="og:site_name" content="AI Artist Gallery">
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="AI Artist Gallery - Modern Collection">
     <meta name="twitter:description" content="Browse and explore a curated collection of AI-generated artwork.">
-    <meta name="twitter:image" content="{{ request.url.scheme }}://{{ request.url.netloc }}/api/images/og-preview.png">
+    <meta name="twitter:image" content="{{ request.url.scheme }}://{{ request.url.netloc }}/static/images/og-preview.png">
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎨</text></svg>">
+    <link rel="icon" type="image/png" sizes="512x512" href="/static/icons/icon-512x512.png">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192x192.png">
 
     <title>AI Artist Gallery - Modern Collection</title>
     <style>
@@ -135,6 +135,7 @@
         /* Header */
         .header {
             background: rgba(19, 19, 26, 0.95);
+            -webkit-backdrop-filter: blur(16px);
             backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--border);
             position: sticky;
@@ -481,6 +482,7 @@
             align-items: center;
             justify-content: center;
             transition: all 0.3s ease;
+            -webkit-backdrop-filter: blur(8px);
             backdrop-filter: blur(8px);
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
@@ -837,6 +839,7 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.95);
+            -webkit-backdrop-filter: blur(16px);
             backdrop-filter: blur(16px);
             z-index: 1000;
             padding: 0;
@@ -857,6 +860,7 @@
             width: 60px;
             height: 60px;
             background: rgba(99, 102, 241, 0.2);
+            -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
             border: 2px solid rgba(99, 102, 241, 0.3);
             border-radius: 50%;
@@ -897,6 +901,7 @@
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0, 0, 0, 0.8);
+            -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
             padding: 12px 24px;
             border-radius: 20px;
@@ -921,6 +926,7 @@
             width: 48px;
             height: 48px;
             background: rgba(0, 0, 0, 0.8);
+            -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
             border: 1px solid var(--border);
             border-radius: 50%;
@@ -941,6 +947,7 @@
 
         .modal-zoom-level {
             background: rgba(0, 0, 0, 0.8);
+            -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
             padding: 12px 20px;
             border-radius: 24px;
@@ -1051,6 +1058,7 @@
             height: 100%;
             padding: 80px 30px 30px;
             background: rgba(13, 13, 18, 0.98);
+            -webkit-backdrop-filter: blur(20px);
             backdrop-filter: blur(20px);
             border-left: 2px solid var(--border);
             overflow-y: auto;
@@ -1111,6 +1119,7 @@
             width: 48px;
             height: 48px;
             background: rgba(0, 0, 0, 0.8);
+            -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
             border: 1px solid var(--border);
             border-radius: 50%;
@@ -1537,6 +1546,143 @@
             border-color: var(--accent);
             box-shadow: 0 4px 12px var(--glow);
         }
+
+        /* === CREATION REQUEST FAB & PANEL === */
+        .creation-fab {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            gap: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .creation-fab-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, var(--accent), #a855f7);
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 24px var(--glow), 0 0 40px rgba(168, 85, 247, 0.3);
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+        .creation-fab-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 32px var(--glow), 0 0 60px rgba(168, 85, 247, 0.4);
+        }
+        .creation-fab-btn.open {
+            border-radius: 50% 0 0 50%;
+            transform: none;
+        }
+
+        .creation-panel {
+            display: none;
+            background: var(--bg-card);
+            border: 2px solid var(--accent);
+            border-left: none;
+            border-radius: 0 28px 28px 0;
+            padding: 12px 20px 12px 12px;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 24px var(--glow);
+            animation: slideInRight 0.3s ease;
+            max-width: 600px;
+        }
+        .creation-panel.open {
+            display: flex;
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .creation-panel-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 14px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+        .creation-panel-input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+        }
+        .creation-panel-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .creation-panel-select {
+            padding: 10px 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 13px;
+            font-family: inherit;
+            cursor: pointer;
+            min-width: 0;
+            max-width: 140px;
+        }
+        .creation-panel-select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .creation-panel-submit {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, var(--accent), #a855f7);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px var(--glow);
+        }
+        .creation-panel-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--glow);
+        }
+        .creation-panel-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        @media (max-width: 768px) {
+            .creation-fab {
+                bottom: 24px;
+            }
+            .creation-panel {
+                flex-wrap: wrap;
+                max-width: calc(100vw - 100px);
+            }
+            .creation-panel-input {
+                min-width: 150px;
+            }
+            .creation-panel-select {
+                max-width: 120px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1545,15 +1691,7 @@
         <div class="header-content">
             <div class="logo">
                 <div class="logo-icon">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <!-- Main star burst -->
-                        <path d="M12 2v4M12 18v4M22 12h-4M6 12H2"></path>
-                        <path d="M19.07 4.93l-2.83 2.83M7.76 16.24l-2.83 2.83M19.07 19.07l-2.83-2.83M7.76 7.76L4.93 4.93"></path>
-                        <!-- Inner circle -->
-                        <circle cx="12" cy="12" r="3" fill="currentColor"></circle>
-                        <!-- Sparkle accents -->
-                        <path d="M12 1v1M12 22v1M23 12h-1M2 12H1"></path>
-                    </svg>
+                    <img src="/static/images/logo.png" alt="Lumira Logo" style="width: 28px; height: 28px; position: relative; z-index: 2; object-fit: contain;">
                 </div>
                 <h1 style="font-size: inherit; font-weight: inherit; margin: 0;">AI Artist Gallery</h1>
             </div>
@@ -1852,6 +1990,30 @@
             <div class="modal-actions" id="modal-actions" style="margin-top: 24px;">
                 <!-- Actions will be inserted here -->
             </div>
+        </div>
+    </div>
+
+    <!-- Creation Request FAB -->
+    <div class="creation-fab" id="creation-fab">
+        <button class="creation-fab-btn" id="creation-fab-btn" onclick="toggleCreationPanel()" title="Request a creation from Lumira">✦</button>
+        <div class="creation-panel" id="creation-panel">
+            <input type="text" class="creation-panel-input" id="fab-prompt" placeholder="Describe what you'd like Lumira to create..." maxlength="500">
+            <select class="creation-panel-select" id="fab-style">
+                <option value="">Any style</option>
+                <option value="photorealistic">Photorealistic</option>
+                <option value="digital_art">Digital Art</option>
+                <option value="oil_painting">Oil Painting</option>
+                <option value="watercolor">Watercolor</option>
+                <option value="anime">Anime</option>
+                <option value="concept_art">Concept Art</option>
+                <option value="abstract">Abstract</option>
+                <option value="minimalist">Minimalist</option>
+                <option value="surreal">Surreal</option>
+                <option value="impressionist">Impressionist</option>
+                <option value="gothic">Gothic</option>
+                <option value="cyberpunk">Cyberpunk</option>
+            </select>
+            <button class="creation-panel-submit" id="fab-submit" onclick="submitGalleryCreation()">Create</button>
         </div>
     </div>
 
@@ -3727,6 +3889,80 @@
 
                 setRowSpan();
             });
+        }
+
+        // === CREATION REQUEST FAB ===
+        function toggleCreationPanel() {
+            const panel = document.getElementById('creation-panel');
+            const btn = document.getElementById('creation-fab-btn');
+            const isOpen = panel.classList.toggle('open');
+            btn.classList.toggle('open', isOpen);
+            btn.textContent = isOpen ? '×' : '✦';
+            if (isOpen) {
+                document.getElementById('fab-prompt').focus();
+            }
+        }
+
+        // Close panel on Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const panel = document.getElementById('creation-panel');
+                if (panel.classList.contains('open')) {
+                    toggleCreationPanel();
+                }
+            }
+        });
+
+        // Submit on Enter
+        document.getElementById('fab-prompt').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                submitGalleryCreation();
+            }
+        });
+
+        async function submitGalleryCreation() {
+            const promptInput = document.getElementById('fab-prompt');
+            const styleSelect = document.getElementById('fab-style');
+            const submitBtn = document.getElementById('fab-submit');
+            const prompt = promptInput.value.trim();
+
+            if (!prompt) {
+                showToast('Please describe what you\'d like Lumira to create', 'warning');
+                promptInput.focus();
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating...';
+
+            const body = { prompt, allow_interpretation: true };
+            if (styleSelect.value) body.style = styleSelect.value;
+
+            try {
+                const resp = await fetch('/api/lumira/request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await resp.json();
+
+                if (data.success) {
+                    showToast('Lumira created: ' + (data.subject || 'a new artwork'), 'success');
+                    promptInput.value = '';
+                    toggleCreationPanel();
+                    // Refresh gallery
+                    await loadImages();
+                } else {
+                    showToast(data.error || 'Creation failed', 'error');
+                }
+            } catch (err) {
+                console.error('Creation request failed:', err);
+                showToast('Failed to submit creation request', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create';
+            }
         }
 
         // Scroll to top button
