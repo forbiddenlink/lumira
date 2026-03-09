@@ -364,14 +364,22 @@ async def _load_portfolio_from_gallery() -> list[dict]:
                 image_path = json_file.with_suffix(".jpg")
 
             if image_path.exists():
+                # Handle nested metadata structure (mood/style inside "metadata" key)
+                inner_meta = metadata.get("metadata", {})
                 portfolio.append(
                     {
                         "number": len(portfolio),
-                        "subject": metadata.get("prompt", "").split(",")[0][:50],
+                        "subject": inner_meta.get(
+                            "subject", metadata.get("prompt", "").split(",")[0][:50]
+                        ),
                         "prompt": metadata.get("prompt", ""),
                         "image_url": f"/api/images/file/{image_path.relative_to(gallery_path)}",
-                        "mood": metadata.get("mood", "contemplative"),
-                        "style": metadata.get("style", "digital art"),
+                        "mood": inner_meta.get(
+                            "mood", metadata.get("mood", "contemplative")
+                        ),
+                        "style": inner_meta.get(
+                            "style", metadata.get("style", "digital art")
+                        ),
                         "reflection": metadata.get(
                             "reflection", metadata.get("prompt", "")
                         ),

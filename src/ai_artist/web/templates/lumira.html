@@ -15,6 +15,9 @@
     <link rel="icon" type="image/png" sizes="512x512" href="/static/icons/icon-512x512.png">
     <link rel="apple-touch-icon" href="/static/icons/icon-192x192.png">
 
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
     <style>
         :root {
             --bg-dark: #0a0a0a;
@@ -563,7 +566,7 @@
         }
 
         .axis-name {
-            font-size: 0.6rem;
+            font-size: 0.65rem;
             color: var(--text-muted);
             width: 70px;
             text-transform: capitalize;
@@ -625,17 +628,31 @@
         .influence-btn {
             flex: 1;
             padding: 0.75rem;
+            min-height: 44px; /* Touch target accessibility */
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--border);
             border-radius: 8px;
             font-size: 1.2rem;
             cursor: pointer;
             transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .influence-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: var(--text-main);
+            stroke-width: 2;
+            transition: stroke 0.2s ease;
         }
         .influence-btn:hover {
             background: var(--accent);
             transform: translateY(-2px);
             box-shadow: 0 4px 12px var(--accent-glow);
+        }
+        .influence-btn:hover svg {
+            stroke: #000;
         }
         .influence-btn:active {
             transform: translateY(0);
@@ -922,7 +939,7 @@
             display: inline-block;
             padding: 2px 6px;
             border-radius: 10px;
-            font-size: 0.6rem;
+            font-size: 0.65rem;
             font-family: 'Space Mono', monospace;
             margin-left: 0.5rem;
         }
@@ -1001,6 +1018,7 @@
             align-items: center;
             gap: 0.5rem;
             padding: 0.6rem 1rem;
+            min-height: 40px; /* Touch target accessibility */
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid var(--border);
             border-radius: 8px;
@@ -1014,6 +1032,14 @@
             background: var(--accent);
             color: #000;
             transform: translateY(-2px);
+        }
+
+        .action-btn svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            stroke-width: 2;
+            flex-shrink: 0;
         }
 
         .action-btn:disabled {
@@ -1057,6 +1083,14 @@
             transform: translateY(-50%);
             color: var(--text-muted);
             font-size: 1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .semantic-search-icon svg {
+            width: 16px;
+            height: 16px;
+            stroke: var(--text-muted);
         }
 
         .semantic-search-results {
@@ -1202,12 +1236,76 @@
             .lightbox-body { flex-direction: column; }
             .lightbox-content { flex-direction: column; max-height: 95vh; overflow-y: auto; }
             .lightbox-img-container img { max-height: 50vh; }
+            /* Mobile lightbox details */
+            .lightbox-details {
+                padding: 1rem;
+                border-left: none;
+                border-top: 1px solid var(--border);
+            }
+            /* Mobile lightbox actions */
+            .lightbox-actions {
+                gap: 0.5rem;
+                margin: 1rem 0;
+            }
+            .action-btn {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.8rem;
+            }
         }
 
         @media (max-width: 480px) {
             .mind-panel { padding: 1rem; }
             h1 { font-size: 1.5rem; }
             .orb { width: 50px; height: 50px; }
+            /* Small mobile lightbox actions - 2x2 grid */
+            .lightbox-actions {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 0.5rem;
+            }
+            .action-btn {
+                justify-content: center;
+                padding: 0.6rem;
+                font-size: 0.75rem;
+            }
+            .action-btn svg {
+                width: 14px;
+                height: 14px;
+            }
+            /* Smaller influence buttons on mobile */
+            .influence-btn {
+                padding: 0.5rem;
+            }
+            .influence-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+            /* Mobile request form */
+            .request-section {
+                padding: 1rem;
+            }
+            .request-row {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+            .request-actions {
+                flex-direction: column;
+            }
+            .request-actions button {
+                width: 100%;
+            }
+            .request-header h2 {
+                font-size: 1.1rem;
+            }
+            /* Mobile gallery grid */
+            .masonry-grid {
+                column-count: 1;
+            }
+            /* Mobile semantic search */
+            .semantic-search-input {
+                font-size: 0.85rem;
+                padding: 0.7rem 1rem 0.7rem 2.2rem;
+            }
         }
 
         /* === REQUEST CREATION SECTION === */
@@ -1452,7 +1550,7 @@
             gap: 0.4rem;
         }
         .request-result-tag {
-            font-size: 0.6rem;
+            font-size: 0.65rem;
             padding: 0.15rem 0.5rem;
             border-radius: 20px;
             background: rgba(187, 134, 252, 0.15);
@@ -1493,10 +1591,10 @@
         <div class="mood-influence" role="group" aria-label="Influence Lumira's mood">
             <div class="influence-label">Influence Her Mood</div>
             <div class="influence-buttons">
-                <button class="influence-btn" onclick="influenceMood('energize')" title="Energize" aria-label="Energize Lumira's mood">&#9889;</button>
-                <button class="influence-btn" onclick="influenceMood('calm')" title="Calm" aria-label="Calm Lumira's mood">&#127754;</button>
-                <button class="influence-btn" onclick="influenceMood('provoke')" title="Provoke" aria-label="Provoke Lumira's mood">&#128293;</button>
-                <button class="influence-btn" onclick="influenceMood('inspire')" title="Inspire" aria-label="Inspire Lumira's mood">&#10024;</button>
+                <button class="influence-btn" onclick="influenceMood('energize')" title="Energize" aria-label="Energize Lumira's mood"><i data-lucide="zap"></i></button>
+                <button class="influence-btn" onclick="influenceMood('calm')" title="Calm" aria-label="Calm Lumira's mood"><i data-lucide="waves"></i></button>
+                <button class="influence-btn" onclick="influenceMood('provoke')" title="Provoke" aria-label="Provoke Lumira's mood"><i data-lucide="flame"></i></button>
+                <button class="influence-btn" onclick="influenceMood('inspire')" title="Inspire" aria-label="Inspire Lumira's mood"><i data-lucide="sparkles"></i></button>
             </div>
         </div>
 
@@ -1651,7 +1749,7 @@
 
         <!-- Semantic Search -->
         <div class="semantic-search-container">
-            <span class="semantic-search-icon">🔍</span>
+            <span class="semantic-search-icon"><i data-lucide="search"></i></span>
             <input type="text"
                    id="semantic-search"
                    class="semantic-search-input"
@@ -1687,16 +1785,16 @@
                     <!-- Action Buttons -->
                     <div class="lightbox-actions" id="lb-actions">
                         <button class="action-btn" onclick="generateVariations()" title="Generate Variations">
-                            <span>&#127912;</span> Variations
+                            <i data-lucide="palette"></i> Variations
                         </button>
                         <button class="action-btn" onclick="findSimilarArtworks()" title="Find Similar">
-                            <span>🔍</span> Similar
+                            <i data-lucide="search"></i> Similar
                         </button>
                         <button class="action-btn" onclick="downloadArtwork()" title="Download">
-                            <span>&#11015;&#65039;</span> Download
+                            <i data-lucide="download"></i> Download
                         </button>
                         <button class="action-btn" onclick="shareArtwork()" title="Share">
-                            <span>&#128279;</span> Share
+                            <i data-lucide="share-2"></i> Share
                         </button>
                     </div>
                     <!-- Similar Artworks Section -->
@@ -3382,6 +3480,10 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Lucide icons
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
             initTheme();
             initLoraPreference();
             fetchState(true);
