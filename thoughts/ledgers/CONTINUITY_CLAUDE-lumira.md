@@ -56,8 +56,21 @@ to make Lumira a more polished, feature-rich AI artist.
     - [x] GET /api/lumira/artist-statement endpoint in lumira_routes.py
     - [x] RLAIF wired up in /api/lumira/create (calls record_critic_evaluation)
     - [x] Reflection scheduling in app.py lifespan (daily 11PM, weekly Sunday 10PM)
+  - [x] Infrastructure Wiring & Cost Optimization
+    - [x] Wire GenerationCache into lumira_routes.py (intent caching)
+    - [x] Integrate NegativePromptLibrary (mood/style-aware negatives)
+    - [x] Add tests for new modules (71 new tests)
+    - [x] LoRA training pipeline (prepare + train scripts)
+    - [x] Vector memory with ChromaDB (semantic search)
+    - [x] POST /api/lumira/memory/search endpoint
+    - [x] LoRA support in ReplicateGenerator
+  - [x] LoRA Training & Semantic Search
+    - [x] LoRA training completed on Replicate (lumira-style-v1)
+    - [x] 320 creations indexed into vector memory
+    - [x] Semantic search UI (search bar + "Find Similar")
+    - [x] LoRA toggle in creation UI with localStorage persistence
+    - [x] lora_models.json updated with weights URL
 - Now: ✅ All Phases Complete
-- Next: Manual testing and verification
 
 ## Files Modified
 
@@ -116,6 +129,12 @@ to make Lumira a more polished, feature-rich AI artist.
 
 - `src/ai_artist/web/lumira_routes.py` - Added:
   - GET /api/lumira/artist-statement endpoint
+  - `use_lora` parameter in UserCreationRequest
+  - LoRA URL loading and trigger word injection in /request endpoint
+
+- `config/lora_models.json` - Updated:
+  - LoRA training weights URL and version
+  - Status changed to "ready"
 
 ### Frontend (HTML/CSS/JS)
 
@@ -131,6 +150,8 @@ to make Lumira a more polished, feature-rich AI artist.
   - Memory dashboard modal UI
   - Mood evolution graph modal UI
   - WebSocket handlers for mood_drift and memory_insight
+  - Semantic search bar + "Find Similar" button
+  - LoRA style toggle with localStorage persistence
 
 ## New API Endpoints Summary
 
@@ -148,6 +169,7 @@ to make Lumira a more polished, feature-rich AI artist.
 | `/api/gallery/collections/{id}` | GET | Collection details |
 | `/api/gallery/search` | POST | Advanced search |
 | `/api/gallery/trending` | GET | Trending artworks |
+| `/api/lumira/memory/search` | POST | Semantic search across creations |
 
 ## Open Questions
 

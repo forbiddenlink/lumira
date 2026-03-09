@@ -29,6 +29,7 @@ turn_span_id: ""
 | Add missing test coverage for new endpoints | Pending |
 
 Working from:
+
 - `thoughts/ledgers/CONTINUITY_CLAUDE-aria-improvements.md` - main continuity ledger
 - `thoughts/shared/plans/2026-02-01-major-enhancements.md` - Phase 5 is next
 
@@ -51,14 +52,18 @@ Working from:
 ## Learnings
 
 ### Test Mocking Pattern
+
 When mocking imports that happen inside a function (lazy imports), you must patch where the module is **defined**, not where it's imported:
+
 - **Wrong**: `patch("ai_artist.queue.worker.ImageGenerator")`
 - **Right**: `patch("ai_artist.core.generator.ImageGenerator")`
 
 ### ReplicateGenerator vs ImageGenerator API Difference
+
 The `ReplicateGenerator.generate_img2img()` returns `list[Image.Image]`, but the original `ImageGenerator.generate_img2img()` returns `dict` with an `"image"` key. The `aria_routes.py` code was written for the dict API but was importing `ReplicateGenerator`. This was a **real bug** caught by mypy.
 
 ### Skills Resources Discovered
+
 - **levnikolaevich/claude-code-skills**: 109 skills for full Agile workflow (documentation, planning, execution, quality, audit)
 - **skills.sh**: Directory of 86,629+ skills across agents
 - Key skills: `ln-620-codebase-auditor`, `ln-700-project-bootstrap`, `ln-400-story-executor`
@@ -66,15 +71,18 @@ The `ReplicateGenerator.generate_img2img()` returns `list[Image.Image]`, but the
 ## Post-Mortem
 
 ### What Worked
+
 - **TDD skill invocation**: Following the test-driven-development skill helped structure the debugging approach
 - **Parallel tool calls**: Running ruff and mypy checks simultaneously saved time
 - **Type annotations**: Adding explicit `list[Image.Image]` annotations fixed mypy errors cleanly
 
 ### What Failed
+
 - Tried: Installing dev tools via `uv run ruff` directly -> Failed because tools weren't in dependencies
 - Fixed by: Running `uv pip install ruff mypy black` first
 
 ### Key Decisions
+
 - Decision: Added `UP042` to ruff ignore list (str/Enum inheritance)
   - Alternatives: Could refactor all enums to use `StrEnum` from Python 3.11
   - Reason: `class Mood(str, Enum)` is valid pattern for JSON-serializable enums, low priority refactor
@@ -92,10 +100,12 @@ The `ReplicateGenerator.generate_img2img()` returns `list[Image.Image]`, but the
 ## Action Items & Next Steps
 
 ### Immediate (Next Session)
+
 1. **Install skills plugin**: Run `/plugin add levnikolaevich/claude-code-skills` to get access to 109 production skills
 2. **Run codebase auditor**: Use `ln-620-codebase-auditor` for comprehensive quality feedback
 
 ### Phase 5: Community Gallery (from plan)
+
 3. Create gallery database models (likes, comments, shares) - `src/ai_artist/models/gallery.py`
 4. Create public gallery API endpoints - `src/ai_artist/web/gallery_routes.py`
 5. Add search/filtering by tags, mood, style
@@ -105,23 +115,27 @@ The `ReplicateGenerator.generate_img2img()` returns `list[Image.Image]`, but the
 9. Add daily/weekly featured artwork
 
 ### Test Coverage
+
 10. Verify test coverage for 18 new API endpoints from Lumira improvements
 11. Add missing edge case tests
 
 ## Other Notes
 
 ### Codebase Stats
+
 - 86 Python files, 22,735 lines of code
 - 533 tests passing, 15 skipped
 - All ruff and mypy checks pass
 
 ### Key File Locations
+
 - Main API routes: `src/ai_artist/web/aria_routes.py` (78KB, largest file)
 - Image generation: `src/ai_artist/core/generator.py`, `replicate_generator.py`
 - Personality system: `src/ai_artist/personality/` (moods, memory, cognition)
 - Tests: `tests/unit/` (427 tests), `tests/integration/` (42 tests)
 
 ### Production State
-- Deployed on Railway: https://aria-production-3084.up.railway.app
+
+- Deployed on Railway: <https://aria-production-3084.up.railway.app>
 - Using Replicate cloud API for image generation (not local GPU)
 - 655+ images generated, 754+ episodic memories

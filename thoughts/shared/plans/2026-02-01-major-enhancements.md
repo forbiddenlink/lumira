@@ -25,6 +25,7 @@ This plan implements the highest-impact improvements identified through codebase
 - [x] 1.6 Add unit tests for FluxGenerator
 
 **Files to create/modify:**
+
 - `pyproject.toml` - Add flux dependencies
 - `src/ai_artist/core/flux_generator.py` - New file
 - `src/ai_artist/core/model_pool.py` - Add FLUX support
@@ -49,6 +50,7 @@ This plan implements the highest-impact improvements identified through codebase
 - [x] 2.6 Add unit tests for IP-Adapter
 
 **Files to create/modify:**
+
 - `pyproject.toml` - Add ip-adapter
 - `src/ai_artist/core/ip_adapter.py` - New file
 - `src/ai_artist/core/generator.py` - Integration
@@ -73,6 +75,7 @@ This plan implements the highest-impact improvements identified through codebase
 - [x] 3.6 Add integration tests for ControlNet
 
 **Files to create/modify:**
+
 - `pyproject.toml` - Add controlnet-aux
 - `src/ai_artist/core/controlnet.py` - Expand preprocessors
 - `src/ai_artist/core/generator.py` - SDXL ControlNet
@@ -99,6 +102,7 @@ This plan implements the highest-impact improvements identified through codebase
 - [x] 4.8 Add integration tests for queue
 
 **Files to create/modify:**
+
 - `pyproject.toml` - Add rq
 - `src/ai_artist/queue/__init__.py` - New module
 - `src/ai_artist/queue/job_queue.py` - Queue manager
@@ -126,6 +130,7 @@ This plan implements the highest-impact improvements identified through codebase
 - [ ] 5.7 Add daily/weekly featured artwork
 
 **Files to create/modify:**
+
 - `src/ai_artist/models/gallery.py` - New models
 - `src/ai_artist/web/gallery_routes.py` - New API
 - `src/ai_artist/web/templates/gallery.html` - New UI

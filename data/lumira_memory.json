@@ -1,26 +1,26 @@
 {
   "name": "Lumira",
-  "created_at": "2026-03-07T21:51:53.843728",
+  "created_at": "2026-03-09T12:44:47.575486",
   "paintings": [
     {
-      "timestamp": "2026-03-07T21:51:53.849888",
-      "prompt": "lighthouse meets volcano, abstract interpretation, minimalist, color palette: muted blues, soft grays, highly detailed, zen style, meditative quiet mood",
+      "timestamp": "2026-03-09T12:44:47.583454",
+      "prompt": "chaos, fusion of mysterious and bold, calm atmosphere, street art, color palette: defiant blacks, anarchic neons, professional quality, sharp defined edges, dramatic high contrast, unapologetic bold mood",
       "subject": "test landscape",
-      "style": "minimalist",
-      "mood": "contemplative",
+      "style": "dreamlike",
+      "mood": "rebellious",
       "colors": [
-        "muted blues",
-        "soft grays",
-        "gentle earth tones"
+        "defiant blacks",
+        "anarchic neons",
+        "aggressive reds"
       ],
       "score": 0.75,
-      "image_path": "/private/var/folders/vl/1g4kyx090p34nf40rd5vyydm0000gn/T/pytest-of-elizabethstein/pytest-19/test_full_artwork_creation_wor0/test_image.png",
+      "image_path": "/private/var/folders/vl/1g4kyx090p34nf40rd5vyydm0000gn/T/pytest-of-elizabethstein/pytest-7/test_full_artwork_creation_wor0/test_image.png",
       "metadata": {
         "creation_type": "autonomous_original",
-        "generation_mode": "mashup",
+        "generation_mode": "fusion",
         "model": "runwayml/stable-diffusion-v1-5",
-        "energy_level": 0.49907345675565185,
-        "reflection": "There's a question buried in this test landscape. I'm not sure I know the answer yet. I'm quietly pleased. Sometimes the gentle moments surprise you."
+        "energy_level": 0.44876971293337986,
+        "reflection": "I broke something on purpose with this test landscape. It needed breaking. I'm quietly pleased. Sometimes the gentle moments surprise you."
       }
     }
   ],
@@ -30,12 +30,12 @@
       "test landscape": 1
     },
     "favorite_styles": {
-      "minimalist": 1
+      "dreamlike": 1
     },
     "favorite_colors": {
-      "muted blues": 1,
-      "soft grays": 1,
-      "gentle earth tones": 1
+      "defiant blacks": 1,
+      "anarchic neons": 1,
+      "aggressive reds": 1
     }
   },
   "stats": {

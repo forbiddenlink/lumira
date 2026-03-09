@@ -78,16 +78,19 @@ turn_span_id: ""
 ## Post-Mortem (Required for Artifact Index)
 
 ### What Worked
+
 - **Research-first approach**: Using 3 parallel agents (codebase, GitHub, best practices) gave comprehensive context
 - **Incremental integration**: Adding features one at a time with syntax checks prevented cascading errors
 - **Existing infrastructure**: NarrativeEngine and DesireEngine were already solid - just needed wiring
 
 ### What Failed
+
 - **Tried**: Direct module import tests → Failed because not in virtualenv
 - **Fixed by**: Using `uv run python -c "..."` for import verification
 - **Pre-existing issue**: `src/static` directory missing caused test collection failure
 
 ### Key Decisions
+
 - **Decision**: Changed default model from flux-schnell to flux2-pro
   - Alternatives: Keep schnell for speed, use flux2-dev for cost
   - Reason: flux2-pro offers best quality/speed/cost balance for production
@@ -99,11 +102,13 @@ turn_span_id: ""
 ## Artifacts
 
 **New files created:**
+
 - `src/ai_artist/export/provenance.py` - C2PA provenance manager
 - `src/ai_artist/scheduling/resilience.py` - Circuit breaker, retry, state persistence
 - `src/ai_artist/scheduling/__init__.py` - Module exports
 
 **Modified files:**
+
 - `src/ai_artist/core/replicate_generator.py` - FLUX.2 models
 - `src/ai_artist/core/flux_generator.py` - FLUX.2 configs
 - `src/ai_artist/export/__init__.py` - Provenance exports
@@ -128,11 +133,13 @@ turn_span_id: ""
 **Test status:** All 548 unit tests pass (1 skipped for CLIP model)
 
 **Key patterns discovered from research:**
+
 - Eden.art (edenartlab/eve) is most similar project - uses FalkorDB for knowledge graph
 - StreamDiffusion's RCFG could halve generation compute (future optimization)
 - ComfyUI workflow embedding in PNG is a good pattern to adopt
 
 **API endpoints added:**
+
 - `GET /api/lumira/series` - View thematic series
 - `GET /api/lumira/autonomy-status` - Monitor 24/7 operation health
 
