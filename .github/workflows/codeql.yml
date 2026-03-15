@@ -8,6 +8,11 @@ on:
   schedule:
     - cron: '0 0 * * 1'  # Weekly on Monday at midnight
 
+# Cancel in-progress runs for the same branch (except scheduled runs)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
+
 jobs:
   analyze:
     name: Analyze
