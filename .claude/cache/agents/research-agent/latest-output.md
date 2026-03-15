@@ -1,7 +1,9 @@
 # Research Report: Lumira 2.0 Design Validation
+
 Generated: 2026-03-13
 
 ## Executive Summary
+
 FalkorDB remains a strong choice for AI agent memory with excellent GraphRAG support, though runs via Docker on macOS. For fast previews, FLUX.1 Schnell now outperforms SDXL Turbo in quality while remaining fast. Inner Dialogue is a validated pattern (now called "Reflection"). LoRA blending at runtime is feasible with established tooling.
 
 ## Validation Results
@@ -20,6 +22,7 @@ FalkorDB remains a strong choice for AI agent memory with excellent GraphRAG sup
 **Recommendation:** Keep FalkorDB. Run via Docker with 4-8GB allocation. Your 48GB M4 Pro handles this easily.
 
 **macOS Setup:**
+
 ```bash
 docker run -p 6379:6379 -p 3000:3000 \
   --memory="8g" --memory-reservation="4g" \
@@ -27,6 +30,7 @@ docker run -p 6379:6379 -p 3000:3000 \
 ```
 
 Sources:
+
 - [FalkorDB vs Neo4j Performance Benchmarks](https://www.falkordb.com/blog/graph-database-performance-benchmarks-falkordb-vs-neo4j/)
 - [FalkorDB Docker Installation](https://docs.falkordb.com/operations/docker.html)
 - [FalkorDB vs Neo4j for AI](https://www.falkordb.com/blog/falkordb-vs-neo4j-for-ai-applications/)
@@ -44,6 +48,7 @@ Sources:
 | **FLUX.1 Schnell** | 4 steps | Highest | 1024x1024 | 10x faster than SDXL, better text rendering |
 
 **2026 Update:** FLUX.1 Schnell has emerged as the better fast preview option:
+
 - 10x faster than base SDXL
 - Superior text rendering (critical for UI mockups)
 - Better prompt adherence
@@ -52,6 +57,7 @@ Sources:
 **Recommendation:** Switch to FLUX.1 Schnell for previews. Use Draw Things with Metal FlashAttention 2.0 for ~20% faster inference on M4.
 
 Sources:
+
 - [Flux vs SDXL 2026 Comparison](https://pxz.ai/blog/flux-vs-sdxl)
 - [FLUX.1 Schnell vs SDXL Analysis](https://flux-ai.io/blog/detail/Comparative-Analysis:-FLUX-1-Schnell-AI-vs--Stable-Diffusion-XL-65da0e0bc8df/)
 - [Metal FlashAttention 2.0](https://engineering.drawthings.ai/p/metal-flashattention-2-0-pushing-forward-on-device-inference-training-on-apple-silicon-fe8aac1ab23c)
@@ -73,16 +79,19 @@ The pattern you're describing is formally known as **Reflection** in 2026 AI age
 **Key 2026 Development:** Research has shifted toward **internalized reflection** - putting the iterative self-review process inside the LLM rather than external loops. This reduces token costs while maintaining quality.
 
 **Practical Implementation:**
+
 - Combine with tool use for fact verification
 - Add human-in-the-loop for high-risk outputs
 - Use Reflexion pattern for iterative repair
 
 **Pitfalls to Avoid:**
+
 - Don't use reflection alone without grounding (tools/retrieval)
 - Avoid excessive reflection loops (diminishing returns after 2-3 iterations)
 - Consider when to escalate vs. continue reflecting
 
 Sources:
+
 - [4 Agentic AI Design Patterns 2026](https://research.aimultiple.com/agentic-ai-design-patterns/)
 - [AI Trends 2026: Reflective Agents](https://huggingface.co/blog/aufklarer/ai-trends-2026-test-time-reasoning-reflective-agen)
 - [The Reflection Pattern](https://qat.com/reflection-pattern-ai/)
@@ -96,16 +105,19 @@ Sources:
 **Verdict: CONFIRMED - Feasible and well-supported**
 
 **Runtime LoRA Blending:**
+
 - Multiple LoRAs can be combined using weighted merging
 - Tools like SuperMerger handle LoRA characteristic blending
 - Interpolation is inherent to LoRA design: `model + alpha * (lora1 + beta * lora2)`
 
 **Latent Space Navigation (2026 State):**
+
 - **Smooth Diffusion** formally introduces latent space smoothness to models
 - Improves: interpolation continuity, inversion accuracy, edit preservation
 - Higher interpolation steps = smoother transitions (trade-off: generation time)
 
 **Practical Implementation:**
+
 ```python
 # Conceptual LoRA blending
 pipe.load_lora_weights("style_a.safetensors", adapter_name="style_a")
@@ -116,6 +128,7 @@ pipe.set_adapters(["style_a", "style_b"], adapter_weights=[0.6, 0.4])
 **Performance Note:** Runtime blending is efficient - the overhead is in loading weights, not inference. Pre-merge LoRAs if you have fixed style combinations.
 
 Sources:
+
 - [LoRA for Stable Diffusion Fine-Tuning](https://huggingface.co/blog/lora)
 - [Smooth Diffusion: Crafting Smooth Latent Spaces](https://shi-labs.github.io/Smooth-Diffusion/)
 - [Image Interpolation with Stable Diffusion](https://huggingface.co/learn/cookbook/stable_diffusion_interpolation)

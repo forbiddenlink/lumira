@@ -77,7 +77,8 @@
       "mcp__plugin_playwright_playwright__browser_click",
       "Bash(system_profiler:*)",
       "Bash(gh run view:*)",
-      "Bash(uvx ruff check:*)"
+      "Bash(uvx ruff check:*)",
+      "Bash(gh run list:*)"
     ]
   }
 }
