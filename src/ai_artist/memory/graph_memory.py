@@ -7,7 +7,7 @@ This module provides relationship-aware memory that tracks:
 - Mood pair effectiveness
 """
 
-import logging
+import contextlib
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
@@ -15,14 +15,7 @@ from uuid import uuid4
 
 import structlog
 
-from ai_artist.memory.graph_schema import (
-    DEFAULT_MOODS,
-    SCHEMA_QUERIES,
-    ArtworkNode,
-    DecisionNode,
-    MoodNode,
-    StyleNode,
-)
+from ai_artist.memory.graph_schema import DEFAULT_MOODS, SCHEMA_QUERIES, MoodNode
 
 logger = structlog.get_logger(__name__)
 
@@ -105,18 +98,14 @@ class GraphMemory:
 
     async def initialize_schema(self) -> bool:
         """Initialize graph schema and default data."""
-        if self._graph is None:
-            if not await self.connect():
-                return False
+        if self._graph is None and not await self.connect():
+            return False
 
         try:
-            # Create indexes
+            # Create indexes (suppress errors for existing indexes)
             for query in SCHEMA_QUERIES:
-                try:
+                with contextlib.suppress(Exception):
                     self._graph.query(query)
-                except Exception:
-                    # Index might already exist
-                    pass
 
             # Create default mood nodes
             for mood in DEFAULT_MOODS:
@@ -212,7 +201,7 @@ class GraphMemory:
             )
 
             # Link to style nodes
-            for style, weight in zip(styles, style_weights):
+            for style, weight in zip(styles, style_weights, strict=False):
                 await self._link_decision_to_style(decision_id, style, weight)
 
             # Record style blend effectiveness if multiple styles
@@ -504,10 +493,8 @@ class GraphMemory:
     async def close(self) -> None:
         """Close the database connection."""
         if self._db:
-            try:
+            with contextlib.suppress(Exception):
                 self._db.close()
-            except Exception:
-                pass
             self._db = None
             self._graph = None
             self._initialized = False

@@ -1,7 +1,8 @@
 """Tests for FalkorDB graph memory."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 
 from ai_artist.memory.graph_memory import GraphMemory, MemoryContext, StyleEffectiveness
 from ai_artist.memory.graph_schema import DEFAULT_MOODS, MoodNode
@@ -125,16 +126,17 @@ class TestGraphMemoryOperations:
         """Test connect fails gracefully without FalkorDB installed."""
         gm = GraphMemory()
 
-        with patch.dict("sys.modules", {"falkordb": None}):
-            # Simulate ImportError
-            with patch(
+        with (
+            patch.dict("sys.modules", {"falkordb": None}),
+            patch(
                 "ai_artist.memory.graph_memory.GraphMemory.connect",
                 new_callable=AsyncMock,
                 return_value=False,
-            ):
-                result = await gm.connect()
-                # Should return False when FalkorDB not installed
-                assert result is False
+            ),
+        ):
+            # Simulate ImportError - should return False when FalkorDB not installed
+            result = await gm.connect()
+            assert result is False
 
     async def test_record_decision_without_connection(self):
         """Test record_decision returns empty string without connection."""
@@ -207,9 +209,12 @@ class TestGraphMemoryWithMockedFalkorDB:
         """Test successful connection to FalkorDB."""
         gm = GraphMemory()
 
-        with patch("ai_artist.memory.graph_memory.FalkorDB", create=True) as MockFalkorDB:
+        with patch(
+            "ai_artist.memory.graph_memory.FalkorDB", create=True
+        ):
             # Need to patch it at import time
             import sys
+
             mock_module = MagicMock()
             mock_module.FalkorDB = MagicMock(return_value=mock_db)
             sys.modules["falkordb"] = mock_module
@@ -228,6 +233,7 @@ class TestGraphMemoryWithMockedFalkorDB:
         gm = GraphMemory()
 
         import sys
+
         # Remove falkordb if it exists
         if "falkordb" in sys.modules:
             original = sys.modules["falkordb"]
@@ -238,6 +244,7 @@ class TestGraphMemoryWithMockedFalkorDB:
         try:
             # Make import fail
             import builtins
+
             original_import = builtins.__import__
 
             def mock_import(name, *args, **kwargs):
@@ -258,8 +265,11 @@ class TestGraphMemoryWithMockedFalkorDB:
         gm = GraphMemory()
 
         import sys
+
         mock_module = MagicMock()
-        mock_module.FalkorDB = MagicMock(side_effect=ConnectionError("Connection refused"))
+        mock_module.FalkorDB = MagicMock(
+            side_effect=ConnectionError("Connection refused")
+        )
         sys.modules["falkordb"] = mock_module
 
         try:
@@ -496,7 +506,13 @@ class TestGraphMemoryWithMockedFalkorDB:
 
         mock_result = MagicMock()
         mock_result.result_set = [
-            ["id1", "mountain landscape", ["impressionist"], 0.85, "2024-01-01T12:00:00"],
+            [
+                "id1",
+                "mountain landscape",
+                ["impressionist"],
+                0.85,
+                "2024-01-01T12:00:00",
+            ],
             ["id2", "ocean sunset", ["romantic"], 0.90, "2024-01-01T11:00:00"],
         ]
         mock_graph.query.return_value = mock_result
@@ -535,6 +551,7 @@ class TestGraphMemoryWithMockedFalkorDB:
 
         # Mock different query results for each call
         call_count = 0
+
         def mock_query_results(*args, **kwargs):
             nonlocal call_count
             call_count += 1
@@ -544,7 +561,9 @@ class TestGraphMemoryWithMockedFalkorDB:
             elif "m2.name as paired_mood" in args[0]:  # get_mood_pairs query
                 result.result_set = [["serene", ["zen"], ["green"]]]
             elif "d.id, d.prompt" in args[0]:  # get_recent_decisions query
-                result.result_set = [["id1", "peaceful mountain sunset view", ["zen"], 0.9, "2024-01-01"]]
+                result.result_set = [
+                    ["id1", "peaceful mountain sunset view", ["zen"], 0.9, "2024-01-01"]
+                ]
             elif "BLENDS_WITH" in args[0]:  # get_best_style_blends query
                 result.result_set = []
             else:
@@ -599,16 +618,14 @@ class TestGraphMemoryWithMockedFalkorDB:
         gm._graph = mock_graph
 
         # Mock different counts for each label
-        call_count = [0]
+
         def mock_query_results(query, *args, **kwargs):
             result = MagicMock()
             if "Mood" in query:
                 result.result_set = [[10]]
             elif "Style" in query:
                 result.result_set = [[25]]
-            elif "Decision" in query:
-                result.result_set = [[100]]
-            elif "Artwork" in query:
+            elif "Decision" in query or "Artwork" in query:
                 result.result_set = [[100]]
             elif "()-[r]->()" in query:
                 result.result_set = [[300]]
@@ -730,6 +747,4 @@ class TestGraphMemoryIntegration:
         # Should have recorded the blend
         assert any(
             b["style_a"] == "zen" and b["style_b"] == "minimalist" for b in blends
-        ) or any(
-            b["style_a"] == "minimalist" and b["style_b"] == "zen" for b in blends
-        )
+        ) or any(b["style_a"] == "minimalist" and b["style_b"] == "zen" for b in blends)

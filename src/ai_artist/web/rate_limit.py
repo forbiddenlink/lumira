@@ -133,16 +133,17 @@ class RateLimitHeadersMiddleware(BaseHTTPMiddleware):
         if limiter:
             # Try to get rate limit info from limiter state
             # The exact headers depend on the request's rate limit configuration
-            key = get_remote_address(request)
+            get_remote_address(request)
 
             # Add headers if we have limit info in response
             # slowapi stores current window info in the response headers after processing
-            if "X-RateLimit-Limit" not in response.headers:
-                # Default headers for generation endpoints
-                if "/api/lumira/" in request.url.path:
-                    # Set generic headers - actual values set by slowapi decorators
-                    if "X-RateLimit-Remaining" not in response.headers:
-                        response.headers["X-RateLimit-Remaining"] = "see X-RateLimit-Limit"
+            # Default headers for generation endpoints (if not already set by slowapi)
+            if (
+                "X-RateLimit-Limit" not in response.headers
+                and "/api/lumira/" in request.url.path
+                and "X-RateLimit-Remaining" not in response.headers
+            ):
+                response.headers["X-RateLimit-Remaining"] = "see X-RateLimit-Limit"
 
         return response
 
