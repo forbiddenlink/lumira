@@ -68,3 +68,16 @@ config/config.yaml
 # Specter knowledge graph cache
 .specter/
 data/lora_training/lumira_training.zip
+.claude
+.claude/
+.playwright-mcp
+.playwright-mcp/
+.history
+playwright-report
+playwright-report/
+__pycache__
+.codacy
+.codacy/
+coverage/
+test_run/
+supabase/.temp/

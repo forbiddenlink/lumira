@@ -2,19 +2,19 @@
   "model_scores": {
     "Lykon/dreamshaper-8": {
       "param_combo_hash": "Lykon/dreamshaper-8",
-      "total_score": 125.30000000000035,
-      "num_samples": 179,
-      "avg_score": 0.700000000000002,
-      "last_updated": "2026-03-14 02:03:31.370876+00:00"
+      "total_score": 146.30000000000007,
+      "num_samples": 209,
+      "avg_score": 0.7000000000000003,
+      "last_updated": "2026-03-15 02:28:26.548246+00:00"
     }
   },
   "param_scores": {
     "[('guidance_scale', 7.5), ('height', 768), ('num_inference_steps', 40), ('width', 768)]": {
       "param_combo_hash": "[('guidance_scale', 7.5), ('height', 768), ('num_inference_steps', 40), ('width', 768)]",
-      "total_score": 125.30000000000035,
-      "num_samples": 179,
-      "avg_score": 0.700000000000002,
-      "last_updated": "2026-03-14 02:03:31.371219+00:00"
+      "total_score": 146.30000000000007,
+      "num_samples": 209,
+      "avg_score": 0.7000000000000003,
+      "last_updated": "2026-03-15 02:28:26.548256+00:00"
     }
   },
   "mood_preferences": {
@@ -211,9 +211,15 @@
     "different": 0.7,
     "lighting": 0.7,
     "whimsical": 0.7,
-    "bold": 0.7
+    "bold": 0.7,
+    "color": 0.7,
+    "dreamlike": 0.7,
+    "painterly": 0.7,
+    "alternate": 0.7,
+    "moods": 0.7,
+    "within": 0.7
   },
-  "last_updated": "2026-03-14T02:03:31.372557+00:00",
+  "last_updated": "2026-03-15T02:28:26.548280+00:00",
   "alignment_history": [
     {
       "artwork_id": "art1",

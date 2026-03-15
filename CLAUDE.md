@@ -75,6 +75,7 @@ Memory         (observe/reflect/                             + ensemble
 ### Central Class: `AIArtist` (main.py)
 
 Orchestrates all subsystems:
+
 - `mood_system` - Current emotional state influencing art
 - `thinking` - Visible reasoning process
 - `critic` - Self-evaluation before generation
@@ -86,6 +87,7 @@ Orchestrates all subsystems:
 ### Web Application Structure
 
 FastAPI routers mounted at:
+
 - `/api/lumira` - Personality & generation endpoints
 - `/api/gallery` - Gallery management
 - `/api/health` - Kubernetes probes
@@ -95,6 +97,7 @@ FastAPI routers mounted at:
 ### Database
 
 SQLAlchemy models in `db/models.py`. Primary tables:
+
 - `GeneratedImage` - Artwork metadata, scores, generation params
 - `TrainingSession` - LoRA training records
 - `GalleryLike/Comment/Share` - User engagement
@@ -102,14 +105,18 @@ SQLAlchemy models in `db/models.py`. Primary tables:
 ## Code Patterns
 
 ### Async Convention
+
 All FastAPI routes are async. File I/O uses `aiofiles`:
+
 ```python
 async with aiofiles.open(path, "r") as f:
     content = await f.read()
 ```
 
 ### Pydantic V2
+
 Configuration and API models use Pydantic V2:
+
 ```python
 from pydantic import BaseModel
 class LumiraEvolveResponse(BaseModel):
@@ -119,12 +126,15 @@ class LumiraEvolveResponse(BaseModel):
 ```
 
 ### Type Hints
+
 Target 100% coverage. Use Google-style docstrings.
 
 ### Tenacity for Retries
+
 API calls use `@retry` decorator with exponential backoff.
 
 ### Commit Messages
+
 Conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`
 
 ## Configuration
@@ -136,6 +146,7 @@ Conventional commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`
 - **LoRA registry**: `config/lora_models.json`
 
 Key env vars:
+
 ```
 MODEL_ID=stabilityai/stable-diffusion-xl-base-1.0
 DEVICE=cuda|mps|cpu
@@ -153,10 +164,12 @@ DATABASE_URL=sqlite:///./data/lumira.db
 ## Personality System
 
 The 10-mood system influences model selection, prompt generation, and artistic decisions:
+
 - Contemplative, Playful, Melancholic, Euphoric, Serene
 - Anxious, Nostalgic, Curious, Rebellious, Transcendent
 
 Memory is 3-layered:
+
 - **Episodic**: Recent creation history
 - **Semantic**: Learned patterns and preferences
 - **Working**: Current session context

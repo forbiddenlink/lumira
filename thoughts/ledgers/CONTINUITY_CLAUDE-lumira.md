@@ -103,18 +103,21 @@ to make Lumira a more polished, feature-rich AI artist.
 ## Potential Future Improvements
 
 ### Not Yet Tested (require external dependencies)
+
 - [ ] FLUX.1 Schnell preview generation (needs model download ~12GB)
 - [ ] FalkorDB graph queries (needs `docker-compose up falkordb`)
 - [ ] Full image generation with LoRA (needs Replicate API key + credits)
 - [ ] Mobile touch gestures (needs device testing)
 
 ### Deferred Features (from design doc)
+
 - [ ] Video generation (Kling/Runway APIs)
 - [ ] Community features (challenges, model sharing)
 - [ ] 3D generation (TripoSR)
 - [ ] Audio pairing (Suno API)
 
 ### Remaining Polish Ideas
+
 - [ ] Prometheus metrics dashboard
 - [ ] Docker image optimization
 - [ ] lumira_routes.py coverage (currently 65%)

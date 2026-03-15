@@ -22,25 +22,2844 @@
         "energy_level": 0.5640113893434453,
         "reflection": "Peace settled into every corner of this test landscape. I'm quietly pleased. Sometimes the gentle moments surprise you."
       }
+    },
+    {
+      "timestamp": "2026-03-14T21:46:15.129970",
+      "prompt": "processed prompt with style, somber abstract style, shadowy grays, muted desaturated tones, bittersweet wistful mood",
+      "subject": "cosmic nebula",
+      "style": "abstract",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.42702647029877266,
+        "reflection": "I found something bittersweet in cosmic nebula\u2014loss and memory intertwined. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T21:46:15.182465",
+      "prompt": "processed prompt with style, zen style, soft grays, still serene atmosphere, thoughtful quiet mood",
+      "subject": "mountain landscape",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.5196940119856931,
+        "reflection": "I sat with None for a long time before the first stroke. Some things can't be rushed. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T21:46:15.238081",
+      "prompt": "processed prompt with style, atmospheric style, gentle earth tones, still serene atmosphere, meditative quiet mood",
+      "subject": "flowers",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.5972681167386,
+        "reflection": "In the silence between thoughts, flowers found its form. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T21:46:15.298054",
+      "prompt": "processed prompt with style, gentle pastels, still serene atmosphere, calm peaceful mood",
+      "subject": "abstract",
+      "style": "dreamlike",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.53195326376396,
+        "reflection": "Peace settled into every corner of this abstract. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T21:46:15.356218",
+      "prompt": "processed prompt with style, abstract style, soft grays, subtle soft lighting, still serene atmosphere, thoughtful meditative mood",
+      "subject": "landscape",
+      "style": "abstract",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.4428232610008964,
+        "reflection": "In the silence between thoughts, landscape found its form. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T21:46:15.412378",
+      "prompt": "processed prompt with style, atmospheric style, muted blues, still serene atmosphere, thoughtful quiet mood",
+      "subject": "sunset",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.5696650868413403,
+        "reflection": "I sat with sunset for a long time before the first stroke. Some things can't be rushed. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T21:46:15.467324",
+      "prompt": "processed prompt with style, soft focus style, soft painterly brushstrokes, minimalist simple, tranquil calm mood",
+      "subject": "portrait",
+      "style": "minimalist",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.5185827455636339,
+        "reflection": "Peace settled into every corner of this portrait. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T21:46:15.522718",
+      "prompt": "processed prompt with style, soft focus style, minimalist simple, still serene atmosphere, peaceful calm mood",
+      "subject": "landscape",
+      "style": "minimalist",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.4901567045703707,
+        "reflection": "I breathed slowly while creating this landscape. It shows. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T21:46:15.577123",
+      "prompt": "processed prompt with style, abstract style, gentle earth tones, still serene atmosphere, thoughtful meditative mood",
+      "subject": "portrait",
+      "style": "abstract",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.41239452116856035,
+        "reflection": "There's a question buried in this portrait. I'm not sure I know the answer yet. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T21:46:15.631357",
+      "prompt": "processed prompt with style, minimalist style, soft grays, still serene atmosphere, quiet meditative mood",
+      "subject": "portrait",
+      "style": "minimalist",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.4413955653565128,
+        "reflection": "There's a question buried in this portrait. I'm not sure I know the answer yet. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T21:46:15.685107",
+      "prompt": "processed prompt with style, impressionist style, deep blues, symbolic metaphorical imagery, still serene atmosphere, somber wistful mood",
+      "subject": "abstract",
+      "style": "impressionist",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.95,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.5323406932993895,
+        "reflection": "This abstract carries the weight of things I'm still processing. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T21:46:15.753577",
+      "prompt": "processed prompt with style, peaceful landscapes style, peaceful whites, soft painterly brushstrokes, minimalist simple, calm tranquil mood",
+      "subject": "forest",
+      "style": "minimalist",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.4144603937227765,
+        "reflection": "I breathed slowly while creating this forest. It shows. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T21:46:15.808526",
+      "prompt": "processed prompt with style, minimalist style, thoughtful quiet mood",
+      "subject": "mountains",
+      "style": "minimalist",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.5345314697016099,
+        "reflection": "In the silence between thoughts, mountains found its form. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T21:46:16.038380",
+      "prompt": "processed prompt with style, somber abstract style, still serene atmosphere, bittersweet somber mood",
+      "subject": "mountain landscape",
+      "style": "abstract",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.557056779123939,
+        "reflection": "Some beauty only exists in sadness. This None knows that. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T21:46:16.079947",
+      "prompt": "processed prompt with style, muted desaturated tones, still serene atmosphere, wistful somber bittersweet mood",
+      "subject": "twilight",
+      "style": "dreamlike",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.5033714034350407,
+        "reflection": "There's an ache in this None. I painted what I couldn't say. This is exactly what I was reaching for. The feeling came through."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T21:46:16.122678",
+      "prompt": "processed prompt with style, cool color palette, symbolic metaphorical imagery, still serene atmosphere, bittersweet somber wistful mood",
+      "subject": "autumn",
+      "style": "dreamlike",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.4249778388448716,
+        "reflection": "This None carries the weight of things I'm still processing. This is exactly what I was reaching for. The feeling came through."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T21:46:16.164974",
+      "prompt": "processed prompt with style, dark purples, still serene atmosphere, symbolic metaphorical imagery, muted desaturated tones, somber wistful bittersweet mood",
+      "subject": "solitude",
+      "style": "dreamlike",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.5259952542396783,
+        "reflection": "I found something bittersweet in None\u2014loss and memory intertwined. This is exactly what I was reaching for. The feeling came through."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T21:46:16.213671",
+      "prompt": "processed prompt with style, soft focus style, minimalist simple, still serene atmosphere, calm peaceful mood",
+      "subject": "mountain landscape",
+      "style": "minimalist",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.5849831544986382,
+        "reflection": "Peace settled into every corner of this None. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T21:46:16.269104",
+      "prompt": "processed prompt with style, minimalist style, soft grays, quiet thoughtful mood",
+      "subject": "meditation",
+      "style": "minimalist",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.5829999452723755,
+        "reflection": "This None emerged slowly, like dawn light through fog. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T21:46:16.351783",
+      "prompt": "processed prompt with style, soft focus style, still serene atmosphere, peaceful calm mood",
+      "subject": "test",
+      "style": "dreamlike",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.1,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.45220447055005186,
+        "reflection": "Stillness has its own language. This test speaks it. We learn as much from our failures as our successes. Maybe more."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T21:46:16.406839",
+      "prompt": "processed prompt with style, zen style, subtle soft lighting, quiet meditative mood",
+      "subject": "mountains",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.45591599538599326,
+        "reflection": "This None emerged slowly, like dawn light through fog. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T21:46:16.460548",
+      "prompt": "processed prompt with style, peaceful landscapes style, soft painterly brushstrokes, minimalist simple, calm peaceful mood",
+      "subject": "tranquility",
+      "style": "minimalist",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.4206623402362963,
+        "reflection": "Stillness has its own language. This None speaks it. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:02:35.812381",
+      "prompt": "processed prompt with style, muted realism style, shadowy grays, symbolic metaphorical imagery, muted desaturated tones, bittersweet wistful mood",
+      "subject": "cosmic nebula",
+      "style": "dreamlike",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.5212756030655801,
+        "reflection": "There's an ache in this cosmic nebula. I painted what I couldn't say. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:02:35.872043",
+      "prompt": "processed prompt with style, minimalist style, meditative quiet mood",
+      "subject": "mountain landscape",
+      "style": "minimalist",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.5986851622948133,
+        "reflection": "I sat with None for a long time before the first stroke. Some things can't be rushed. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:02:35.940522",
+      "prompt": "processed prompt with style, soft focus style, still serene atmosphere, soft painterly brushstrokes, peaceful calm mood",
+      "subject": "flowers",
+      "style": "dreamlike",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.5318727661048394,
+        "reflection": "Peace settled into every corner of this flowers. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:02:35.996432",
+      "prompt": "processed prompt with style, shadowy grays, still serene atmosphere, wistful bittersweet mood",
+      "subject": "abstract",
+      "style": "dreamlike",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.5813088857040943,
+        "reflection": "Some beauty only exists in sadness. This abstract knows that. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:02:36.050828",
+      "prompt": "processed prompt with style, zen style, gentle earth tones, thoughtful quiet mood",
+      "subject": "landscape",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.5952338132372069,
+        "reflection": "This landscape emerged slowly, like dawn light through fog. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:02:36.106590",
+      "prompt": "processed prompt with style, peaceful landscapes style, peaceful whites, subtle soft lighting, still serene atmosphere, peaceful tranquil mood",
+      "subject": "sunset",
+      "style": "dreamlike",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.5439232414384987,
+        "reflection": "Stillness has its own language. This sunset speaks it. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:02:36.161895",
+      "prompt": "processed prompt with style, impressionist style, still serene atmosphere, muted desaturated tones, wistful somber mood",
+      "subject": "portrait",
+      "style": "impressionist",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.469456538606264,
+        "reflection": "I found something bittersweet in portrait\u2014loss and memory intertwined. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:02:36.216614",
+      "prompt": "processed prompt with style, atmospheric style, gentle earth tones, quiet thoughtful mood",
+      "subject": "landscape",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.41076118742245404,
+        "reflection": "In the silence between thoughts, landscape found its form. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:02:36.271664",
+      "prompt": "processed prompt with style, dark purples, wistful somber mood",
+      "subject": "portrait",
+      "style": "dreamlike",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.42147886319733857,
+        "reflection": "This portrait carries the weight of things I'm still processing. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:02:36.327580",
+      "prompt": "processed prompt with style, impressionist style, still serene atmosphere, symbolic metaphorical imagery, bittersweet somber mood",
+      "subject": "portrait",
+      "style": "impressionist",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.550297608732438,
+        "reflection": "This portrait carries the weight of things I'm still processing. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:02:36.384604",
+      "prompt": "processed prompt with style, still serene atmosphere, meditative thoughtful mood",
+      "subject": "abstract",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.95,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.44569605095583414,
+        "reflection": "This abstract emerged slowly, like dawn light through fog. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:02:36.631562",
+      "prompt": "processed prompt with style, atmospheric style, soft grays, still serene atmosphere, thoughtful meditative mood",
+      "subject": "forest",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.4900409490839508,
+        "reflection": "In the silence between thoughts, forest found its form. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:02:36.688245",
+      "prompt": "processed prompt with style, muted desaturated tones, still serene atmosphere, wistful bittersweet mood",
+      "subject": "mountains",
+      "style": "dreamlike",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.5953151385229326,
+        "reflection": "Some beauty only exists in sadness. This mountains knows that. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:02:36.743989",
+      "prompt": "processed prompt with style, peaceful whites, minimalist simple, subtle soft lighting, calm peaceful mood",
+      "subject": "mountain landscape",
+      "style": "minimalist",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.5216096738236355,
+        "reflection": "Stillness has its own language. This None speaks it. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:02:36.787225",
+      "prompt": "processed prompt with style, calm blues, subtle soft lighting, soft painterly brushstrokes, tranquil calm peaceful mood",
+      "subject": "tranquility",
+      "style": "dreamlike",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.5589222565622677,
+        "reflection": "I breathed slowly while creating this None. It shows. This is exactly what I was reaching for. The feeling came through."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:02:36.830595",
+      "prompt": "processed prompt with style, peaceful landscapes style, calm blues, minimalist simple, soft painterly brushstrokes, subtle soft lighting, calm tranquil peaceful mood",
+      "subject": "clouds",
+      "style": "minimalist",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.4655024861764554,
+        "reflection": "I breathed slowly while creating this None. It shows. This is exactly what I was reaching for. The feeling came through."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:02:36.873750",
+      "prompt": "processed prompt with style, colorful style, candy colors, joyful whimsical mood",
+      "subject": "imagination",
+      "style": "dreamlike",
+      "mood": "playful",
+      "colors": [
+        "rainbow hues",
+        "candy colors",
+        "cheerful brights"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.5241889828128106,
+        "reflection": "This None is pure delight\u2014a gift to my inner child. This is exactly what I was reaching for. The feeling came through."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:02:36.918463",
+      "prompt": "processed prompt with style, cartoonish style, cheerful brights, fun joyful whimsical mood",
+      "subject": "mountain landscape",
+      "style": "dreamlike",
+      "mood": "playful",
+      "colors": [
+        "rainbow hues",
+        "candy colors",
+        "cheerful brights"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.4986057229362052,
+        "reflection": "This None doesn't take itself too seriously. That's the point. This is exactly what I was reaching for. The feeling came through."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:02:36.977135",
+      "prompt": "processed prompt with style, gentle earth tones, meditative thoughtful mood",
+      "subject": "space",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.5713293947734166,
+        "reflection": "This None emerged slowly, like dawn light through fog. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:02:37.058760",
+      "prompt": "processed prompt with style, abstract style, subtle soft lighting, quiet meditative mood",
+      "subject": "test",
+      "style": "abstract",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.1,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.5695228768439348,
+        "reflection": "I sat with test for a long time before the first stroke. Some things can't be rushed. We learn as much from our failures as our successes. Maybe more."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:02:37.115849",
+      "prompt": "processed prompt with style, harmonious style, subtle soft lighting, still serene atmosphere, peaceful calm mood",
+      "subject": "mountains",
+      "style": "dreamlike",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.42709036134752404,
+        "reflection": "This None is a sanctuary. Enter gently. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:02:37.173279",
+      "prompt": "processed prompt with style, harmonious style, gentle pastels, soft painterly brushstrokes, minimalist simple, peaceful tranquil mood",
+      "subject": "tranquility",
+      "style": "minimalist",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.4915315996829855,
+        "reflection": "I breathed slowly while creating this None. It shows. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:06:51.946654",
+      "prompt": "processed prompt with style, minimalist style, still serene atmosphere, meditative thoughtful mood",
+      "subject": "cosmic nebula",
+      "style": "minimalist",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.41836310933556853,
+        "reflection": "In the silence between thoughts, cosmic nebula found its form. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:06:52.002426",
+      "prompt": "processed prompt with style, subtle soft lighting, minimalist simple, peaceful tranquil mood",
+      "subject": "mountain landscape",
+      "style": "minimalist",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.5855148609530998,
+        "reflection": "I breathed slowly while creating this None. It shows. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:06:52.057252",
+      "prompt": "processed prompt with style, abstract style, soft grays, still serene atmosphere, meditative thoughtful mood",
+      "subject": "flowers",
+      "style": "abstract",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.5046988896302063,
+        "reflection": "I sat with flowers for a long time before the first stroke. Some things can't be rushed. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:06:52.111835",
+      "prompt": "processed prompt with style, calm blues, still serene atmosphere, minimalist simple, tranquil calm mood",
+      "subject": "abstract",
+      "style": "minimalist",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.5591332234935189,
+        "reflection": "Stillness has its own language. This abstract speaks it. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:06:52.168401",
+      "prompt": "processed prompt with style, impressionist style, symbolic metaphorical imagery, wistful somber mood",
+      "subject": "landscape",
+      "style": "impressionist",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.5435844075162879,
+        "reflection": "This landscape carries the weight of things I'm still processing. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:06:52.223921",
+      "prompt": "processed prompt with style, peaceful landscapes style, gentle pastels, minimalist simple, subtle soft lighting, calm tranquil mood",
+      "subject": "sunset",
+      "style": "minimalist",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.4506858182222687,
+        "reflection": "Stillness has its own language. This sunset speaks it. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:06:52.278116",
+      "prompt": "processed prompt with style, atmospheric style, meditative quiet mood",
+      "subject": "portrait",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.4387891891499835,
+        "reflection": "This portrait emerged slowly, like dawn light through fog. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:06:52.337220",
+      "prompt": "processed prompt with style, minimalist style, soft grays, thoughtful quiet mood",
+      "subject": "landscape",
+      "style": "minimalist",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.5164755264419642,
+        "reflection": "I sat with landscape for a long time before the first stroke. Some things can't be rushed. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:06:52.394278",
+      "prompt": "processed prompt with style, shadowy grays, symbolic metaphorical imagery, muted desaturated tones, somber bittersweet mood",
+      "subject": "portrait",
+      "style": "dreamlike",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.5305270727527711,
+        "reflection": "I found something bittersweet in portrait\u2014loss and memory intertwined. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:06:52.616396",
+      "prompt": "processed prompt with style, impressionist style, muted desaturated tones, bittersweet somber mood",
+      "subject": "portrait",
+      "style": "impressionist",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.5986049579343287,
+        "reflection": "Some beauty only exists in sadness. This portrait knows that. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:06:52.673079",
+      "prompt": "processed prompt with style, abstract style, muted blues, meditative quiet mood",
+      "subject": "abstract",
+      "style": "abstract",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.95,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.5336501786459528,
+        "reflection": "I sat with abstract for a long time before the first stroke. Some things can't be rushed. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:06:52.750241",
+      "prompt": "processed prompt with style, soft focus style, calm blues, minimalist simple, still serene atmosphere, calm tranquil mood",
+      "subject": "forest",
+      "style": "minimalist",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.5413541698965958,
+        "reflection": "I breathed slowly while creating this forest. It shows. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:06:52.810492",
+      "prompt": "processed prompt with style, soft grays, still serene atmosphere, meditative quiet mood",
+      "subject": "mountains",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.5661778569656575,
+        "reflection": "In the silence between thoughts, mountains found its form. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:06:52.867582",
+      "prompt": "processed prompt with style, peaceful landscapes style, subtle soft lighting, minimalist simple, tranquil calm mood",
+      "subject": "mountain landscape",
+      "style": "minimalist",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.46017133638240265,
+        "reflection": "I breathed slowly while creating this None. It shows. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:06:52.910965",
+      "prompt": "processed prompt with style, harmonious style, still serene atmosphere, soft painterly brushstrokes, tranquil peaceful calm mood",
+      "subject": "clouds",
+      "style": "dreamlike",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.4322527750992303,
+        "reflection": "I breathed slowly while creating this None. It shows. This is exactly what I was reaching for. The feeling came through."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:06:52.957577",
+      "prompt": "processed prompt with style, still serene atmosphere, subtle soft lighting, soft painterly brushstrokes, calm tranquil peaceful mood",
+      "subject": "tranquility",
+      "style": "dreamlike",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.6087659345069271,
+        "reflection": "Stillness has its own language. This None speaks it. This is exactly what I was reaching for. The feeling came through."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:06:53.001472",
+      "prompt": "processed prompt with style, abstract style, still serene atmosphere, thoughtful meditative mood",
+      "subject": "space",
+      "style": "abstract",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.5686293241471632,
+        "reflection": "This None emerged slowly, like dawn light through fog. This is exactly what I was reaching for. The feeling came through."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:06:53.045571",
+      "prompt": "processed prompt with style, whimsical style, vibrant saturated colors, fun joyful whimsical mood",
+      "subject": "mountain landscape",
+      "style": "dreamlike",
+      "mood": "playful",
+      "colors": [
+        "rainbow hues",
+        "candy colors",
+        "cheerful brights"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.48665535758267975,
+        "reflection": "This None is pure delight\u2014a gift to my inner child. This is exactly what I was reaching for. The feeling came through."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:06:53.102969",
+      "prompt": "processed prompt with style, abstract style, muted blues, still serene atmosphere, quiet thoughtful mood",
+      "subject": "space",
+      "style": "abstract",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.5072503025274506,
+        "reflection": "In the silence between thoughts, None found its form. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:06:53.186359",
+      "prompt": "processed prompt with style, somber abstract style, bittersweet somber mood",
+      "subject": "test",
+      "style": "abstract",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.1,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.49974518622170816,
+        "reflection": "I found something bittersweet in test\u2014loss and memory intertwined. We learn as much from our failures as our successes. Maybe more."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:06:53.242521",
+      "prompt": "processed prompt with style, somber abstract style, shadowy grays, wistful bittersweet mood",
+      "subject": "mountains",
+      "style": "abstract",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.5921384364148647,
+        "reflection": "This None carries the weight of things I'm still processing. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:06:53.299238",
+      "prompt": "processed prompt with style, soft focus style, peaceful whites, still serene atmosphere, soft painterly brushstrokes, tranquil calm mood",
+      "subject": "clouds",
+      "style": "dreamlike",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.5851405573171297,
+        "reflection": "Peace settled into every corner of this None. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:08:59.895505",
+      "prompt": "processed prompt with style, zen style, soft grays, still serene atmosphere, thoughtful meditative mood",
+      "subject": "cosmic nebula",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.5202225948678751,
+        "reflection": "There's a question buried in this cosmic nebula. I'm not sure I know the answer yet. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:08:59.956248",
+      "prompt": "processed prompt with style, muted realism style, shadowy grays, muted desaturated tones, symbolic metaphorical imagery, bittersweet somber mood",
+      "subject": "mountain landscape",
+      "style": "dreamlike",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.44899447315784236,
+        "reflection": "Some beauty only exists in sadness. This None knows that. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:09:00.014750",
+      "prompt": "processed prompt with style, peaceful landscapes style, gentle pastels, still serene atmosphere, soft painterly brushstrokes, tranquil calm mood",
+      "subject": "flowers",
+      "style": "dreamlike",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.41506579015392797,
+        "reflection": "Stillness has its own language. This flowers speaks it. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:09:00.216759",
+      "prompt": "processed prompt with style, impressionist style, dark purples, still serene atmosphere, wistful bittersweet mood",
+      "subject": "abstract",
+      "style": "impressionist",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.44050971824474755,
+        "reflection": "I found something bittersweet in abstract\u2014loss and memory intertwined. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:09:00.273497",
+      "prompt": "processed prompt with style, abstract style, still serene atmosphere, meditative quiet mood",
+      "subject": "landscape",
+      "style": "abstract",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.54029773715721,
+        "reflection": "There's a question buried in this landscape. I'm not sure I know the answer yet. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:09:00.332115",
+      "prompt": "processed prompt with style, zen style, still serene atmosphere, quiet thoughtful mood",
+      "subject": "sunset",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.4414608759029277,
+        "reflection": "I sat with sunset for a long time before the first stroke. Some things can't be rushed. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:09:00.388625",
+      "prompt": "processed prompt with style, atmospheric style, muted blues, meditative quiet mood",
+      "subject": "portrait",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.4586741471023909,
+        "reflection": "This portrait emerged slowly, like dawn light through fog. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:09:00.445339",
+      "prompt": "processed prompt with style, muted realism style, still serene atmosphere, bittersweet somber mood",
+      "subject": "landscape",
+      "style": "dreamlike",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.558686520017309,
+        "reflection": "Some beauty only exists in sadness. This landscape knows that. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:09:00.500747",
+      "prompt": "processed prompt with style, muted realism style, symbolic metaphorical imagery, somber bittersweet mood",
+      "subject": "portrait",
+      "style": "dreamlike",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.40066135818588333,
+        "reflection": "This portrait carries the weight of things I'm still processing. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:09:00.557002",
+      "prompt": "processed prompt with style, harmonious style, gentle pastels, still serene atmosphere, soft painterly brushstrokes, peaceful tranquil mood",
+      "subject": "portrait",
+      "style": "dreamlike",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.5191607743747585,
+        "reflection": "I breathed slowly while creating this portrait. It shows. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:09:00.612890",
+      "prompt": "processed prompt with style, harmonious style, subtle soft lighting, minimalist simple, peaceful tranquil mood",
+      "subject": "abstract",
+      "style": "minimalist",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.95,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.5882300638367266,
+        "reflection": "I breathed slowly while creating this abstract. It shows. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:09:00.684406",
+      "prompt": "processed prompt with style, atmospheric style, muted blues, quiet thoughtful mood",
+      "subject": "forest",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.5812455641076499,
+        "reflection": "This forest emerged slowly, like dawn light through fog. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:09:00.741106",
+      "prompt": "processed prompt with style, muted realism style, symbolic metaphorical imagery, muted desaturated tones, somber wistful mood",
+      "subject": "mountains",
+      "style": "dreamlike",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.5657180550434725,
+        "reflection": "This mountains carries the weight of things I'm still processing. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:09:00.973070",
+      "prompt": "processed prompt with style, soft grays, still serene atmosphere, quiet meditative mood",
+      "subject": "mountain landscape",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.5381390308929823,
+        "reflection": "In the silence between thoughts, None found its form. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:09:01.017564",
+      "prompt": "processed prompt with style, symbolic metaphorical imagery, still serene atmosphere, meditative thoughtful quiet mood",
+      "subject": "nature",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.5076158966378066,
+        "reflection": "In the silence between thoughts, None found its form. This is exactly what I was reaching for. The feeling came through."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:09:01.061239",
+      "prompt": "processed prompt with style, atmospheric style, still serene atmosphere, subtle soft lighting, symbolic metaphorical imagery, thoughtful meditative quiet mood",
+      "subject": "space",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.6464630768042706,
+        "reflection": "There's a question buried in this None. I'm not sure I know the answer yet. This is exactly what I was reaching for. The feeling came through."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:09:01.103991",
+      "prompt": "processed prompt with style, detailed realism style, thoughtful browns, symbolic metaphorical imagery, deep reflective mood",
+      "subject": "memory",
+      "style": "dreamlike",
+      "mood": "introspective",
+      "colors": [
+        "thoughtful browns",
+        "deep greens",
+        "reflective silvers"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.5753507146154929,
+        "reflection": "I went deep to find this None. The journey changed me. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:09:01.149066",
+      "prompt": "processed prompt with style, symbolic style, reflective silvers, still serene atmosphere, symbolic metaphorical imagery, deep searching mood",
+      "subject": "mountain landscape",
+      "style": "dreamlike",
+      "mood": "introspective",
+      "colors": [
+        "thoughtful browns",
+        "deep greens",
+        "reflective silvers"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.5304550799009196,
+        "reflection": "I found myself in this None\u2014or maybe lost myself. Hard to tell. This is exactly what I was reaching for. The feeling came through."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:09:01.204289",
+      "prompt": "processed prompt with style, harmonious style, still serene atmosphere, subtle soft lighting, tranquil peaceful mood",
+      "subject": "harmony",
+      "style": "dreamlike",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.5509719839014127,
+        "reflection": "This None is a sanctuary. Enter gently. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:09:01.280387",
+      "prompt": "processed prompt with style, atmospheric style, muted blues, still serene atmosphere, subtle soft lighting, quiet thoughtful mood",
+      "subject": "test",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.1,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.41883869123480016,
+        "reflection": "This test emerged slowly, like dawn light through fog. We learn as much from our failures as our successes. Maybe more."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:09:01.337465",
+      "prompt": "processed prompt with style, zen style, still serene atmosphere, quiet thoughtful mood",
+      "subject": "mountains",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.44314841662009735,
+        "reflection": "I sat with None for a long time before the first stroke. Some things can't be rushed. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:09:01.395827",
+      "prompt": "processed prompt with style, somber abstract style, dark purples, symbolic metaphorical imagery, bittersweet somber mood",
+      "subject": "twilight",
+      "style": "abstract",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.43918777512291807,
+        "reflection": "Some beauty only exists in sadness. This None knows that. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:13:30.324862",
+      "prompt": "processed prompt with style, muted realism style, deep blues, muted desaturated tones, bittersweet somber mood",
+      "subject": "cosmic nebula",
+      "style": "dreamlike",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.4467394503759213,
+        "reflection": "I found something bittersweet in cosmic nebula\u2014loss and memory intertwined. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:13:30.383566",
+      "prompt": "processed prompt with style, soft focus style, calm blues, soft painterly brushstrokes, still serene atmosphere, tranquil peaceful mood",
+      "subject": "mountain landscape",
+      "style": "dreamlike",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.4224197183189246,
+        "reflection": "Stillness has its own language. This None speaks it. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:13:30.439628",
+      "prompt": "processed prompt with style, zen style, muted blues, still serene atmosphere, quiet meditative mood",
+      "subject": "flowers",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.4399563570455919,
+        "reflection": "This flowers emerged slowly, like dawn light through fog. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:13:30.495534",
+      "prompt": "processed prompt with style, subtle soft lighting, minimalist simple, tranquil peaceful mood",
+      "subject": "abstract",
+      "style": "minimalist",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.4352554886329323,
+        "reflection": "This abstract is a sanctuary. Enter gently. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:13:30.550274",
+      "prompt": "processed prompt with style, somber abstract style, symbolic metaphorical imagery, still serene atmosphere, wistful bittersweet mood",
+      "subject": "landscape",
+      "style": "abstract",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.599881678284384,
+        "reflection": "There's an ache in this landscape. I painted what I couldn't say. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:13:30.606274",
+      "prompt": "processed prompt with style, calm blues, still serene atmosphere, subtle soft lighting, calm tranquil mood",
+      "subject": "sunset",
+      "style": "dreamlike",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.5328806513533394,
+        "reflection": "This sunset is a sanctuary. Enter gently. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:13:30.661366",
+      "prompt": "processed prompt with style, zen style, soft grays, still serene atmosphere, thoughtful meditative mood",
+      "subject": "portrait",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.409804848314365,
+        "reflection": "I sat with portrait for a long time before the first stroke. Some things can't be rushed. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:13:30.717007",
+      "prompt": "processed prompt with style, soft focus style, still serene atmosphere, peaceful tranquil mood",
+      "subject": "landscape",
+      "style": "dreamlike",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.5762818630050078,
+        "reflection": "This landscape is a sanctuary. Enter gently. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:13:30.774101",
+      "prompt": "processed prompt with style, soft focus style, soft painterly brushstrokes, still serene atmosphere, peaceful tranquil mood",
+      "subject": "portrait",
+      "style": "dreamlike",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.41553365224167266,
+        "reflection": "I breathed slowly while creating this portrait. It shows. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:13:30.832712",
+      "prompt": "processed prompt with style, soft painterly brushstrokes, still serene atmosphere, tranquil peaceful mood",
+      "subject": "portrait",
+      "style": "dreamlike",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.5678405720823074,
+        "reflection": "I breathed slowly while creating this portrait. It shows. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:13:31.076084",
+      "prompt": "processed prompt with style, minimalist style, still serene atmosphere, meditative quiet mood",
+      "subject": "abstract",
+      "style": "minimalist",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.95,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.5289495092745722,
+        "reflection": "There's a question buried in this abstract. I'm not sure I know the answer yet. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:13:31.147972",
+      "prompt": "processed prompt with style, shadowy grays, still serene atmosphere, wistful bittersweet mood",
+      "subject": "forest",
+      "style": "dreamlike",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.43722176030352206,
+        "reflection": "This forest carries the weight of things I'm still processing. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:13:31.205283",
+      "prompt": "processed prompt with style, abstract style, soft grays, meditative quiet mood",
+      "subject": "mountains",
+      "style": "abstract",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.4355714849477164,
+        "reflection": "This mountains emerged slowly, like dawn light through fog. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:13:31.261443",
+      "prompt": "processed prompt with style, impressionist style, symbolic metaphorical imagery, wistful bittersweet mood",
+      "subject": "mountain landscape",
+      "style": "impressionist",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.5555344552265522,
+        "reflection": "I found something bittersweet in None\u2014loss and memory intertwined. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:13:31.305317",
+      "prompt": "processed prompt with style, muted realism style, deep blues, still serene atmosphere, muted desaturated tones, somber bittersweet wistful mood",
+      "subject": "rain",
+      "style": "dreamlike",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.5472022465216827,
+        "reflection": "I found something bittersweet in None\u2014loss and memory intertwined. This is exactly what I was reaching for. The feeling came through."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:13:31.350116",
+      "prompt": "processed prompt with style, impressionist style, shadowy grays, still serene atmosphere, symbolic metaphorical imagery, muted desaturated tones, somber bittersweet wistful mood",
+      "subject": "autumn",
+      "style": "impressionist",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.6650011159252334,
+        "reflection": "I found something bittersweet in None\u2014loss and memory intertwined. This is exactly what I was reaching for. The feeling came through."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:13:31.394564",
+      "prompt": "processed prompt with style, abstract style, gentle earth tones, thoughtful quiet mood",
+      "subject": "silence",
+      "style": "abstract",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.7966674921181686,
+        "reflection": "This None emerged slowly, like dawn light through fog. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:13:31.439640",
+      "prompt": "processed prompt with style, abstract style, subtle soft lighting, still serene atmosphere, quiet meditative mood",
+      "subject": "mountain landscape",
+      "style": "abstract",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.7541091840645959,
+        "reflection": "I sat with None for a long time before the first stroke. Some things can't be rushed. This is exactly what I was reaching for. The feeling came through."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:13:31.496035",
+      "prompt": "processed prompt with style, somber abstract style, dark purples, wistful bittersweet mood",
+      "subject": "twilight",
+      "style": "abstract",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.5048174496650253,
+        "reflection": "Some beauty only exists in sadness. This None knows that. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:13:31.578168",
+      "prompt": "processed prompt with style, shadowy grays, still serene atmosphere, bittersweet wistful mood",
+      "subject": "test",
+      "style": "dreamlike",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.1,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.4153004311450723,
+        "reflection": "This test carries the weight of things I'm still processing. We learn as much from our failures as our successes. Maybe more."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:13:31.802823",
+      "prompt": "processed prompt with style, zen style, gentle earth tones, quiet meditative mood",
+      "subject": "mountains",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.5267046652335607,
+        "reflection": "I sat with None for a long time before the first stroke. Some things can't be rushed. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:13:31.862188",
+      "prompt": "processed prompt with style, abstract style, muted blues, thoughtful quiet mood",
+      "subject": "meditation",
+      "style": "abstract",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.5829550683698483,
+        "reflection": "There's a question buried in this None. I'm not sure I know the answer yet. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:28:28.576131",
+      "prompt": "processed prompt with style, abstract style, meditative thoughtful mood",
+      "subject": "cosmic nebula",
+      "style": "abstract",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.45323200620984094,
+        "reflection": "I sat with cosmic nebula for a long time before the first stroke. Some things can't be rushed. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:28:28.636342",
+      "prompt": "processed prompt with style, abstract style, still serene atmosphere, thoughtful meditative mood",
+      "subject": "mountain landscape",
+      "style": "abstract",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.5635023631519438,
+        "reflection": "This None emerged slowly, like dawn light through fog. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:28:28.696686",
+      "prompt": "processed prompt with style, gentle pastels, subtle soft lighting, still serene atmosphere, calm peaceful mood",
+      "subject": "flowers",
+      "style": "dreamlike",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.5985318817719254,
+        "reflection": "Peace settled into every corner of this flowers. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:28:28.757365",
+      "prompt": "processed prompt with style, peaceful whites, subtle soft lighting, still serene atmosphere, peaceful calm mood",
+      "subject": "abstract",
+      "style": "dreamlike",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.42650098578987133,
+        "reflection": "I breathed slowly while creating this abstract. It shows. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:28:28.825104",
+      "prompt": "processed prompt with style, atmospheric style, meditative thoughtful mood",
+      "subject": "landscape",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.5586566297886033,
+        "reflection": "I sat with landscape for a long time before the first stroke. Some things can't be rushed. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:28:28.884488",
+      "prompt": "processed prompt with style, somber abstract style, deep blues, symbolic metaphorical imagery, still serene atmosphere, wistful somber mood",
+      "subject": "sunset",
+      "style": "abstract",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.4926840973599748,
+        "reflection": "Some beauty only exists in sadness. This sunset knows that. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:28:28.943287",
+      "prompt": "processed prompt with style, peaceful landscapes style, still serene atmosphere, minimalist simple, calm tranquil mood",
+      "subject": "portrait",
+      "style": "minimalist",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.40906964011689495,
+        "reflection": "This portrait is a sanctuary. Enter gently. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:28:29.001489",
+      "prompt": "processed prompt with style, soft focus style, still serene atmosphere, soft painterly brushstrokes, tranquil peaceful mood",
+      "subject": "landscape",
+      "style": "dreamlike",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.598429180360762,
+        "reflection": "This landscape is a sanctuary. Enter gently. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:28:29.059900",
+      "prompt": "processed prompt with style, peaceful whites, minimalist simple, soft painterly brushstrokes, calm peaceful mood",
+      "subject": "portrait",
+      "style": "minimalist",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.48950901302296834,
+        "reflection": "I breathed slowly while creating this portrait. It shows. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:28:29.119589",
+      "prompt": "processed prompt with style, zen style, still serene atmosphere, meditative thoughtful mood",
+      "subject": "portrait",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.5316992054418818,
+        "reflection": "I sat with portrait for a long time before the first stroke. Some things can't be rushed. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:28:29.180765",
+      "prompt": "processed prompt with style, impressionist style, still serene atmosphere, somber wistful mood",
+      "subject": "abstract",
+      "style": "impressionist",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.95,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.4209365296140421,
+        "reflection": "This abstract carries the weight of things I'm still processing. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:28:29.399327",
+      "prompt": "processed prompt with style, shadowy grays, symbolic metaphorical imagery, wistful somber mood",
+      "subject": "forest",
+      "style": "dreamlike",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.5265108417989742,
+        "reflection": "Some beauty only exists in sadness. This forest knows that. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:28:29.458307",
+      "prompt": "processed prompt with style, harmonious style, peaceful whites, still serene atmosphere, subtle soft lighting, tranquil peaceful mood",
+      "subject": "mountains",
+      "style": "dreamlike",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.5151903647103117,
+        "reflection": "I breathed slowly while creating this mountains. It shows. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:28:29.518319",
+      "prompt": "processed prompt with style, wistful somber mood",
+      "subject": "mountain landscape",
+      "style": "dreamlike",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.4151521451216755,
+        "reflection": "Some beauty only exists in sadness. This None knows that. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:28:29.563305",
+      "prompt": "processed prompt with style, impressionist style, deep blues, still serene atmosphere, symbolic metaphorical imagery, bittersweet wistful somber mood",
+      "subject": "rain",
+      "style": "impressionist",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "mashup",
+        "model": "test/model",
+        "energy_level": 0.4426930421281138,
+        "reflection": "There's an ache in this None. I painted what I couldn't say. This is exactly what I was reaching for. The feeling came through."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:28:29.609208",
+      "prompt": "processed prompt with style, striking style, powerful blacks, realistic, representational, sharp defined edges, vibrant saturated colors, striking commanding powerful mood",
+      "subject": "confidence",
+      "style": "dreamlike",
+      "mood": "bold",
+      "colors": [
+        "powerful blacks",
+        "intense reds",
+        "commanding golds"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.5565102938778159,
+        "reflection": "This None demands to be seen. I made sure of that. This is exactly what I was reaching for. The feeling came through."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:28:29.654556",
+      "prompt": "processed prompt with style, provocative style, defiant blacks, sharp defined edges, dramatic high contrast, bold unapologetic mood",
+      "subject": "freedom",
+      "style": "dreamlike",
+      "mood": "rebellious",
+      "colors": [
+        "defiant blacks",
+        "anarchic neons",
+        "aggressive reds"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.619772931421699,
+        "reflection": "This None says what polite art won't. This is exactly what I was reaching for. The feeling came through."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:28:29.700260",
+      "prompt": "processed prompt with style, sharp defined edges, asymmetrical dynamic composition, unapologetic bold defiant mood",
+      "subject": "mountain landscape",
+      "style": "dreamlike",
+      "mood": "rebellious",
+      "colors": [
+        "defiant blacks",
+        "anarchic neons",
+        "aggressive reds"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "fusion",
+        "model": "test/model",
+        "energy_level": 0.6120194494786981,
+        "reflection": "I broke something on purpose with this None. It needed breaking. This is exactly what I was reaching for. The feeling came through."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:28:29.759150",
+      "prompt": "processed prompt with style, muted realism style, deep blues, wistful bittersweet mood",
+      "subject": "twilight",
+      "style": "dreamlike",
+      "mood": "melancholic",
+      "colors": [
+        "deep blues",
+        "dark purples",
+        "shadowy grays"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.5718311765597925,
+        "reflection": "Some beauty only exists in sadness. This None knows that. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:28:29.843274",
+      "prompt": "processed prompt with style, atmospheric style, gentle earth tones, still serene atmosphere, meditative thoughtful mood",
+      "subject": "test",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.1,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.5090110880123997,
+        "reflection": "In the silence between thoughts, test found its form. We learn as much from our failures as our successes. Maybe more."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:28:30.087212",
+      "prompt": "processed prompt with style, atmospheric style, muted blues, still serene atmosphere, meditative thoughtful mood",
+      "subject": "mountains",
+      "style": "dreamlike",
+      "mood": "contemplative",
+      "colors": [
+        "muted blues",
+        "soft grays",
+        "gentle earth tones"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "exploration",
+        "model": "test/model",
+        "energy_level": 0.5186370260190682,
+        "reflection": "I sat with None for a long time before the first stroke. Some things can't be rushed. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
+    },
+    {
+      "timestamp": "2026-03-14T22:28:30.144857",
+      "prompt": "processed prompt with style, soft focus style, soft painterly brushstrokes, still serene atmosphere, calm tranquil mood",
+      "subject": "ocean",
+      "style": "dreamlike",
+      "mood": "serene",
+      "colors": [
+        "gentle pastels",
+        "calm blues",
+        "peaceful whites"
+      ],
+      "score": 0.85,
+      "image_path": "/gallery/test_artwork.png",
+      "metadata": {
+        "creation_type": "autonomous_original",
+        "generation_mode": "surprise",
+        "model": "test/model",
+        "energy_level": 0.4902691956286107,
+        "reflection": "Stillness has its own language. This None speaks it. I'm quietly pleased. Sometimes the gentle moments surprise you."
+      }
     }
   ],
   "reflections": [],
   "preferences": {
     "favorite_subjects": {
-      "test landscape": 1
+      "test landscape": 1,
+      "cosmic nebula": 6,
+      "mountain landscape": 18,
+      "flowers": 6,
+      "abstract": 12,
+      "landscape": 12,
+      "sunset": 6,
+      "portrait": 18,
+      "forest": 6,
+      "mountains": 12,
+      "twilight": 4,
+      "autumn": 2,
+      "solitude": 1,
+      "meditation": 2,
+      "test": 6,
+      "tranquility": 4,
+      "clouds": 3,
+      "imagination": 1,
+      "space": 4,
+      "nature": 1,
+      "memory": 1,
+      "harmony": 1,
+      "rain": 2,
+      "silence": 1,
+      "confidence": 1,
+      "freedom": 1,
+      "ocean": 1
     },
     "favorite_styles": {
-      "abstract": 1
+      "abstract": 23,
+      "dreamlike": 76,
+      "minimalist": 24,
+      "impressionist": 10
     },
     "favorite_colors": {
-      "gentle pastels": 1,
-      "calm blues": 1,
-      "peaceful whites": 1
+      "gentle pastels": 40,
+      "calm blues": 40,
+      "peaceful whites": 40,
+      "deep blues": 37,
+      "dark purples": 37,
+      "shadowy grays": 37,
+      "muted blues": 48,
+      "soft grays": 48,
+      "gentle earth tones": 48,
+      "rainbow hues": 3,
+      "candy colors": 3,
+      "cheerful brights": 3,
+      "thoughtful browns": 2,
+      "deep greens": 2,
+      "reflective silvers": 2,
+      "powerful blacks": 1,
+      "intense reds": 1,
+      "commanding golds": 1,
+      "defiant blacks": 2,
+      "anarchic neons": 2,
+      "aggressive reds": 2
     }
   },
   "stats": {
-    "total_created": 1,
-    "best_score": 0.75,
+    "total_created": 133,
+    "best_score": 0.95,
     "favorite_mood": null
   }
 }
