@@ -252,8 +252,17 @@ class TestGenerationEndpointRateLimits:
 
     @pytest.fixture
     def client(self):
-        """Create test client for the Lumira app."""
+        """Create test client for the Lumira app with fresh rate limiter."""
         from ai_artist.web.app import app
+
+        # Reset rate limiter storage to avoid cross-test interference
+        if (
+            hasattr(app.state, "limiter")
+            and app.state.limiter
+            and hasattr(app.state.limiter, "_storage")
+        ):
+            # Clear the in-memory storage used by slowapi
+            app.state.limiter._storage.storage.clear()
 
         return TestClient(app)
 
@@ -299,7 +308,8 @@ class TestGenerationEndpointRateLimits:
             "/api/lumira/batch-create",
             json={"count": 1},
         )
-        assert response.status_code in [200, 422, 500]
+        # 429 is acceptable - it proves endpoint exists and has rate limiting
+        assert response.status_code in [200, 422, 429, 500]
 
     def test_explore_endpoint_exists(self, client):
         """Explore endpoint should exist."""
@@ -307,5 +317,5 @@ class TestGenerationEndpointRateLimits:
             "/api/lumira/explore",
             json={"concept_a": "forest", "concept_b": "ocean", "steps": 3},
         )
-        # May fail but endpoint should exist
-        assert response.status_code in [200, 422, 500]
+        # 429 is acceptable - it proves endpoint exists and has rate limiting
+        assert response.status_code in [200, 422, 429, 500]

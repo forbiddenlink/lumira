@@ -12,6 +12,7 @@ import io
 import os
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from PIL import Image
 from pydantic import BaseModel, Field
@@ -78,10 +79,11 @@ class TwitterPoster:
             access_secret: Twitter access secret (or TWITTER_ACCESS_SECRET env var)
             bearer_token: Twitter bearer token (or TWITTER_BEARER_TOKEN env var)
         """
+        self._client: Any = None
+        self._api: Any = None
+
         if not TWITTER_AVAILABLE:
             logger.warning("twitter_unavailable", reason="tweepy not installed")
-            self._client = None
-            self._api = None
             return
 
         self.api_key = api_key or os.getenv("TWITTER_API_KEY")
@@ -89,9 +91,6 @@ class TwitterPoster:
         self.access_token = access_token or os.getenv("TWITTER_ACCESS_TOKEN")
         self.access_secret = access_secret or os.getenv("TWITTER_ACCESS_SECRET")
         self.bearer_token = bearer_token or os.getenv("TWITTER_BEARER_TOKEN")
-
-        self._client = None
-        self._api = None
 
         if all([self.api_key, self.api_secret, self.access_token, self.access_secret]):
             try:
@@ -208,18 +207,19 @@ class InstagramPoster:
             password: Instagram password (or INSTAGRAM_PASSWORD env var)
             session_file: Path to session file for persistent login
         """
+        self._client: Any = None
+
         if not INSTAGRAM_AVAILABLE:
             logger.warning("instagram_unavailable", reason="instagrapi not installed")
-            self._client = None
             return
 
         self.username = username or os.getenv("INSTAGRAM_USERNAME")
         self.password = password or os.getenv("INSTAGRAM_PASSWORD")
-        self.session_file = session_file or os.getenv(
-            "INSTAGRAM_SESSION_FILE", "data/instagram_session.json"
+        self.session_file: str = (
+            session_file
+            or os.getenv("INSTAGRAM_SESSION_FILE", "data/instagram_session.json")
+            or "data/instagram_session.json"
         )
-
-        self._client = None
 
         if self.username and self.password:
             try:
@@ -333,15 +333,14 @@ class BlueskyPoster:
             handle: Bluesky handle (or BLUESKY_HANDLE env var)
             password: Bluesky app password (or BLUESKY_PASSWORD env var)
         """
+        self._client: Any = None
+
         if not BLUESKY_AVAILABLE:
             logger.warning("bluesky_unavailable", reason="atproto not installed")
-            self._client = None
             return
 
         self.handle = handle or os.getenv("BLUESKY_HANDLE")
         self.password = password or os.getenv("BLUESKY_PASSWORD")
-
-        self._client = None
 
         if self.handle and self.password:
             try:

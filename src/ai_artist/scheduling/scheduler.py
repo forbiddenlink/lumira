@@ -3,7 +3,7 @@
 import asyncio
 from collections.abc import Callable
 from datetime import UTC
-from typing import Literal
+from typing import Any, Literal
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -663,6 +663,7 @@ class DesireAwareArtist:
         self.scheduler.shutdown()
         logger.info("desire_aware_artist_shutdown")
 
-    def list_jobs(self) -> list[dict]:
+    def list_jobs(self) -> list[dict[Any, Any]]:
         """List all scheduled jobs."""
-        return self.scheduler.list_jobs()
+        jobs: list[dict[Any, Any]] = self.scheduler.list_jobs()
+        return jobs

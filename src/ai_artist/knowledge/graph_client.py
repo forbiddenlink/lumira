@@ -88,8 +88,8 @@ class KnowledgeGraph:
             graph_name: Name of the graph
         """
         self.graph_name = graph_name
-        self._graph = None
-        self._db = None
+        self._graph: Any = None
+        self._db: Any = None
         self._connected = False
 
         # In-memory fallback storage
@@ -425,16 +425,18 @@ class KnowledgeGraph:
                 for rel in self._memory_relationships
                 if rel["type"] == "DEPICTS" and rel["to"] == subject_name
             ]
-            return [
-                {
-                    "id": rel["from"],
-                    "title": self._memory_artworks.get(rel["from"], {}).get(
-                        "title", ""
-                    ),
-                    "confidence": rel.get("confidence", 1.0),
-                }
-                for rel in matching[:limit]
-            ]
+            results = []
+            for rel in matching[:limit]:
+                artwork = self._memory_artworks.get(rel["from"])
+                title = artwork.title if artwork else ""
+                results.append(
+                    {
+                        "id": rel["from"],
+                        "title": title,
+                        "confidence": rel.get("confidence", 1.0),
+                    }
+                )
+            return results
 
     def find_artworks_by_mood(
         self, mood_name: str, min_intensity: float = 0.5, limit: int = 10

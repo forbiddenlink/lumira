@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 
 
 @dataclass
@@ -213,7 +214,7 @@ class ArtisticProfile:
     )
 
     # Artistic periods/phases (tracked over time)
-    artistic_periods: list[dict[str, str]] = field(default_factory=list)
+    artistic_periods: list[dict[str, Any]] = field(default_factory=list)
 
     def add_evolution_note(self, note: str, category: str = "general"):
         """Record a significant change or realization in artistic development."""
@@ -252,7 +253,7 @@ class ArtisticProfile:
             category="period",
         )
 
-    def get_current_period(self) -> dict[str, str] | None:
+    def get_current_period(self) -> dict[str, Any] | None:
         """Get the current artistic period if one is active."""
         for period in reversed(self.artistic_periods):
             if period.get("ended") is None:

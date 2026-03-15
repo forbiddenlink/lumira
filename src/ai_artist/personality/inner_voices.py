@@ -567,7 +567,8 @@ class Rememberer:
         # Query vector memory for similar work
         if self.vectors and theme:
             try:
-                similar = await self.vectors.search_creations(theme, limit=limit)
+                # VectorMemory.search_creations is synchronous (not async)
+                similar = self.vectors.search_creations(theme, n_results=limit)
                 similar_works = [
                     {
                         "id": s.get("id"),

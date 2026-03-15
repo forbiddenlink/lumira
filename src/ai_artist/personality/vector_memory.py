@@ -170,8 +170,8 @@ class VectorMemory:
             List of matching creations with similarity scores
         """
         # Build where clause for filters
-        where = None
-        where_conditions = []
+        where: dict[str, Any] | None = None
+        where_conditions: list[dict[str, Any]] = []
 
         if mood_filter:
             where_conditions.append({"mood": mood_filter})

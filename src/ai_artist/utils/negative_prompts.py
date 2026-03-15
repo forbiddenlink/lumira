@@ -77,7 +77,7 @@ class NegativePromptLibrary:
         Returns:
             Mood-specific negative prompt additions
         """
-        mood_specific = self._prompts.get("mood_specific", {})
+        mood_specific: dict[str, str] = self._prompts.get("mood_specific", {})
         mood_lower = mood.lower()
         return mood_specific.get(mood_lower, "")
 
@@ -90,7 +90,7 @@ class NegativePromptLibrary:
         Returns:
             Subject-specific negative prompts
         """
-        by_subject = self._prompts.get("by_subject", {})
+        by_subject: dict[str, str] = self._prompts.get("by_subject", {})
 
         # Check for matching subject keywords
         subject_lower = subject.lower()
@@ -108,7 +108,7 @@ class NegativePromptLibrary:
         Returns:
             Style-specific negative prompts
         """
-        style_specific = self._prompts.get("style_specific", {})
+        style_specific: dict[str, str] = self._prompts.get("style_specific", {})
         style_lower = style.lower()
 
         for key, prompts in style_specific.items():
@@ -127,7 +127,8 @@ class NegativePromptLibrary:
         """
         category_data = self._prompts.get(category, {})
         if isinstance(category_data, dict):
-            return category_data.get("base", "")
+            base = category_data.get("base", "")
+            return str(base) if base else ""
         return ""
 
     def compose(

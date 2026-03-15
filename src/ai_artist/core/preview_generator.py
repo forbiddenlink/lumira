@@ -215,7 +215,8 @@ class PreviewGenerator:
                 if blended.atmosphere:
                     enhanced_prompt = f"{enhanced_prompt}, {blended.atmosphere}"
 
-            # Generate preview
+            # Generate preview (pipeline guaranteed loaded by ensure_loaded check above)
+            assert self._pipeline is not None
             output = self._pipeline(
                 prompt=enhanced_prompt,
                 num_inference_steps=self.config.num_inference_steps,
@@ -404,7 +405,7 @@ class TwoStageGenerator:
         Returns:
             Dict with preview_result, approved, final_image (if approved)
         """
-        result = {
+        result: dict[str, Any] = {
             "prompt": prompt,
             "preview_result": None,
             "preview_approved": False,

@@ -14,6 +14,8 @@ References:
 - LAION aesthetic predictor
 """
 
+from typing import Any
+
 import numpy as np
 from PIL import Image
 
@@ -51,8 +53,8 @@ class AGIQAScorer:
             model_name: CLIP model to use for quality assessment
         """
         self.model_name = model_name
-        self._model = None
-        self._processor = None
+        self._model: Any = None
+        self._processor: Any = None
         self._device = device
 
         if TORCH_AVAILABLE:
@@ -240,7 +242,7 @@ class AGIQAScorer:
 
             # Get variance at rule-of-thirds intersections
             region_size = min(h, w) // 10
-            intersection_variance = 0
+            intersection_variance: float = 0.0
             for th in thirds_h:
                 for tw in thirds_w:
                     region = img_array[

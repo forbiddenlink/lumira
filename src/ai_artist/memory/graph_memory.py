@@ -68,8 +68,8 @@ class GraphMemory:
         self.host = host
         self.port = port
         self.graph_name = graph_name
-        self._db = None
-        self._graph = None
+        self._db: Any = None
+        self._graph: Any = None
         self._initialized = False
 
     async def connect(self) -> bool:

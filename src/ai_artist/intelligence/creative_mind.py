@@ -236,12 +236,14 @@ class CreativeMind:
                 }
             ]
 
+            assert self._client is not None  # Guaranteed by has_llm check above
             response = self._client.messages.create(
                 model=self.model,
                 max_tokens=200,
                 messages=messages,
             )
-            return response.content[0].text.strip()
+            text: str = response.content[0].text.strip()
+            return text
         except Exception as e:
             logger.warning("llm_reflection_failed", error=str(e))
             return self._fallback_reflection(prompt, quality_score)
@@ -422,6 +424,7 @@ class CreativeMind:
 
     async def _llm_decide(self, context: dict[str, Any]) -> CreativeIntent:
         """Use LLM to make a genuine creative decision."""
+        assert self._client is not None  # Called only when has_llm is True
         context_prompt = self._build_context_prompt(context)
 
         messages = [
@@ -479,6 +482,7 @@ class CreativeMind:
 
     async def _llm_user_request(self, context: dict[str, Any]) -> CreativeIntent:
         """Process a user request through Lumira's creative lens via LLM."""
+        assert self._client is not None  # Called only when has_llm is True
         user_prompt = context["user_request"]
         allow_interpretation = context.get("allow_interpretation", True)
         context_prompt = self._build_context_prompt(context)
@@ -915,7 +919,8 @@ class CreativeMind:
                 text = text.rstrip()[:-3]
 
         try:
-            return json.loads(text.strip())
+            parsed: dict[str, Any] = json.loads(text.strip())
+            return parsed
         except json.JSONDecodeError:
             logger.error("json_parse_failed", raw=raw[:200])
             # Return minimal valid data

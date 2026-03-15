@@ -41,13 +41,15 @@ class GenerationCache:
         self.enabled = enabled
 
         # Parse Redis URL or use defaults
-        redis_url = redis_url or os.environ.get("REDIS_URL", "redis://localhost:6379")
+        effective_url: str = (
+            redis_url or os.environ.get("REDIS_URL") or "redis://localhost:6379"
+        )
 
         try:
             # Parse URL components
-            if "://" in redis_url:
+            if "://" in effective_url:
                 # redis://host:port/db
-                parts = redis_url.replace("redis://", "").split("/")
+                parts = effective_url.replace("redis://", "").split("/")
                 host_port = parts[0].split(":")
                 host = host_port[0]
                 port = int(host_port[1]) if len(host_port) > 1 else 6379
@@ -122,7 +124,8 @@ class GenerationCache:
                 )
                 return None
             logger.info("intent_cache_hit", mood=mood)
-            return cached
+            result: dict[str, Any] = cached
+            return result
         return None
 
     async def set_creative_intent(

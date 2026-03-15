@@ -132,7 +132,11 @@ class DesireEngine:
         self.narrative_engine = narrative_engine
 
         self.drives: dict[str, CreativeDrive] = {
-            name: CreativeDrive(name=name, **params)
+            name: CreativeDrive(
+                name=name,
+                base_rate=params["base_rate"],
+                decay_rate=params["decay_rate"],
+            )
             for name, params in _DEFAULT_DRIVES.items()
         }
 

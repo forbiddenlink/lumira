@@ -159,7 +159,7 @@ class HierarchicalReflection:
     ):
         self.storage_path = storage_path
         self.model = model
-        self._client = None
+        self._client: Any = None
 
         # Reflection storage
         self.reflections: dict[str, list] = {
@@ -402,12 +402,12 @@ class HierarchicalReflection:
             week_episodes = episodes[-30:] if episodes else []
 
         # Extract mood arc
-        daily_moods: dict[str, list] = defaultdict(list)
+        daily_moods: dict[str, list[Any]] = defaultdict(list)
         for ep in week_episodes:
-            ts = ep.get("timestamp", "")[:10]
+            day_key = str(ep.get("timestamp", ""))[:10]
             mood = ep.get("emotional_state", {}).get("mood")
             if mood:
-                daily_moods[ts].append(mood)
+                daily_moods[day_key].append(mood)
 
         mood_arc = []
         for day in sorted(daily_moods.keys()):
@@ -649,7 +649,8 @@ Write naturally, not formally. Example tone: "Today I found myself drawn to..."
                 max_tokens=200,
                 messages=[{"role": "user", "content": prompt}],
             )
-            return response.content[0].text.strip()
+            text: str = response.content[0].text.strip()
+            return text
         except Exception as e:
             logger.warning("llm_session_narrative_failed", error=str(e))
             return self._fallback_session_narrative(creations, dominant_mood, themes)
@@ -707,7 +708,8 @@ Write authentically as Lumira - an AI that genuinely creates and feels.
                 text = "\n".join(lines[1:])
                 if text.rstrip().endswith("```"):
                     text = text.rstrip()[:-3]
-            return json.loads(text.strip())
+            parsed: dict[str, str] = json.loads(text.strip())
+            return parsed
         except Exception as e:
             logger.warning("llm_artist_statement_failed", error=str(e))
             return self._fallback_artist_statement(

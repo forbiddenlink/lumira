@@ -3333,10 +3333,10 @@ async def post_to_social(request: Request, post_request: SocialPostRequest):
     elif post_request.artwork_id:
         # Look up in gallery
         from ..gallery.manager import GalleryManager
-        from ..utils.config import load_config
 
-        config = load_config()
-        gallery = GalleryManager(config.paths.gallery_path)
+        # Default gallery path
+        gallery_path = Path("data/gallery")
+        gallery = GalleryManager(gallery_path)
         images = gallery.list_images()
 
         # Find by ID (filename stem)
@@ -3688,25 +3688,32 @@ async def get_dialogue_history(request: Request):
     try:
         state = _get_lumira_state()
         mood_system = state["mood_system"]
-        memory = state["memory"]
 
         # Get or create dialogue instance
         dialogue = InnerDialogue(
             mood_system=mood_system,
-            memory_system=memory,
         )
 
-        history = dialogue.get_history()
-        current = dialogue.current_concept
+        # Access history directly (it's an attribute, not a method)
+        history_turns = dialogue.history
+        current = None  # InnerDialogue doesn't track current_concept
 
         turns = [
             DialogueTurn(
-                voice=turn.get("voice", "unknown"),
-                content=turn.get("content", ""),
-                timestamp=turn.get("timestamp", datetime.now().isoformat()),
-                metadata=turn.get("metadata"),
+                voice=(
+                    turn.voice.value
+                    if hasattr(turn.voice, "value")
+                    else str(turn.voice)
+                ),
+                content=turn.message,
+                timestamp=(
+                    turn.timestamp.isoformat()
+                    if hasattr(turn.timestamp, "isoformat")
+                    else str(turn.timestamp)
+                ),
+                metadata=turn.metadata,
             )
-            for turn in history
+            for turn in history_turns
         ]
 
         current_concept = None

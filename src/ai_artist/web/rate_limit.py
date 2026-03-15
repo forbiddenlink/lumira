@@ -52,7 +52,8 @@ def get_rate_limit_key(request: Request) -> str:
     if api_key:
         # Hash the API key to avoid logging sensitive data
         return f"apikey:{hash(api_key) % 10000:04d}"
-    return get_remote_address(request)
+    remote_addr = get_remote_address(request)
+    return str(remote_addr) if remote_addr else "unknown"
 
 
 def create_rate_limit_error_response(exc: RateLimitExceeded) -> JSONResponse:
