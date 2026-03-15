@@ -2,19 +2,19 @@
   "model_scores": {
     "Lykon/dreamshaper-8": {
       "param_combo_hash": "Lykon/dreamshaper-8",
-      "total_score": 91.70000000000022,
-      "num_samples": 131,
-      "avg_score": 0.7000000000000016,
-      "last_updated": "2026-03-09 17:27:39.824558+00:00"
+      "total_score": 125.30000000000035,
+      "num_samples": 179,
+      "avg_score": 0.700000000000002,
+      "last_updated": "2026-03-14 02:03:31.370876+00:00"
     }
   },
   "param_scores": {
     "[('guidance_scale', 7.5), ('height', 768), ('num_inference_steps', 40), ('width', 768)]": {
       "param_combo_hash": "[('guidance_scale', 7.5), ('height', 768), ('num_inference_steps', 40), ('width', 768)]",
-      "total_score": 91.70000000000022,
-      "num_samples": 131,
-      "avg_score": 0.7000000000000016,
-      "last_updated": "2026-03-09 17:27:39.824567+00:00"
+      "total_score": 125.30000000000035,
+      "num_samples": 179,
+      "avg_score": 0.700000000000002,
+      "last_updated": "2026-03-14 02:03:31.371219+00:00"
     }
   },
   "mood_preferences": {
@@ -192,9 +192,28 @@
     "modernist": 0.7,
     "stencil": 0.7,
     "protest": 0.7,
-    "spotlight": 0.7
+    "spotlight": 0.7,
+    "magical": 0.7,
+    "punk": 0.7,
+    "aesthetic": 0.7,
+    "varying": 0.7,
+    "evolving": 0.7,
+    "emotional": 0.7,
+    "paper": 0.7,
+    "boats": 0.7,
+    "mysterious": 0.7,
+    "shifting": 0.7,
+    "wide": 0.7,
+    "futuristic": 0.7,
+    "delicate": 0.7,
+    "vintage": 0.7,
+    "dramatic": 0.7,
+    "different": 0.7,
+    "lighting": 0.7,
+    "whimsical": 0.7,
+    "bold": 0.7
   },
-  "last_updated": "2026-03-09T17:27:39.824588+00:00",
+  "last_updated": "2026-03-14T02:03:31.372557+00:00",
   "alignment_history": [
     {
       "artwork_id": "art1",

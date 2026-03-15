@@ -463,7 +463,10 @@ class KnowledgeGraph:
                 and rel["to"] == mood_name
                 and rel.get("intensity", 1.0) >= min_intensity
             ]
-            return [{"id": rel["from"], "intensity": rel.get("intensity", 1.0)} for rel in matching[:limit]]
+            return [
+                {"id": rel["from"], "intensity": rel.get("intensity", 1.0)}
+                for rel in matching[:limit]
+            ]
 
     def find_similar_artworks(
         self, artwork_id: str, depth: int = 2, limit: int = 10
@@ -489,7 +492,10 @@ class KnowledgeGraph:
                 for rel in self._memory_relationships
                 if rel["type"] == "SIMILAR_TO" and rel["from"] == artwork_id
             ]
-            return [{"id": rel["to"], "score": rel.get("score", 0.5)} for rel in matching[:limit]]
+            return [
+                {"id": rel["to"], "score": rel.get("score", 0.5)}
+                for rel in matching[:limit]
+            ]
 
     def get_subjects_for_mood(
         self, mood_name: str, limit: int = 10
@@ -603,9 +609,18 @@ class KnowledgeGraph:
                 "title": artwork.title,
                 "prompt": artwork.prompt,
                 "aesthetic_score": artwork.aesthetic_score,
-                "subjects": [{"name": s["to"], "confidence": s.get("confidence", 1.0)} for s in subjects],
-                "styles": [{"name": s["to"], "strength": s.get("strength", 1.0)} for s in styles],
-                "moods": [{"name": m["to"], "intensity": m.get("intensity", 1.0)} for m in moods],
+                "subjects": [
+                    {"name": s["to"], "confidence": s.get("confidence", 1.0)}
+                    for s in subjects
+                ],
+                "styles": [
+                    {"name": s["to"], "strength": s.get("strength", 1.0)}
+                    for s in styles
+                ],
+                "moods": [
+                    {"name": m["to"], "intensity": m.get("intensity", 1.0)}
+                    for m in moods
+                ],
             }
 
     def get_creative_suggestions(self, mood_name: str) -> dict[str, Any]:

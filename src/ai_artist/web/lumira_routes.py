@@ -28,6 +28,7 @@ from ..personality.profile import ArtisticProfile
 from ..utils.config import load_config
 from ..utils.logging import get_logger
 from ..utils.negative_prompts import get_negative_prompt_library
+from .rate_limit import RateLimits
 
 logger = get_logger(__name__)
 
@@ -1000,7 +1001,7 @@ async def evolve_state(request: Request):
 
 
 @router.post("/request", response_model=LumiraCreateResponse)
-@limiter.limit("5/minute")
+@limiter.limit(RateLimits.REQUEST)
 async def user_request_creation(
     request: Request,
     body: UserCreationRequest,
@@ -2698,7 +2699,7 @@ async def create_with_reference(
 
 
 @router.post("/img2img", response_model=LumiraCreateResponse)
-@limiter.limit("10/minute")
+@limiter.limit(RateLimits.IMG2IMG)
 async def img2img_generation(
     request: Request,
     img2img_request: Img2ImgRequest,
@@ -2869,7 +2870,7 @@ async def img2img_generation(
 
 
 @router.post("/variations", response_model=VariationsResponse)
-@limiter.limit("5/minute")
+@limiter.limit(RateLimits.VARIATIONS)
 async def generate_variations(
     request: Request,
     var_request: VariationsRequest,
@@ -3057,7 +3058,7 @@ async def generate_variations(
 
 
 @router.post("/batch-create", response_model=BatchCreateResponse)
-@limiter.limit("3/minute")
+@limiter.limit(RateLimits.BATCH_CREATE)
 async def batch_create(
     request: Request,
     batch_request: BatchCreateRequest,
@@ -3391,3 +3392,337 @@ async def post_to_social(request: Request, post_request: SocialPostRequest):
         successful_platforms=successful,
         failed_platforms=failed,
     )
+
+
+# =============================================================================
+# Preview & Inner Dialogue Endpoints (Lumira 2.0)
+# =============================================================================
+
+
+class PreviewRequest(BaseModel):
+    """Request for fast preview generation."""
+
+    prompt: str = Field(description="Generation prompt")
+    style_weights: dict[str, float] | None = Field(
+        default=None, description="LoRA style blend weights"
+    )
+    mood_blend: dict[str, float] | None = Field(
+        default=None, description="Mood blend weights"
+    )
+    seed: int | None = Field(default=None, description="Random seed")
+
+
+class PreviewResponse(BaseModel):
+    """Response from preview generation."""
+
+    success: bool
+    session_id: str
+    image_base64: str | None = None
+    generation_time: float = 0.0
+    prompt: str = ""
+    seed: int = 0
+    error: str | None = None
+
+
+class PreviewApproveRequest(BaseModel):
+    """Request to approve preview and generate full quality."""
+
+    session_id: str = Field(description="Session ID from preview")
+    prompt: str = Field(description="Original prompt")
+    style_weights: dict[str, float] | None = None
+    mood_blend: dict[str, float] | None = None
+
+
+class PreviewApproveResponse(BaseModel):
+    """Response from approved full generation."""
+
+    success: bool
+    session_id: str
+    image_url: str | None = None
+    total_time: float = 0.0
+    error: str | None = None
+
+
+class ExploreRequest(BaseModel):
+    """Request for latent space exploration."""
+
+    concept_a: str = Field(description="Starting concept")
+    concept_b: str = Field(description="Ending concept")
+    steps: int = Field(default=5, ge=2, le=10, description="Interpolation steps")
+    use_slerp: bool = Field(
+        default=True, description="Use spherical interpolation (recommended)"
+    )
+
+
+class ExploreResponse(BaseModel):
+    """Response from latent exploration."""
+
+    success: bool
+    images_base64: list[str] = []
+    prompts: list[str] = []
+    interpolation_values: list[float] = []
+    error: str | None = None
+
+
+class DialogueTurn(BaseModel):
+    """Single inner dialogue turn."""
+
+    voice: str
+    content: str
+    timestamp: str
+    metadata: dict[str, Any] | None = None
+
+
+class DialogueHistoryResponse(BaseModel):
+    """Inner dialogue history."""
+
+    turns: list[DialogueTurn]
+    current_concept: dict[str, Any] | None = None
+
+
+@router.post("/preview", response_model=PreviewResponse)
+@limiter.limit(RateLimits.PREVIEW)
+async def generate_preview(request: Request, body: PreviewRequest):
+    """Generate a fast preview using FLUX.1 Schnell (~2 seconds).
+
+    Returns a low-step preview image for concept validation before
+    committing to a full render.
+    """
+    from ..core.mood_blender import MoodBlender
+    from ..core.preview_generator import PreviewGenerator
+
+    session_id = str(uuid.uuid4())
+
+    try:
+        state = _get_lumira_state()
+        mood_system = state["mood_system"]
+
+        # Get or create preview generator
+        preview_gen = PreviewGenerator(
+            mood_blender=MoodBlender(),
+        )
+
+        # Generate preview
+        result = await preview_gen.preview(
+            prompt=body.prompt,
+            style_weights=body.style_weights,
+            mood_blend=body.mood_blend or {mood_system.current_mood.value: 1.0},
+            seed=body.seed,
+        )
+
+        if result.error:
+            return PreviewResponse(
+                success=False,
+                session_id=session_id,
+                error=result.error,
+            )
+
+        # Encode image
+        image_base64 = result.get_image_base64()
+
+        logger.info(
+            "preview_generated",
+            session_id=session_id,
+            generation_time=round(result.generation_time, 2),
+        )
+
+        return PreviewResponse(
+            success=True,
+            session_id=session_id,
+            image_base64=image_base64,
+            generation_time=result.generation_time,
+            prompt=result.prompt,
+            seed=result.seed,
+        )
+
+    except Exception as e:
+        logger.error("preview_failed", error=str(e), session_id=session_id)
+        return PreviewResponse(
+            success=False,
+            session_id=session_id,
+            error=str(e),
+        )
+
+
+@router.post("/preview/approve", response_model=PreviewApproveResponse)
+@limiter.limit("5/minute")
+async def approve_preview(request: Request, body: PreviewApproveRequest):
+    """Approve a preview and generate full quality image.
+
+    Call this after reviewing a preview to commit to full generation.
+    """
+    from ..web.websocket import manager as ws_manager
+
+    try:
+        # Load config and generator
+        config = load_config()
+
+        from ..core.generator import ImageGenerator
+
+        generator = ImageGenerator(
+            model_id=config.model.base_model,
+            device=config.model.device,
+        )
+
+        # Start full generation
+        await ws_manager.send_generation_start(
+            session_id=body.session_id,
+            prompt=body.prompt,
+        )
+
+        # Generate full quality
+        generator.load_model()
+        images = generator.generate(
+            prompt=body.prompt,
+            negative_prompt=config.generation.negative_prompt,
+            width=config.generation.width,
+            height=config.generation.height,
+            num_inference_steps=config.generation.num_inference_steps,
+            guidance_scale=config.generation.guidance_scale,
+            num_images=1,
+        )
+
+        if images:
+            # Save to gallery
+            from ..gallery.manager import GalleryManager
+
+            gallery = GalleryManager(Path("gallery"))
+            saved_path = gallery.save_image(
+                image=images[0],
+                prompt=body.prompt,
+                metadata={
+                    "creation_type": "preview_approved",
+                    "session_id": body.session_id,
+                    "style_weights": body.style_weights,
+                    "mood_blend": body.mood_blend,
+                },
+            )
+
+            image_url = f"/api/images/file/{saved_path.relative_to(Path('gallery'))}"
+
+            await ws_manager.send_generation_complete(
+                session_id=body.session_id,
+                image_paths=[str(saved_path)],
+                metadata={"image_url": image_url},
+            )
+
+            return PreviewApproveResponse(
+                success=True,
+                session_id=body.session_id,
+                image_url=image_url,
+            )
+
+        return PreviewApproveResponse(
+            success=False,
+            session_id=body.session_id,
+            error="No images generated",
+        )
+
+    except Exception as e:
+        logger.error("preview_approve_failed", error=str(e))
+        return PreviewApproveResponse(
+            success=False,
+            session_id=body.session_id,
+            error=str(e),
+        )
+
+
+@router.post("/explore", response_model=ExploreResponse)
+@limiter.limit(RateLimits.EXPLORE)
+async def explore_latent_space(request: Request, body: ExploreRequest):
+    """Explore the latent space between two concepts.
+
+    Generates interpolated images along the path from concept_a to concept_b
+    using spherical interpolation for smoother transitions.
+    """
+    from ..core.style_interpolator import LatentExplorer
+
+    try:
+        explorer = LatentExplorer()
+
+        result = await explorer.explore_between(
+            concept_a=body.concept_a,
+            concept_b=body.concept_b,
+            steps=body.steps,
+            use_slerp=body.use_slerp,
+        )
+
+        if not result.images:
+            return ExploreResponse(
+                success=False,
+                error="No pipeline available for exploration",
+            )
+
+        # Encode images to base64
+        import base64
+        import io
+
+        images_base64 = []
+        for img in result.images:
+            buffer = io.BytesIO()
+            img.save(buffer, format="PNG")
+            images_base64.append(base64.b64encode(buffer.getvalue()).decode("utf-8"))
+
+        return ExploreResponse(
+            success=True,
+            images_base64=images_base64,
+            prompts=result.prompts,
+            interpolation_values=result.interpolation_values,
+        )
+
+    except Exception as e:
+        logger.error("explore_failed", error=str(e))
+        return ExploreResponse(success=False, error=str(e))
+
+
+@router.get("/dialogue", response_model=DialogueHistoryResponse)
+@limiter.limit("60/minute")
+async def get_dialogue_history(request: Request):
+    """Get Lumira's recent inner dialogue history.
+
+    Returns the deliberation history showing how Lumira's inner voices
+    (Dreamer, Critic, Curator, Rememberer) discussed recent creations.
+    """
+    from ..personality.dialogue import InnerDialogue
+
+    try:
+        state = _get_lumira_state()
+        mood_system = state["mood_system"]
+        memory = state["memory"]
+
+        # Get or create dialogue instance
+        dialogue = InnerDialogue(
+            mood_system=mood_system,
+            memory_system=memory,
+        )
+
+        history = dialogue.get_history()
+        current = dialogue.current_concept
+
+        turns = [
+            DialogueTurn(
+                voice=turn.get("voice", "unknown"),
+                content=turn.get("content", ""),
+                timestamp=turn.get("timestamp", datetime.now().isoformat()),
+                metadata=turn.get("metadata"),
+            )
+            for turn in history
+        ]
+
+        current_concept = None
+        if current:
+            current_concept = {
+                "subject": current.subject,
+                "style": current.style,
+                "prompt": current.prompt,
+                "confidence": current.confidence,
+            }
+
+        return DialogueHistoryResponse(
+            turns=turns,
+            current_concept=current_concept,
+        )
+
+    except Exception as e:
+        logger.error("dialogue_history_failed", error=str(e))
+        return DialogueHistoryResponse(turns=[])

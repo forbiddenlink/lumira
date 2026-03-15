@@ -105,7 +105,10 @@ queue = [
     "rq-dashboard>=0.7.0",  # Optional admin UI (rq is now in core deps)
 ]
 knowledge = [
-    "FalkorDB>=1.6.0",  # Graph database for semantic knowledge
+    "falkordb>=1.0.0",  # Graph database for semantic knowledge
+]
+graph = [
+    "falkordb>=1.0.0",  # Graph memory for institutional knowledge
 ]
 social = [
     "tweepy>=4.14.0",  # Twitter/X API
@@ -114,6 +117,9 @@ social = [
 ]
 agiqa = [
     "scipy>=1.12.0",  # For AGIQA image analysis
+]
+e2e = [
+    "pytest-playwright>=0.5.0",  # Browser automation for E2E tests
 ]
 
 [tool.ruff]
@@ -143,6 +149,7 @@ markers = [
     "slow: marks tests as slow",
     "integration: marks integration tests",
     "unit: marks unit tests",
+    "e2e: marks end-to-end tests requiring browser (Playwright)",
 ]
 
 [tool.mypy]

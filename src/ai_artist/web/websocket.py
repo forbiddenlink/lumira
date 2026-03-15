@@ -273,6 +273,90 @@ class ConnectionManager:
         }
         await self.broadcast(message)
 
+    async def broadcast_inner_dialogue(
+        self,
+        session_id: str,
+        voice: str,
+        content: str,
+        iteration: int = 1,
+        metadata: dict | None = None,
+    ):
+        """Broadcast an inner dialogue turn.
+
+        Args:
+            session_id: The creation session ID
+            voice: The inner voice speaking (dreamer, critic, curator, rememberer)
+            content: What the voice said
+            iteration: Current iteration number
+            metadata: Optional additional context
+        """
+        message = {
+            "type": "inner_dialogue",
+            "session_id": session_id,
+            "voice": voice,
+            "content": content,
+            "iteration": iteration,
+            "metadata": metadata or {},
+            "timestamp": datetime.now().isoformat(),
+        }
+        await self.broadcast(message)
+
+    async def broadcast_preview_ready(
+        self,
+        session_id: str,
+        image_base64: str | None,
+        score: float,
+        approved: bool,
+        prompt: str,
+        generation_time: float,
+    ):
+        """Broadcast when a preview is ready for review.
+
+        Args:
+            session_id: The creation session ID
+            image_base64: Base64-encoded preview image
+            score: Quality score (0-1)
+            approved: Whether auto-approved
+            prompt: The generation prompt
+            generation_time: How long generation took
+        """
+        message = {
+            "type": "preview_ready",
+            "session_id": session_id,
+            "image_base64": image_base64,
+            "score": score,
+            "approved": approved,
+            "prompt": prompt,
+            "generation_time": generation_time,
+            "timestamp": datetime.now().isoformat(),
+        }
+        await self.broadcast(message)
+
+    async def broadcast_concept_evolved(
+        self,
+        session_id: str,
+        concept: dict,
+        iteration: int,
+        reason: str,
+    ):
+        """Broadcast when a concept evolves during deliberation.
+
+        Args:
+            session_id: The creation session ID
+            concept: The evolved concept details
+            iteration: Which iteration this is
+            reason: Why the concept evolved (critique, insight, etc)
+        """
+        message = {
+            "type": "concept_evolved",
+            "session_id": session_id,
+            "concept": concept,
+            "iteration": iteration,
+            "reason": reason,
+            "timestamp": datetime.now().isoformat(),
+        }
+        await self.broadcast(message)
+
 
 # Global instance
 manager = ConnectionManager()
@@ -289,3 +373,40 @@ async def broadcast_mood_drift(
 async def broadcast_memory_insight(insight: str, insight_type: str = "learning"):
     """Broadcast a memory insight to all connected clients."""
     await manager.broadcast_memory_insight(insight, insight_type)
+
+
+async def broadcast_inner_dialogue(
+    session_id: str,
+    voice: str,
+    content: str,
+    iteration: int = 1,
+    metadata: dict | None = None,
+):
+    """Broadcast an inner dialogue turn."""
+    await manager.broadcast_inner_dialogue(
+        session_id, voice, content, iteration, metadata
+    )
+
+
+async def broadcast_preview_ready(
+    session_id: str,
+    image_base64: str | None,
+    score: float,
+    approved: bool,
+    prompt: str,
+    generation_time: float,
+):
+    """Broadcast when a preview is ready."""
+    await manager.broadcast_preview_ready(
+        session_id, image_base64, score, approved, prompt, generation_time
+    )
+
+
+async def broadcast_concept_evolved(
+    session_id: str,
+    concept: dict,
+    iteration: int,
+    reason: str,
+):
+    """Broadcast when a concept evolves."""
+    await manager.broadcast_concept_evolved(session_id, concept, iteration, reason)

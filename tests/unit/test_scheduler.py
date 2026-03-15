@@ -288,7 +288,10 @@ class TestDesireAwareScheduler:
         """Test should_create_now when nothing is urgent."""
         mock_desire_engine.get_strongest_desire.return_value.urgency = 0.3
         mock_mood_system.mood_intensity = 0.3
-        mock_mood_system.current_mood.value = "contemplative"  # Not in any time bias
+        # Use a mood not in any time ritual's mood_bias to avoid triggering
+        # (morning: energized/playful, afternoon: rebellious/chaotic,
+        #  evening: serene/melancholic, night: introspective/contemplative)
+        mock_mood_system.current_mood.value = "nostalgic"
 
         should, reason = scheduler.should_create_now()
 
@@ -374,7 +377,10 @@ class TestDesireAwareArtist:
         # Low urgency and low intensity
         mock_desire_engine.get_strongest_desire.return_value.urgency = 0.3
         mock_mood_system.mood_intensity = 0.3
-        mock_mood_system.current_mood.value = "contemplative"
+        # Use a mood not in any time ritual's mood_bias to avoid triggering time ritual
+        # (morning: energized/playful, afternoon: rebellious/chaotic,
+        #  evening: serene/melancholic, night: introspective/contemplative)
+        mock_mood_system.current_mood.value = "nostalgic"
 
         result = await artist.create_when_inspired()
 

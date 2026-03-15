@@ -132,6 +132,15 @@ class CacheConfig(BaseModel):
     curation_ttl: int = 7200  # 2 hours
 
 
+class GraphMemoryConfig(BaseModel):
+    """FalkorDB graph memory configuration."""
+
+    enabled: bool = True
+    host: str = "localhost"
+    port: int = 6380  # Different from Redis (6379)
+    graph_name: str = "lumira"
+
+
 class SocialConfig(BaseModel):
     """Social media sharing configuration."""
 
@@ -239,6 +248,9 @@ class Config(BaseSettings):
     autonomy: AutonomyConfig = Field(default_factory=lambda: AutonomyConfig())
     trends: TrendsConfig = Field(default_factory=lambda: TrendsConfig())
     cache: CacheConfig = Field(default_factory=lambda: CacheConfig())
+    graph_memory: GraphMemoryConfig = Field(
+        default_factory=lambda: GraphMemoryConfig()
+    )
     social: SocialConfig = Field(default_factory=lambda: SocialConfig())
     model_manager: ModelManagerConfig = Field(
         default_factory=lambda: ModelManagerConfig()

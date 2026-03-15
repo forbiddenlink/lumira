@@ -89,10 +89,16 @@ class EnsembleCurator:
         # Calculate consensus
         # With AGIQA, we have more signals to compare
         if agiqa_scores:
-            scores = [primary_metrics.clip_score, primary_metrics.aesthetic_score, agiqa_final]
+            scores = [
+                primary_metrics.clip_score,
+                primary_metrics.aesthetic_score,
+                agiqa_final,
+            ]
             mean_score = sum(scores) / len(scores)
             variance = sum((s - mean_score) ** 2 for s in scores) / len(scores)
-            consensus = max(0, 1.0 - (variance ** 0.5) * 2)  # Lower variance = higher consensus
+            consensus = max(
+                0, 1.0 - (variance**0.5) * 2
+            )  # Lower variance = higher consensus
         else:
             consensus = 1.0
 

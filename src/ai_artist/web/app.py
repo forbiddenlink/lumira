@@ -63,6 +63,7 @@ from .middleware import (
     add_cors_middleware,
 )
 from .prompt_routes import router as prompt_router
+from .rate_limit import rate_limit_exceeded_handler
 from .websocket import manager as ws_manager
 
 # Error message constants
@@ -140,21 +141,6 @@ def require_api_key(
         )
 
     return api_key
-
-
-def _rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Response:
-    """Handle rate limit exceeded errors."""
-    from fastapi.responses import JSONResponse
-
-    return JSONResponse(
-        status_code=429,
-        content={
-            "error": "Rate limit exceeded",
-            "detail": str(exc.detail),
-            "retry_after": exc.detail,
-        },
-        headers={"Retry-After": str(getattr(exc, "retry_after", 60))},
-    )
 
 
 logger = get_logger(__name__)
@@ -378,12 +364,83 @@ async def lifespan(app: FastAPI):
         logger.info("reflection_scheduler_shutdown")
 
 
+# OpenAPI tag metadata for organizing endpoints
+tags_metadata = [
+    {
+        "name": "lumira",
+        "description": "Lumira's personality, mood, and creation endpoints. Control the autonomous AI artist.",
+    },
+    {
+        "name": "gallery",
+        "description": "Community gallery with public sharing, likes, comments, and collections.",
+    },
+    {
+        "name": "images",
+        "description": "Direct image management - list, serve, delete, and feature images.",
+    },
+    {
+        "name": "generation",
+        "description": "Image generation endpoints with WebSocket progress updates.",
+    },
+    {
+        "name": "templates",
+        "description": "Prompt template management for saving and reusing generation settings.",
+    },
+    {
+        "name": "prompt",
+        "description": "Advanced prompt utilities - emphasis parsing, matrix expansion, style presets.",
+    },
+    {
+        "name": "feedback",
+        "description": "User feedback and adaptive learning system.",
+    },
+    {
+        "name": "admin",
+        "description": "Admin dashboard and image upload endpoints. Requires API key.",
+    },
+    {
+        "name": "health",
+        "description": "Health checks, liveness, and readiness probes for Kubernetes.",
+    },
+    {
+        "name": "metrics",
+        "description": "Prometheus metrics endpoint for monitoring.",
+    },
+    {
+        "name": "pages",
+        "description": "HTML page endpoints - gallery views, Lumira studio, and PWA assets.",
+    },
+]
+
 # Initialize FastAPI app with lifespan
 app = FastAPI(
-    title="AI Artist Gallery",
-    description="Browse and explore AI-generated artwork",
-    version="1.0.0",
+    title="Lumira API",
+    description="""
+Lumira is an autonomous AI artist system with personality, moods, memory, and creative independence.
+
+## Features
+
+- **Personality System**: 10 distinct moods influencing artistic output
+- **Memory**: 3-layer episodic, semantic, and working memory
+- **Image Generation**: SDXL, FLUX.2, LoRA, ControlNet support
+- **Gallery**: Community features with likes, comments, collections
+- **Adaptive Learning**: Multi-armed bandit learning from feedback
+
+## Authentication
+
+Admin endpoints require an `X-API-Key` header. In development mode (no keys configured),
+all endpoints are accessible.
+
+## WebSocket
+
+Connect to `/ws` for real-time generation progress updates.
+""",
+    version="2.0.0",
     lifespan=lifespan,
+    openapi_tags=tags_metadata,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
 )
 
 # Add rate limiter to app state
@@ -405,7 +462,7 @@ app.add_exception_handler(
 )
 app.add_exception_handler(
     RateLimitExceeded,
-    cast(ExceptionHandler, _rate_limit_exceeded_handler),
+    cast(ExceptionHandler, rate_limit_exceeded_handler),
 )
 
 # Add middleware (added in reverse order of execution)
@@ -434,7 +491,7 @@ static_dir = Path(__file__).parent.parent.parent / "static"
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/", response_class=HTMLResponse, tags=["pages"])
 async def root(request: Request):
     """Serve modern gallery homepage."""
     return templates.TemplateResponse(
@@ -444,7 +501,7 @@ async def root(request: Request):
     )
 
 
-@app.get("/lumira", response_class=HTMLResponse)
+@app.get("/lumira", response_class=HTMLResponse, tags=["pages"])
 async def lumira_page(request: Request):
     """Serve Lumira's creative studio.
 
@@ -457,7 +514,7 @@ async def lumira_page(request: Request):
     )
 
 
-@app.get("/robots.txt", response_class=PlainTextResponse)
+@app.get("/robots.txt", response_class=PlainTextResponse, tags=["pages"])
 async def robots_txt(request: Request):
     """Serve robots.txt for search engine crawlers."""
     base_url = str(request.base_url).rstrip("/")
@@ -473,7 +530,7 @@ Sitemap: {base_url}/sitemap.xml
     return PlainTextResponse(content=robots_content, media_type="text/plain")
 
 
-@app.get("/sitemap.xml")
+@app.get("/sitemap.xml", tags=["pages"])
 async def sitemap_xml(request: Request):
     """Serve XML sitemap for search engine indexing."""
     base_url = str(request.base_url).rstrip("/")
@@ -496,7 +553,7 @@ async def sitemap_xml(request: Request):
     return Response(content=sitemap_content, media_type="application/xml")
 
 
-@app.get("/manifest.json")
+@app.get("/manifest.json", tags=["pages"])
 async def manifest():
     """Serve PWA manifest file."""
     manifest_path = static_dir / "manifest.json"
@@ -505,7 +562,7 @@ async def manifest():
     return FileResponse(manifest_path, media_type="application/manifest+json")
 
 
-@app.get("/service-worker.js")
+@app.get("/service-worker.js", tags=["pages"])
 async def service_worker():
     """Serve service worker for PWA."""
     sw_path = static_dir / "service-worker.js"
@@ -514,7 +571,7 @@ async def service_worker():
     return FileResponse(sw_path, media_type="application/javascript")
 
 
-@app.get("/offline.html", response_class=HTMLResponse)
+@app.get("/offline.html", response_class=HTMLResponse, tags=["pages"])
 async def offline_page():
     """Serve offline fallback page."""
     offline_path = static_dir / "offline.html"
@@ -523,7 +580,7 @@ async def offline_page():
     return FileResponse(offline_path)
 
 
-@app.get("/classic", response_class=HTMLResponse)
+@app.get("/classic", response_class=HTMLResponse, tags=["pages"])
 async def classic_gallery(request: Request):
     """Serve classic gallery page."""
     return templates.TemplateResponse(
@@ -533,7 +590,7 @@ async def classic_gallery(request: Request):
     )
 
 
-@app.get("/test/websocket", response_class=HTMLResponse)
+@app.get("/test/websocket", response_class=HTMLResponse, tags=["pages"])
 async def test_websocket(request: Request):
     """Serve WebSocket test page."""
     return templates.TemplateResponse(
@@ -543,7 +600,7 @@ async def test_websocket(request: Request):
     )
 
 
-@app.get("/api/images", response_model=list[ImageMetadata])
+@app.get("/api/images", response_model=list[ImageMetadata], tags=["images"])
 @limiter.limit("60/minute")
 async def list_images(
     request: Request,
@@ -608,7 +665,7 @@ async def list_images(
     return results
 
 
-@app.get("/api/images/file/{file_path:path}")
+@app.get("/api/images/file/{file_path:path}", tags=["images"])
 @limiter.limit("60/minute")
 async def get_image_file(
     request: Request,
@@ -640,7 +697,7 @@ async def get_image_file(
     return FileResponse(full_path, media_type="image/png")
 
 
-@app.get("/api/stats", response_model=GalleryStats)
+@app.get("/api/stats", response_model=GalleryStats, tags=["images"])
 @limiter.limit("60/minute")
 async def get_stats(
     request: Request,
@@ -660,7 +717,7 @@ async def get_stats(
     )
 
 
-@app.delete("/api/images/{file_path:path}")
+@app.delete("/api/images/{file_path:path}", tags=["images"])
 @limiter.limit("60/minute")
 async def delete_image(
     request: Request,
@@ -695,7 +752,7 @@ async def delete_image(
     return {"message": "Image deleted successfully", "path": file_path}
 
 
-@app.put("/api/images/{file_path:path}/featured")
+@app.put("/api/images/{file_path:path}/featured", tags=["images"])
 @limiter.limit("60/minute")
 async def toggle_featured(
     request: Request,
@@ -747,7 +804,7 @@ async def toggle_featured(
 
 
 # Admin Upload Endpoints
-@app.post("/api/admin/upload-image")
+@app.post("/api/admin/upload-image", tags=["admin"])
 @limiter.limit("100/minute")
 async def upload_image(
     request: Request,
@@ -829,7 +886,7 @@ async def upload_image(
     }
 
 
-@app.post("/api/admin/upload-batch")
+@app.post("/api/admin/upload-batch", tags=["admin"])
 @limiter.limit("5/minute")
 async def upload_batch(
     request: Request,
@@ -947,7 +1004,7 @@ def save_templates(templates: list[dict]):
         json.dump(templates, f, indent=2)
 
 
-@app.get("/api/templates", response_model=list[PromptTemplate])
+@app.get("/api/templates", response_model=list[PromptTemplate], tags=["templates"])
 @limiter.limit("60/minute")
 async def get_templates(
     request: Request,
@@ -957,7 +1014,7 @@ async def get_templates(
     return templates
 
 
-@app.post("/api/templates", response_model=PromptTemplate)
+@app.post("/api/templates", response_model=PromptTemplate, tags=["templates"])
 @limiter.limit("60/minute")
 async def create_template(
     request: Request,
@@ -994,7 +1051,7 @@ async def create_template(
     return new_template
 
 
-@app.delete("/api/templates/{template_id}")
+@app.delete("/api/templates/{template_id}", tags=["templates"])
 @limiter.limit("60/minute")
 async def delete_template(
     request: Request,
@@ -1011,7 +1068,7 @@ async def delete_template(
     return {"message": "Template deleted", "id": template_id}
 
 
-@app.post("/api/gallery/cleanup")
+@app.post("/api/gallery/cleanup", tags=["admin"])
 @limiter.limit("60/minute")
 async def cleanup_gallery(
     request: Request,
@@ -1033,7 +1090,7 @@ async def cleanup_gallery(
     }
 
 
-@app.post("/api/generate", response_model=GenerationResponse)
+@app.post("/api/generate", response_model=GenerationResponse, tags=["generation"])
 @limiter.limit("5/minute")
 async def generate_artwork(
     request: Request,
@@ -1240,7 +1297,7 @@ async def websocket_endpoint(websocket: WebSocket):
         await ws_manager.disconnect(websocket, client_id)
 
 
-@app.get("/health/details")
+@app.get("/health/details", tags=["health"])
 async def health_details():
     """Detailed health and runtime diagnostics endpoint."""
     from .dependencies import _gallery_manager

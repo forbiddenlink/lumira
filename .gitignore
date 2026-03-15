@@ -67,3 +67,4 @@ config/config.yaml
 
 # Specter knowledge graph cache
 .specter/
+data/lora_training/lumira_training.zip

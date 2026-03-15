@@ -21,10 +21,14 @@ services:
       - UNSPLASH_ACCESS_KEY=${UNSPLASH_ACCESS_KEY:-}
       - UNSPLASH_SECRET_KEY=${UNSPLASH_SECRET_KEY:-}
       - REDIS_URL=redis://redis:6379
+      - FALKORDB_HOST=falkordb
+      - FALKORDB_PORT=6379
     env_file:
       - .env
     depends_on:
       redis:
+        condition: service_healthy
+      falkordb:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
@@ -39,6 +43,26 @@ services:
           memory: 8G
         reservations:
           memory: 4G
+
+  # FalkorDB for graph memory (institutional knowledge)
+  falkordb:
+    image: falkordb/falkordb:latest
+    ports:
+      - "6380:6379"  # Map to 6380 to avoid Redis conflict
+    volumes:
+      - falkordb_data:/data
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 2G
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
   # Redis for job queue
   redis:
@@ -119,4 +143,5 @@ services:
 
 volumes:
   redis_data:
+  falkordb_data:
   # postgres_data:

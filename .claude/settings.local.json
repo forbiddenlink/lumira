@@ -66,7 +66,18 @@
       "WebFetch(domain:railway.com)",
       "WebFetch(domain:aria-production-3084.up.railway.app)",
       "Bash(pip --version:*)",
-      "Skill(github-search)"
+      "Skill(github-search)",
+      "Bash(git -C /Volumes/LizsDisk/lumira show:*)",
+      "Bash(uv venv:*)",
+      "Bash(sqlite3:*)",
+      "Bash(date:*)",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "mcp__plugin_playwright_playwright__browser_type",
+      "mcp__plugin_playwright_playwright__browser_click",
+      "Bash(system_profiler:*)",
+      "Bash(gh run view:*)",
+      "Bash(uvx ruff check:*)"
     ]
   }
 }

@@ -10,14 +10,20 @@ from .core.face_restore import FaceRestorer
 from .core.generator import ImageGenerator
 from .core.inpainter import ImageInpainter
 from .core.model_pool import ModelPool
+from .core.mood_blender import MoodBlender
+from .core.preview_generator import PreviewGenerator, TwoStageGenerator
+from .core.style_interpolator import StyleInterpolator
 from .core.upscaler import ImageUpscaler
 from .curation.curator import ImageCurator
 from .gallery.manager import GalleryManager
 from .inspiration.autonomous import AutonomousInspiration
+from .memory.graph_memory import GraphMemory
 from .models.manager import ModelManager
 from .personality.cognition import ThinkingProcess
 from .personality.critic import ArtistCritic
+from .personality.dialogue import InnerDialogue
 from .personality.enhanced_memory import EnhancedMemorySystem
+from .personality.inner_voices import Rememberer
 from .personality.memory import ArtistMemory
 from .personality.moods import MoodSystem
 from .personality.profile import ArtisticProfile
@@ -53,6 +59,14 @@ class AIArtist:
         self.prompt_engine = None
         self.trend_manager = None
         self.model_manager = None
+
+        # Lumira 2.0 enhancements
+        self.graph_memory = None  # FalkorDB institutional memory
+        self.inner_dialogue = None  # Internal deliberation system
+        self.mood_blender = None  # Mood interpolation
+        self.style_interpolator = None  # LoRA style blending
+        self.preview_generator = None  # Fast FLUX.1 Schnell previews
+        self.two_stage_generator = None  # Preview + full render workflow
 
         # Lumira's personality - the core of who she is
         self.mood_system = MoodSystem()
@@ -198,7 +212,74 @@ class AIArtist:
                 api_key=self.config.model_manager.civitai_api_key,
             )
 
+        # Initialize Lumira 2.0 enhancements
+        self._initialize_enhancements()
+
         logger.info("ai_artist_initialized")
+
+    def _initialize_enhancements(self):
+        """Initialize Lumira 2.0 enhancement components."""
+        # Initialize MoodBlender for mood interpolation
+        self.mood_blender = MoodBlender()
+        logger.info("mood_blender_initialized")
+
+        # Initialize StyleInterpolator for LoRA blending
+        # Registry will be populated when LoRAs are loaded
+        self.style_interpolator = StyleInterpolator(
+            pipeline=self.generator._pipe if self.generator else None,
+            lora_registry={},
+        )
+        logger.info("style_interpolator_initialized")
+
+        # Initialize GraphMemory if config enables it
+        graph_config = getattr(self.config, "graph_memory", None)
+        if graph_config and getattr(graph_config, "enabled", False):
+            try:
+                self.graph_memory = GraphMemory(
+                    host=graph_config.host,
+                    port=graph_config.port,
+                    graph_name=graph_config.graph_name,
+                )
+                logger.info(
+                    "graph_memory_initialized",
+                    host=graph_config.host,
+                    port=graph_config.port,
+                )
+            except Exception as e:
+                logger.warning(
+                    "graph_memory_init_failed",
+                    error=str(e),
+                    fallback="enhanced_memory_only",
+                )
+
+        # Initialize Inner Dialogue system
+        # Create Rememberer with memory access
+        rememberer = Rememberer(
+            graph_memory=self.graph_memory,
+            enhanced_memory=self.enhanced_memory,
+        )
+        self.inner_dialogue = InnerDialogue(
+            mood_system=self.mood_system,
+            critic=self.critic,  # Reuse existing ArtistCritic
+            rememberer=rememberer,
+        )
+        logger.info("inner_dialogue_initialized")
+
+        # Initialize Preview Generator for fast previews
+        # Note: Pipeline loaded lazily on first use
+        self.preview_generator = PreviewGenerator(
+            style_interpolator=self.style_interpolator,
+            mood_blender=self.mood_blender,
+        )
+        logger.info("preview_generator_initialized")
+
+        # Initialize Two-Stage Generator
+        self.two_stage_generator = TwoStageGenerator(
+            preview_generator=self.preview_generator,
+            full_generator=self.generator,
+            scorer=self.curator,
+        )
+        logger.info("two_stage_generator_initialized")
 
     def _get_ws_manager(self):
         """Lazily load WebSocket manager to avoid circular imports."""
@@ -771,6 +852,103 @@ class AIArtist:
         # This is Lumira's original artwork - no external attribution needed
         return saved_path
 
+    async def create_with_preview(
+        self, theme: str | None = None, auto_approve: bool = True
+    ) -> dict:
+        """Create artwork using two-stage preview workflow.
+
+        Args:
+            theme: Optional theme suggestion
+            auto_approve: Whether to auto-approve based on quality score
+
+        Returns:
+            Dict with preview_result, approved, final_image (if approved)
+        """
+        request_id = set_request_id()
+        self._current_session_id = request_id
+
+        # Update mood
+        self.mood_system.update_mood()
+
+        # Use inner dialogue to decide what to create
+        if self.inner_dialogue:
+            concept = await self.inner_dialogue.deliberate(
+                theme=theme,
+                mood=self.mood_system.current_mood.value,
+            )
+            prompt = concept.prompt
+            style_weights = concept.style_blend
+            mood_blend = {self.mood_system.current_mood.value: 1.0}
+
+            logger.info(
+                "inner_dialogue_concept",
+                subject=concept.subject,
+                style=concept.style,
+                confidence=concept.confidence,
+            )
+        else:
+            # Fallback to simple prompt
+            mood_style = self.mood_system.get_mood_style()
+            prompt = f"{theme or 'abstract composition'}, {mood_style}"
+            style_weights = None
+            mood_blend = {self.mood_system.current_mood.value: 1.0}
+
+        # Use two-stage generator
+        if self.two_stage_generator:
+            # Callback for WebSocket broadcasts
+            ws_manager = self._get_ws_manager()
+
+            async def on_preview(result, approved, score):
+                if ws_manager:
+                    await ws_manager.broadcast(
+                        {
+                            "type": "preview_ready",
+                            "session_id": request_id,
+                            "approved": approved,
+                            "score": score,
+                            "prompt": result.prompt,
+                        }
+                    )
+
+            result = await self.two_stage_generator.generate_with_preview(
+                prompt=prompt,
+                style_weights=style_weights,
+                mood_blend=mood_blend,
+                auto_approve=auto_approve,
+                on_preview=on_preview,
+            )
+
+            # Record in graph memory if available
+            if self.graph_memory and result.get("preview_approved"):
+                try:
+                    await self.graph_memory.record_decision(
+                        decision_type="creation",
+                        context={
+                            "theme": theme,
+                            "mood": self.mood_system.current_mood.value,
+                        },
+                        choice=prompt[:100],
+                        outcome="approved" if result["preview_approved"] else "rejected",
+                        score=result.get("preview_score", 0.0),
+                    )
+                except Exception as e:
+                    logger.debug("graph_memory_record_failed", error=str(e))
+
+            return result
+
+        # Fallback to regular creation
+        return {"error": "Two-stage generator not initialized"}
+
+    def get_dialogue_history(self) -> list[dict]:
+        """Get recent inner dialogue history.
+
+        Returns:
+            List of dialogue turn dicts with voice, content, etc.
+        """
+        if self.inner_dialogue:
+            return self.inner_dialogue.get_history()
+        return []
+
     def _extract_style_from_prompt(self, prompt: str) -> str:
         """Extract artistic style from prompt text."""
         style_keywords = {
@@ -886,6 +1064,9 @@ class AIArtist:
 
         if self.generator:
             self.generator.unload()
+
+        if self.preview_generator:
+            await self.preview_generator.unload()
 
         if self.unsplash:
             await self.unsplash.close()
