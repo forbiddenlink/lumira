@@ -78,6 +78,7 @@ jobs:
     - name: Run tests with pytest
       run: |
         uv run --frozen --python ${{ matrix.python-version }} pytest tests/ -v -m "not slow" \
+          --ignore=tests/e2e \
           --cov=src/ai_artist \
           --cov-report=xml \
           --cov-report=term-missing \

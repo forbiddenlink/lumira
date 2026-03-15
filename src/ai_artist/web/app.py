@@ -487,7 +487,7 @@ templates_dir = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(templates_dir))
 
 # Static files directory
-static_dir = Path(__file__).parent.parent.parent / "static"
+static_dir = Path(__file__).parent.parent.parent.parent / "static"
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 
