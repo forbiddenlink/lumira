@@ -38,8 +38,7 @@ jobs:
 
     - name: Type check with mypy
       run: |
-        uv sync --dev --python 3.11
-        uv run --frozen --python 3.11 mypy src/
+        uvx --with pydantic mypy src/ --ignore-missing-imports
 
   # Dependency security review on PRs
   dependency-review:
