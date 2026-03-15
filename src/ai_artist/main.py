@@ -928,7 +928,9 @@ class AIArtist:
                             "mood": self.mood_system.current_mood.value,
                         },
                         choice=prompt[:100],
-                        outcome="approved" if result["preview_approved"] else "rejected",
+                        outcome=(
+                            "approved" if result["preview_approved"] else "rejected"
+                        ),
                         score=result.get("preview_score", 0.0),
                     )
                 except Exception as e:

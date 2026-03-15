@@ -248,9 +248,7 @@ class Config(BaseSettings):
     autonomy: AutonomyConfig = Field(default_factory=lambda: AutonomyConfig())
     trends: TrendsConfig = Field(default_factory=lambda: TrendsConfig())
     cache: CacheConfig = Field(default_factory=lambda: CacheConfig())
-    graph_memory: GraphMemoryConfig = Field(
-        default_factory=lambda: GraphMemoryConfig()
-    )
+    graph_memory: GraphMemoryConfig = Field(default_factory=lambda: GraphMemoryConfig())
     social: SocialConfig = Field(default_factory=lambda: SocialConfig())
     model_manager: ModelManagerConfig = Field(
         default_factory=lambda: ModelManagerConfig()

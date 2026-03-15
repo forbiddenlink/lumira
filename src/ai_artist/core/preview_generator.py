@@ -13,9 +13,8 @@ from typing import TYPE_CHECKING, Any
 from ..utils.logging import get_logger
 
 if TYPE_CHECKING:
-    from PIL import Image
-    import torch
     from diffusers import FluxPipeline
+    from PIL import Image
 
 logger = get_logger(__name__)
 
@@ -96,7 +95,7 @@ class PreviewGenerator:
         self.style_interpolator = style_interpolator
         self.mood_blender = mood_blender
 
-        self._pipeline: "FluxPipeline | None" = None
+        self._pipeline: FluxPipeline | None = None
         self._loaded = False
         self._load_time: float = 0.0
 
@@ -259,7 +258,7 @@ class PreviewGenerator:
             List of PreviewResult objects
         """
         results = []
-        for i in range(count):
+        for _i in range(count):
             result = await self.preview(
                 prompt=prompt,
                 style_weights=style_weights,
@@ -329,11 +328,13 @@ class PreviewGenerator:
 
             # Force garbage collection
             import gc
+
             gc.collect()
 
             # Clear CUDA/MPS cache if available
             try:
                 import torch
+
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
                 elif hasattr(torch, "mps") and torch.backends.mps.is_available():

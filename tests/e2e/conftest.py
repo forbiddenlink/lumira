@@ -1,15 +1,14 @@
 """E2E test fixtures for Playwright testing of Lumira web UI."""
 
-import asyncio
 import os
 import socket
 import time
+from collections.abc import Generator
 from contextlib import closing
 from pathlib import Path
-from typing import Generator
 
 import pytest
-from playwright.sync_api import Page, Browser, BrowserContext
+from playwright.sync_api import Browser, Page
 
 
 def find_free_port() -> int:
@@ -34,6 +33,7 @@ def server_process(test_port: int) -> Generator[None, None, None]:
     to be ready before yielding. Shuts down the server after tests.
     """
     import subprocess
+
     import httpx
 
     # Ensure test gallery directory exists
@@ -48,10 +48,14 @@ def server_process(test_port: int) -> Generator[None, None, None]:
     # Start the server
     proc = subprocess.Popen(
         [
-            "python", "-m", "uvicorn",
+            "python",
+            "-m",
+            "uvicorn",
             "ai_artist.web.app:app",
-            "--host", "127.0.0.1",
-            "--port", str(test_port),
+            "--host",
+            "127.0.0.1",
+            "--port",
+            str(test_port),
             "--no-access-log",
         ],
         env=env,
@@ -139,6 +143,7 @@ def lumira_page(page_with_server: Page, base_url: str) -> Page:
 
 
 # --- Standalone fixtures for running without server (mock mode) ---
+
 
 @pytest.fixture(scope="function")
 def standalone_page(browser: Browser) -> Generator[Page, None, None]:

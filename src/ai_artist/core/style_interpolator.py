@@ -6,7 +6,7 @@ The StyleInterpolator enables:
 3. Style discovery - find interesting combinations
 """
 
-import math
+import contextlib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -14,9 +14,9 @@ from typing import TYPE_CHECKING, Any
 from ..utils.logging import get_logger
 
 if TYPE_CHECKING:
-    from PIL import Image
     import torch
     from diffusers import DiffusionPipeline
+    from PIL import Image
 
 logger = get_logger(__name__)
 
@@ -218,10 +218,8 @@ class StyleInterpolator:
     async def clear_blend(self) -> None:
         """Clear the current style blend."""
         if self.pipe is not None:
-            try:
+            with contextlib.suppress(Exception):
                 self.pipe.disable_lora()
-            except Exception:
-                pass
         self.current_blend = None
 
     def get_recommended_blends(self) -> list[StyleBlend]:
@@ -448,7 +446,7 @@ class LatentExplorer:
                 elif t == 1:
                     prompt = concept_b
                 else:
-                    prompt = f"[{1-t:.0%} {concept_a}] + [{t:.0%} {concept_b}]"
+                    prompt = f"[{1 - t:.0%} {concept_a}] + [{t:.0%} {concept_b}]"
                 result.prompts.append(prompt)
 
                 logger.debug(

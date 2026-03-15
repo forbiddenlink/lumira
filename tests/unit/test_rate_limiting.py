@@ -129,7 +129,6 @@ class TestGetRateLimitKey:
     def test_uses_api_key_when_provided(self):
         """Should use API key hash when X-API-Key header is present."""
         # Create a minimal ASGI scope for testing
-        from starlette.requests import Request as StarletteRequest
         from starlette.testclient import TestClient
 
         app = FastAPI()
@@ -171,7 +170,6 @@ class TestRateLimitingIntegration:
     def test_rate_limited_endpoint_returns_429_when_exceeded(self):
         """Endpoint should return 429 when rate limit is exceeded."""
         # Create a test app with strict rate limiting
-        from slowapi.errors import RateLimitExceeded
 
         app = FastAPI()
         limiter = Limiter(key_func=get_remote_address)
@@ -197,7 +195,6 @@ class TestRateLimitingIntegration:
 
     def test_429_response_has_helpful_content(self):
         """429 response should have helpful error information."""
-        from slowapi.errors import RateLimitExceeded
 
         app = FastAPI()
         limiter = Limiter(key_func=get_remote_address)
@@ -228,7 +225,6 @@ class TestRateLimitingIntegration:
 
     def test_429_response_has_retry_after_header(self):
         """429 response should include Retry-After header."""
-        from slowapi.errors import RateLimitExceeded
 
         app = FastAPI()
         limiter = Limiter(key_func=get_remote_address)

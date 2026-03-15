@@ -14,7 +14,6 @@ import re
 import pytest
 from playwright.sync_api import Page, expect
 
-
 pytestmark = pytest.mark.e2e
 
 
@@ -77,7 +76,7 @@ class TestPageLoad:
         expect(search_input).to_be_visible()
         expect(search_input).to_have_attribute(
             "placeholder",
-            "Search by meaning... (e.g., 'peaceful nature scenes', 'vibrant abstract')"
+            "Search by meaning... (e.g., 'peaceful nature scenes', 'vibrant abstract')",
         )
 
 
@@ -315,7 +314,7 @@ class TestLightbox:
         page.wait_for_selector("#lightbox.active")
 
         # Get initial image src
-        initial_src = page.locator("#lb-img").get_attribute("src")
+        page.locator("#lb-img").get_attribute("src")
 
         # Press right arrow to go to next
         page.keyboard.press("ArrowRight")
@@ -440,7 +439,9 @@ class TestLoRAToggle:
         # Clear any previous localStorage value
         page.evaluate("localStorage.removeItem('lumira-use-lora')")
         page.reload()
-        page.wait_for_selector("#mood-text:not(:has-text('Awakening...'))", timeout=15000)
+        page.wait_for_selector(
+            "#mood-text:not(:has-text('Awakening...'))", timeout=15000
+        )
 
         lora_toggle = page.locator("#request-lora")
         expect(lora_toggle).not_to_be_checked()
@@ -476,7 +477,9 @@ class TestLoRAToggle:
         # Note: The actual localStorage save happens in submitCreationRequest()
         # We can verify the checkbox state persists through page actions
 
-    def test_lora_toggle_loads_from_localstorage(self, lumira_page: Page, base_url: str):
+    def test_lora_toggle_loads_from_localstorage(
+        self, lumira_page: Page, base_url: str
+    ):
         """Test that LoRA preference loads from localStorage on page load."""
         page = lumira_page
 
@@ -485,7 +488,9 @@ class TestLoRAToggle:
 
         # Reload page
         page.goto(f"{base_url}/lumira")
-        page.wait_for_selector("#mood-text:not(:has-text('Awakening...'))", timeout=15000)
+        page.wait_for_selector(
+            "#mood-text:not(:has-text('Awakening...'))", timeout=15000
+        )
 
         # Check that toggle is checked
         lora_toggle = page.locator("#request-lora")

@@ -4,7 +4,7 @@ The MoodBlender enables smooth transitions between emotional states,
 creating nuanced artistic expressions that combine multiple moods.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from ..utils.logging import get_logger
@@ -216,9 +216,7 @@ class MoodBlender:
         if len(sorted_moods) == 1:
             name = sorted_moods[0][0]
         else:
-            name = "+".join(
-                f"{m}({w:.0%})" for m, w in sorted_moods if w > 0.1
-            )
+            name = "+".join(f"{m}({w:.0%})" for m, w in sorted_moods if w > 0.1)
 
         blended = BlendedMood(
             components=normalized,
@@ -342,7 +340,9 @@ class MoodBlender:
         }
         return contrasts.get(mood, "contemplative")
 
-    def suggest_blend(self, primary_mood: str, tension: float = 0.2) -> dict[str, float]:
+    def suggest_blend(
+        self, primary_mood: str, tension: float = 0.2
+    ) -> dict[str, float]:
         """Suggest a mood blend with controlled tension.
 
         Args:

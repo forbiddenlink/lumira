@@ -1,8 +1,11 @@
 """Tests for Inner Dialogue system."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
+from ai_artist.memory.graph_memory import MemoryContext
+from ai_artist.personality.dialogue import InnerDialogue
 from ai_artist.personality.inner_voices import (
     Concept,
     Curator,
@@ -11,8 +14,6 @@ from ai_artist.personality.inner_voices import (
     Rememberer,
     Voice,
 )
-from ai_artist.personality.dialogue import InnerDialogue
-from ai_artist.memory.graph_memory import MemoryContext
 
 
 class TestVoice:
@@ -157,7 +158,10 @@ class TestDreamer:
         refined = await dreamer.refine(original, "Make it bolder and more dramatic")
 
         # Should have been modified
-        assert refined.subject != original.subject or refined.style_blend != original.style_blend
+        assert (
+            refined.subject != original.subject
+            or refined.style_blend != original.style_blend
+        )
         assert "dramatic" in refined.style_blend or "bold" in refined.reasoning.lower()
 
 

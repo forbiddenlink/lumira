@@ -19,8 +19,8 @@ from ai_artist.web.websocket import (
     broadcast_memory_insight,
     broadcast_mood_drift,
     broadcast_preview_ready,
-    manager as global_manager,
 )
+from ai_artist.web.websocket import manager as global_manager
 
 
 class WebSocketEventCapture:
@@ -41,12 +41,16 @@ class WebSocketEventCapture:
         """Capture sent messages for later verification."""
         self.received_messages.append(message)
 
-    async def connect(self, manager: ConnectionManager, client_id: str = "test") -> None:
+    async def connect(
+        self, manager: ConnectionManager, client_id: str = "test"
+    ) -> None:
         """Connect this capture client to a manager."""
         await manager.connect(self.websocket, client_id)
         self._connected = True
 
-    async def disconnect(self, manager: ConnectionManager, client_id: str = "test") -> None:
+    async def disconnect(
+        self, manager: ConnectionManager, client_id: str = "test"
+    ) -> None:
         """Disconnect this capture client from a manager."""
         await manager.disconnect(self.websocket, client_id)
         self._connected = False
@@ -93,8 +97,7 @@ class MultiClientCapture:
     def all_received(self, event_type: str) -> bool:
         """Check if all clients received a message of the given type."""
         return all(
-            len(client.get_messages_by_type(event_type)) > 0
-            for client in self.clients
+            len(client.get_messages_by_type(event_type)) > 0 for client in self.clients
         )
 
     def get_all_messages(self) -> list[list[dict[str, Any]]]:
@@ -179,9 +182,7 @@ class TestMoodDriftBroadcast:
         await event_capture.connect(ws_manager)
 
         await ws_manager.broadcast_mood_drift(
-            mood="contemplative",
-            intensity=0.8,
-            reason="natural_drift"
+            mood="contemplative", intensity=0.8, reason="natural_drift"
         )
 
         msg = event_capture.last_message
@@ -233,9 +234,7 @@ class TestMoodDriftBroadcast:
 
         for intensity in intensities:
             event_capture.clear()
-            await ws_manager.broadcast_mood_drift(
-                mood="curious", intensity=intensity
-            )
+            await ws_manager.broadcast_mood_drift(mood="curious", intensity=intensity)
             assert event_capture.last_message["intensity"] == intensity
 
 
@@ -251,7 +250,7 @@ class TestMemoryInsightBroadcast:
 
         await ws_manager.broadcast_memory_insight(
             insight="I notice I create better art in the morning",
-            insight_type="pattern"
+            insight_type="pattern",
         )
 
         msg = event_capture.last_message
@@ -286,8 +285,7 @@ class TestMemoryInsightBroadcast:
         for insight_type in insight_types:
             event_capture.clear()
             await ws_manager.broadcast_memory_insight(
-                insight=f"Testing {insight_type}",
-                insight_type=insight_type
+                insight=f"Testing {insight_type}", insight_type=insight_type
             )
             assert event_capture.last_message["insight_type"] == insight_type
 
@@ -307,7 +305,7 @@ class TestInnerDialogueBroadcast:
             voice="dreamer",
             content="What if we tried something bolder?",
             iteration=1,
-            metadata={"confidence": 0.9}
+            metadata={"confidence": 0.9},
         )
 
         msg = event_capture.last_message
@@ -329,9 +327,7 @@ class TestInnerDialogueBroadcast:
         await event_capture.connect(ws_manager)
 
         await ws_manager.broadcast_inner_dialogue(
-            session_id="session-456",
-            voice="critic",
-            content="This needs more contrast"
+            session_id="session-456", voice="critic", content="This needs more contrast"
         )
 
         msg = event_capture.last_message
@@ -350,9 +346,7 @@ class TestInnerDialogueBroadcast:
         for voice in voices:
             event_capture.clear()
             await ws_manager.broadcast_inner_dialogue(
-                session_id="session-789",
-                voice=voice,
-                content=f"Speaking as {voice}"
+                session_id="session-789", voice=voice, content=f"Speaking as {voice}"
             )
             assert event_capture.last_message["voice"] == voice
 
@@ -368,7 +362,7 @@ class TestInnerDialogueBroadcast:
                 session_id="session-iter",
                 voice="critic",
                 content=f"Iteration {i} feedback",
-                iteration=i
+                iteration=i,
             )
 
         messages = event_capture.get_messages_by_type("inner_dialogue")
@@ -392,7 +386,7 @@ class TestPreviewReadyBroadcast:
             score=0.85,
             approved=True,
             prompt="A serene landscape at dawn",
-            generation_time=12.5
+            generation_time=12.5,
         )
 
         msg = event_capture.last_message
@@ -420,7 +414,7 @@ class TestPreviewReadyBroadcast:
             score=0.0,
             approved=False,
             prompt="Complex abstract concept",
-            generation_time=5.0
+            generation_time=5.0,
         )
 
         msg = event_capture.last_message
@@ -441,7 +435,7 @@ class TestPreviewReadyBroadcast:
             score=0.9,
             approved=True,
             prompt="Good concept",
-            generation_time=10.0
+            generation_time=10.0,
         )
         assert event_capture.last_message["approved"] is True
 
@@ -452,7 +446,7 @@ class TestPreviewReadyBroadcast:
             score=0.3,
             approved=False,
             prompt="Weak concept",
-            generation_time=10.0
+            generation_time=10.0,
         )
         assert event_capture.last_message["approved"] is False
 
@@ -471,14 +465,11 @@ class TestConceptEvolvedBroadcast:
             "prompt": "A dreamlike forest",
             "style": "impressionist",
             "mood_influence": 0.7,
-            "elements": ["trees", "mist", "soft_light"]
+            "elements": ["trees", "mist", "soft_light"],
         }
 
         await ws_manager.broadcast_concept_evolved(
-            session_id="session-evolve",
-            concept=concept,
-            iteration=2,
-            reason="critique"
+            session_id="session-evolve", concept=concept, iteration=2, reason="critique"
         )
 
         msg = event_capture.last_message
@@ -506,7 +497,7 @@ class TestConceptEvolvedBroadcast:
                 session_id="session-reasons",
                 concept={"prompt": "test"},
                 iteration=1,
-                reason=reason
+                reason=reason,
             )
             assert event_capture.last_message["reason"] == reason
 
@@ -528,7 +519,7 @@ class TestConceptEvolvedBroadcast:
                 session_id="session-evolution",
                 concept=concept,
                 iteration=i,
-                reason="refinement"
+                reason="refinement",
             )
 
         messages = event_capture.get_messages_by_type("concept_evolved")
@@ -572,7 +563,7 @@ class TestMultipleClientsBroadcast:
             session_id="shared-session",
             voice="curator",
             content="This piece needs more balance",
-            iteration=1
+            iteration=1,
         )
 
         assert multi_capture.all_received("inner_dialogue")
@@ -614,8 +605,7 @@ class TestMultipleClientsBroadcast:
 
         # All timestamps should be identical (same broadcast)
         timestamps = [
-            client.last_message["timestamp"]
-            for client in multi_capture.clients
+            client.last_message["timestamp"] for client in multi_capture.clients
         ]
         assert len(set(timestamps)) == 1  # All same
 
@@ -754,7 +744,7 @@ class TestModuleLevelFunctions:
             voice="rememberer",
             content="I recall creating something similar",
             iteration=1,
-            metadata={"memory_id": "mem-123"}
+            metadata={"memory_id": "mem-123"},
         )
 
         assert capture.message_count == 1
@@ -773,7 +763,7 @@ class TestModuleLevelFunctions:
             score=0.75,
             approved=True,
             prompt="Test prompt",
-            generation_time=8.0
+            generation_time=8.0,
         )
 
         assert capture.message_count == 1
@@ -790,7 +780,7 @@ class TestModuleLevelFunctions:
             session_id="module-evolve",
             concept={"prompt": "Evolved concept"},
             iteration=3,
-            reason="insight"
+            reason="insight",
         )
 
         assert capture.message_count == 1
@@ -872,10 +862,7 @@ class TestConcurrencyAndRaceConditions:
         await event_capture.connect(ws_manager)
 
         # Send multiple broadcasts concurrently
-        tasks = [
-            ws_manager.broadcast_mood_drift(f"mood-{i}", 0.5)
-            for i in range(10)
-        ]
+        tasks = [ws_manager.broadcast_mood_drift(f"mood-{i}", 0.5) for i in range(10)]
         await asyncio.gather(*tasks)
 
         # All messages should be received
@@ -887,18 +874,19 @@ class TestConcurrencyAndRaceConditions:
         captures = [WebSocketEventCapture() for _ in range(5)]
 
         # Connect all concurrently
-        await asyncio.gather(*[
-            c.connect(ws_manager, f"client-{i}")
-            for i, c in enumerate(captures)
-        ])
+        await asyncio.gather(
+            *[c.connect(ws_manager, f"client-{i}") for i, c in enumerate(captures)]
+        )
 
         assert len(ws_manager.active_connections) == 5
 
         # Disconnect half concurrently
-        await asyncio.gather(*[
-            c.disconnect(ws_manager, f"client-{i}")
-            for i, c in enumerate(captures[:3])
-        ])
+        await asyncio.gather(
+            *[
+                c.disconnect(ws_manager, f"client-{i}")
+                for i, c in enumerate(captures[:3])
+            ]
+        )
 
         assert len(ws_manager.active_connections) == 2
 
@@ -922,10 +910,7 @@ class TestConcurrencyAndRaceConditions:
                 await asyncio.sleep(0.005)
 
         # Run both concurrently
-        await asyncio.gather(
-            connect_disconnect(),
-            broadcast_loop()
-        )
+        await asyncio.gather(connect_disconnect(), broadcast_loop())
 
         # Stable client should receive at least some messages
         assert stable_capture.message_count > 0

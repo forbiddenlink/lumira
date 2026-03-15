@@ -1,19 +1,18 @@
 """Tests for Style Interpolation system."""
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from ai_artist.core.mood_blender import (
+    DEFAULT_MOOD_PROFILES,
     BlendedMood,
     MoodBlender,
     MoodProfile,
-    DEFAULT_MOOD_PROFILES,
 )
 from ai_artist.core.style_interpolator import (
+    RECOMMENDED_BLENDS,
     LatentExplorer,
     StyleBlend,
     StyleInterpolator,
-    RECOMMENDED_BLENDS,
 )
 
 

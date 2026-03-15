@@ -13,8 +13,8 @@ from collections.abc import Awaitable, Callable
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from .inner_voices import Concept, Curator, DialogueTurn, Dreamer, Rememberer, Voice
 from ..utils.logging import get_logger
+from .inner_voices import Concept, Curator, DialogueTurn, Dreamer, Rememberer, Voice
 
 if TYPE_CHECKING:
     from .critic import ArtistCritic
@@ -141,12 +141,14 @@ class InnerDialogue:
         ideas = await self.dreamer.imagine(mood=mood, context=context, count=3)
         if not ideas:
             # Fallback concept
-            ideas = [Concept(
-                subject="abstract emotions",
-                mood_blend={mood: 1.0},
-                style_blend={"atmospheric": 1.0},
-                reasoning="When inspiration fails, I return to pure feeling.",
-            )]
+            ideas = [
+                Concept(
+                    subject="abstract emotions",
+                    mood_blend={mood: 1.0},
+                    style_blend={"atmospheric": 1.0},
+                    reasoning="When inspiration fails, I return to pure feeling.",
+                )
+            ]
 
         dreamer_message = self._format_dreamer_ideas(ideas)
         await self._broadcast(

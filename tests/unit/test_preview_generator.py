@@ -1,7 +1,8 @@
 """Tests for Preview Generator."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from PIL import Image
 
 from ai_artist.core.preview_generator import (
@@ -127,15 +128,14 @@ class TestPreviewGenerator:
     @pytest.mark.asyncio
     async def test_ensure_loaded_import_error(self, generator):
         """Test loading fails gracefully on import error."""
-        with patch.dict("sys.modules", {"diffusers": None}):
-            with patch(
-                "ai_artist.core.preview_generator.PreviewGenerator.ensure_loaded",
-                new_callable=AsyncMock,
-                return_value=False,
-            ):
-                result = await generator.ensure_loaded()
-                # Will fail due to missing diffusers
-                assert result is False
+        with patch.dict("sys.modules", {"diffusers": None}), patch(
+            "ai_artist.core.preview_generator.PreviewGenerator.ensure_loaded",
+            new_callable=AsyncMock,
+            return_value=False,
+        ):
+            result = await generator.ensure_loaded()
+            # Will fail due to missing diffusers
+            assert result is False
 
     @pytest.mark.asyncio
     async def test_preview_without_pipeline(self, generator):

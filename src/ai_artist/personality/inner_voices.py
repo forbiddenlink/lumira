@@ -245,7 +245,7 @@ class Dreamer:
         if context:
             recent_subjects = context.recent_subjects
 
-        for i in range(count):
+        for _i in range(count):
             # Pick a template and fill it
             template = random.choice(templates)
             subject = self._fill_template(template)
@@ -349,9 +349,7 @@ class Dreamer:
 
         if "subtle" in feedback_lower or "gentle" in feedback_lower:
             # Soften the approach
-            refined.mood_blend = {
-                k: v * 0.8 for k, v in refined.mood_blend.items()
-            }
+            refined.mood_blend = {k: v * 0.8 for k, v in refined.mood_blend.items()}
             refined.mood_blend["serene"] = refined.mood_blend.get("serene", 0) + 0.2
             refined.reasoning += " Softened the approach."
 
@@ -419,14 +417,15 @@ class Curator:
             # Style variety: bonus for different styles
             idea_styles = set(idea.style_blend.keys())
             style_overlap = len(idea_styles & recent_styles)
-            variety_score = 20 if style_overlap == 0 else max(0, 20 - (style_overlap * 8))
+            variety_score = (
+                20 if style_overlap == 0 else max(0, 20 - (style_overlap * 8))
+            )
             score += variety_score * self.variety_weight
 
             # Coherence: bonus for fitting portfolio themes
             if portfolio_themes:
                 theme_match = any(
-                    theme.lower() in idea.subject.lower()
-                    for theme in portfolio_themes
+                    theme.lower() in idea.subject.lower() for theme in portfolio_themes
                 )
                 score += 15 if theme_match else 0
 
@@ -467,15 +466,12 @@ class Curator:
             for w in recent_work[-5:]
             if isinstance(w, dict)
         ]
-        recent_subjects_flat = [
-            word for sublist in recent_subjects for word in sublist
-        ]
+        recent_subjects_flat = [word for sublist in recent_subjects for word in sublist]
 
         subject_words = concept.subject.lower().split()
         if any(word in recent_subjects_flat for word in subject_words):
             feedback_parts.append(
-                "This subject feels similar to recent work. "
-                "Consider a fresh direction."
+                "This subject feels similar to recent work. Consider a fresh direction."
             )
 
         # Check style variety
@@ -573,7 +569,11 @@ class Rememberer:
             try:
                 similar = await self.vectors.search_creations(theme, limit=limit)
                 similar_works = [
-                    {"id": s.get("id"), "prompt": s.get("prompt"), "score": s.get("score")}
+                    {
+                        "id": s.get("id"),
+                        "prompt": s.get("prompt"),
+                        "score": s.get("score"),
+                    }
                     for s in similar
                 ]
             except Exception as e:
@@ -585,8 +585,7 @@ class Rememberer:
                 enhanced_context = self.enhanced.get_relevant_context(mood, limit=limit)
                 best_styles = enhanced_context.get("best_styles", [])
                 top_styles = [
-                    {"name": s[0], "avg_score": s[1]}
-                    for s in best_styles[:limit]
+                    {"name": s[0], "avg_score": s[1]} for s in best_styles[:limit]
                 ]
 
                 recent_episodes = enhanced_context.get("similar_mood_episodes", [])
@@ -646,11 +645,11 @@ class Rememberer:
 
         if context.recent_subjects:
             recent = context.recent_subjects[:3]
-            parts.append(
-                f"Recently I've been drawn to: {', '.join(recent)}."
-            )
+            parts.append(f"Recently I've been drawn to: {', '.join(recent)}.")
 
         if not parts:
-            parts.append("My memories offer no specific guidance here... a fresh start.")
+            parts.append(
+                "My memories offer no specific guidance here... a fresh start."
+            )
 
         return " ".join(parts)
