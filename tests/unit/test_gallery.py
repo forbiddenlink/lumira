@@ -356,9 +356,27 @@ class TestCommunityGalleryQueries:
 
 
 @pytest.fixture
-def api_client():
-    """Create test client for API endpoints."""
-    return TestClient(app)
+def api_client(tmp_path):
+    """Create test client with isolated test database."""
+    from ai_artist.db.session import (
+        create_db_engine,
+        create_session_factory,
+        set_session_factory,
+    )
+
+    # Create test database with all tables
+    db_path = tmp_path / "test_gallery_api.db"
+    engine = create_db_engine(db_path)
+    Base.metadata.create_all(engine)
+
+    # Override the global session factory
+    test_session_factory = create_session_factory(db_path)
+    set_session_factory(test_session_factory)
+
+    yield TestClient(app)
+
+    # Cleanup - reset session factory
+    set_session_factory(None)
 
 
 class TestGalleryCollectionsAPI:
