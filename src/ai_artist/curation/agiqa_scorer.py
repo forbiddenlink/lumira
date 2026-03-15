@@ -59,7 +59,9 @@ class AGIQAScorer:
             if device is None:
                 if torch.cuda.is_available():
                     self._device = "cuda"
-                elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+                elif (
+                    hasattr(torch.backends, "mps") and torch.backends.mps.is_available()
+                ):
                     self._device = "mps"
                 else:
                     self._device = "cpu"
@@ -303,7 +305,6 @@ class AGIQAScorer:
             from scipy import ndimage
 
             edges_x = ndimage.sobel(gray, axis=1)
-            edges_y = ndimage.sobel(gray, axis=0)
             edge_consistency = 1.0 - min(np.std(edges_x) / 50.0, 0.5) * 2
 
             # Combined artifact score

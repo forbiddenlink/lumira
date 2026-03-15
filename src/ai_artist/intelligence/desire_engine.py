@@ -322,7 +322,7 @@ class DesireEngine:
 
         # Count recent drive satisfactions
         recent_window = now - timedelta(hours=24)
-        recent_counts: dict[str, int] = {name: 0 for name in self.drives}
+        recent_counts: dict[str, int] = dict.fromkeys(self.drives, 0)
 
         for timestamp, drive_name in self.drive_history:
             if timestamp > recent_window and drive_name in recent_counts:
