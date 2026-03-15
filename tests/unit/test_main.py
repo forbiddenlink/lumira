@@ -190,7 +190,9 @@ class TestAIArtistInitialization:
         lora_path.mkdir()
         mock_config.model.lora_path = str(lora_path)
 
-        _artist = AIArtist(config=mock_config)  # noqa: F841 - instantiation triggers load_lora
+        _artist = AIArtist(
+            config=mock_config
+        )  # noqa: F841 - instantiation triggers load_lora
 
         # Verify load_lora was called
         mock_patches["generator"].load_lora.assert_called_once()
@@ -200,7 +202,9 @@ class TestAIArtistInitialization:
         mock_config.model.lora_path = "/nonexistent/lora/path"
 
         # Should not raise - just log warning
-        _artist = AIArtist(config=mock_config)  # noqa: F841 - test instantiation behavior
+        _artist = AIArtist(
+            config=mock_config
+        )  # noqa: F841 - test instantiation behavior
 
         # load_lora should NOT have been called
         mock_patches["generator"].load_lora.assert_not_called()
@@ -309,7 +313,9 @@ class TestInitializeEnhancements:
         mock_config.graph_memory.graph_name = "test_graph"
 
         with patch("ai_artist.main.GraphMemory") as mock_graph:
-            _artist = AIArtist(config=mock_config)  # noqa: F841 - triggers GraphMemory init
+            _artist = AIArtist(
+                config=mock_config
+            )  # noqa: F841 - triggers GraphMemory init
             mock_graph.assert_called_once_with(
                 host="localhost",
                 port=6380,
@@ -1251,14 +1257,12 @@ class TestAsyncMain:
 
         # Create a minimal config file
         config_file = tmp_path / "config.yaml"
-        config_file.write_text(
-            """
+        config_file.write_text("""
 model:
   base_model: test/model
   device: cpu
   dtype: float32
-"""
-        )
+""")
 
         # Mock AIArtist to avoid full initialization
         with patch("ai_artist.main.AIArtist") as mock_artist_class:

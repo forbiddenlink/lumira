@@ -658,15 +658,13 @@ class KnowledgeGraph:
     def get_stats(self) -> dict[str, Any]:
         """Get graph statistics."""
         if self.is_connected:
-            result = self._graph.ro_query(
-                """
+            result = self._graph.ro_query("""
                 MATCH (a:Artwork) WITH COUNT(a) as artworks
                 MATCH (s:Subject) WITH artworks, COUNT(s) as subjects
                 MATCH (st:Style) WITH artworks, subjects, COUNT(st) as styles
                 MATCH (m:Mood) WITH artworks, subjects, styles, COUNT(m) as moods
                 RETURN artworks, subjects, styles, moods
-                """
-            )
+                """)
             if result.result_set:
                 r = result.result_set[0]
                 return {

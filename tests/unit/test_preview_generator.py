@@ -128,10 +128,13 @@ class TestPreviewGenerator:
     @pytest.mark.asyncio
     async def test_ensure_loaded_import_error(self, generator):
         """Test loading fails gracefully on import error."""
-        with patch.dict("sys.modules", {"diffusers": None}), patch(
-            "ai_artist.core.preview_generator.PreviewGenerator.ensure_loaded",
-            new_callable=AsyncMock,
-            return_value=False,
+        with (
+            patch.dict("sys.modules", {"diffusers": None}),
+            patch(
+                "ai_artist.core.preview_generator.PreviewGenerator.ensure_loaded",
+                new_callable=AsyncMock,
+                return_value=False,
+            ),
         ):
             result = await generator.ensure_loaded()
             # Will fail due to missing diffusers

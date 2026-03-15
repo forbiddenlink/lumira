@@ -209,9 +209,7 @@ class TestGraphMemoryWithMockedFalkorDB:
         """Test successful connection to FalkorDB."""
         gm = GraphMemory()
 
-        with patch(
-            "ai_artist.memory.graph_memory.FalkorDB", create=True
-        ):
+        with patch("ai_artist.memory.graph_memory.FalkorDB", create=True):
             # Need to patch it at import time
             import sys
 

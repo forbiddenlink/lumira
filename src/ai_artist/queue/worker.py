@@ -106,9 +106,7 @@ def generate_image(prompt: str, params: dict[str, Any]) -> dict[str, Any]:
             device = (
                 "cuda"
                 if torch.cuda.is_available()
-                else "mps"
-                if torch.backends.mps.is_available()
-                else "cpu"
+                else "mps" if torch.backends.mps.is_available() else "cpu"
             )
             dtype = torch.float16 if device == "cuda" else torch.float32
 

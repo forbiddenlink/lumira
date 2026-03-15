@@ -124,8 +124,7 @@ def test_configuration_loading(tmp_path):
 
     # Create a test config file
     config_path = tmp_path / "test_config.yaml"
-    config_path.write_text(
-        """
+    config_path.write_text("""
 model:
   base_model: "runwayml/stable-diffusion-v1-5"
   device: "cpu"
@@ -142,8 +141,7 @@ generation:
 api_keys:
   unsplash_access_key: "test_access_key"
   unsplash_secret_key: "test_secret_key"
-"""
-    )
+""")
 
     config = load_config(config_path)
 

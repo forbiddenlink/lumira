@@ -100,14 +100,12 @@ class TestWorkerFunctions:
         config_dir = tmp_path / "config"
         config_dir.mkdir()
         config_file = config_dir / "config.yaml"
-        config_file.write_text(
-            """
+        config_file.write_text("""
 model:
   base_model: test-model
   device: cpu
   dtype: float32
-"""
-        )
+""")
 
         # Create gallery directory
         gallery_dir = tmp_path / "gallery"

@@ -558,9 +558,7 @@ class ImageCurator:
                 assessment=(
                     "sharp"
                     if blur_score > 0.7
-                    else "moderate"
-                    if blur_score > 0.5
-                    else "blurry"
+                    else "moderate" if blur_score > 0.5 else "blurry"
                 ),
             )
 
@@ -613,9 +611,7 @@ class ImageCurator:
                 assessment=(
                     "clean"
                     if artifact_score > 0.7
-                    else "moderate"
-                    if artifact_score > 0.5
-                    else "artifacts"
+                    else "moderate" if artifact_score > 0.5 else "artifacts"
                 ),
             )
 
