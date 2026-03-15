@@ -81,3 +81,18 @@ __pycache__
 coverage/
 test_run/
 supabase/.temp/
+
+# Dependencies
+node_modules/
+
+# Build output
+.next/
+dist/
+build/
+out/
+
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
