@@ -30,11 +30,8 @@ jobs:
     - name: Set up Python
       run: uv python install 3.11
 
-    - name: Create virtual environment
-      run: uv venv
-
     - name: Install dependencies
-      run: uv sync --dev
+      run: uv sync --dev --python 3.11
 
     - name: Lint with Ruff
       run: uv run ruff check src/ tests/ --output-format=github
@@ -76,11 +73,8 @@ jobs:
     - name: Set up Python ${{ matrix.python-version }}
       run: uv python install ${{ matrix.python-version }}
 
-    - name: Create virtual environment
-      run: uv venv
-
     - name: Install dependencies
-      run: uv sync --dev
+      run: uv sync --dev --python ${{ matrix.python-version }}
 
     - name: Run tests with pytest
       run: |
@@ -124,11 +118,8 @@ jobs:
     - name: Set up Python
       run: uv python install 3.11
 
-    - name: Create virtual environment
-      run: uv venv
-
     - name: Install dependencies
-      run: uv sync --dev
+      run: uv sync --dev --python 3.11
 
     - name: Run slow/integration tests
       run: |
@@ -154,7 +145,7 @@ jobs:
       run: uv python install 3.11
 
     - name: Install security tools
-      run: uv pip install --system safety bandit
+      run: uv tool install safety && uv tool install bandit
 
     - name: Check for vulnerabilities with Safety
       run: |
@@ -221,17 +212,14 @@ jobs:
     - name: Set up Python
       run: uv python install 3.11
 
-    - name: Create virtual environment
-      run: uv venv
-
     - name: Install build dependencies
-      run: uv pip install build twine
+      run: uv tool install build && uv tool install twine
 
     - name: Build package
-      run: uv run python -m build
+      run: pyproject-build
 
     - name: Check package
-      run: uv run twine check dist/*
+      run: twine check dist/*
 
     - name: Upload artifacts
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
