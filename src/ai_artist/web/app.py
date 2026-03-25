@@ -26,7 +26,6 @@ from fastapi import (
 )
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Response
-from fastapi.security import APIKeyHeader
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
@@ -39,7 +38,14 @@ from ..gallery.manager import GalleryManager
 from ..utils.config import WebConfig
 from ..utils.logging import get_logger
 from .admin import router as admin_router
-from .dependencies import GalleryManagerDep, GalleryPathDep, set_gallery_manager
+from .dependencies import (
+    GalleryManagerDep,
+    GalleryPathDep,
+    get_web_config,
+    require_api_key,
+    set_gallery_manager,
+    set_web_config,
+)
 from .exception_handlers import (
     general_exception_handler,
     http_exception_handler,
@@ -83,65 +89,6 @@ _background_tasks: set = set()
 
 # Rate limiter instance
 limiter = Limiter(key_func=get_remote_address)
-
-# API key header for authentication
-api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
-
-# Web configuration (set during app initialization)
-_web_config: WebConfig | None = None
-
-
-def set_web_config(config: WebConfig) -> None:
-    """Set the web configuration for authentication and rate limiting."""
-    global _web_config
-    _web_config = config
-
-
-def get_web_config() -> WebConfig:
-    """Get the current web configuration."""
-    if _web_config is None:
-        # Return default config if not set (dev mode)
-        return WebConfig()
-    return _web_config
-
-
-def require_api_key(
-    api_key: str | None = Depends(api_key_header),
-) -> str:
-    """Require API key for admin endpoints.
-
-    Admin endpoints always require authentication when API keys are configured.
-    If no API keys are configured, allow access (dev mode).
-
-    Returns:
-        The validated API key
-    Raises:
-        HTTPException: If key is invalid/missing and auth is enabled
-    """
-    config = get_web_config()
-
-    # If no API keys configured, allow all requests (dev mode)
-    if not config.api_keys:
-        return "dev-mode"
-
-    # Auth is enabled - key is required
-    if api_key is None:
-        raise HTTPException(
-            status_code=401,
-            detail="API key required. Provide X-API-Key header.",
-            headers={"WWW-Authenticate": "API key required"},
-        )
-
-    # Check if key is valid
-    valid_keys = [k.get_secret_value() for k in config.api_keys]
-    if api_key not in valid_keys:
-        raise HTTPException(
-            status_code=403,
-            detail="Invalid API key",
-        )
-
-    return api_key
-
 
 logger = get_logger(__name__)
 
@@ -497,7 +444,66 @@ async def root(request: Request):
     return templates.TemplateResponse(
         request,
         "gallery_modern.html",
-        {"title": "AI Artist Gallery"},
+        {"title": "Lumira — AI Art Gallery"},
+    )
+
+
+@app.get("/share/{share_id}", response_class=HTMLResponse, tags=["pages"])
+async def share_page(request: Request, share_id: str):
+    """Serve shared image page.
+
+    Looks up the shared image and renders an OG-friendly share page.
+    Falls back to a 404 page if the image is not found.
+    """
+    from sqlalchemy.orm import Session
+
+    from ..db.models import GeneratedImage
+    from ..db.session import get_db
+
+    db_gen = get_db()
+    db: Session = next(db_gen)
+    try:
+        image = (
+            db.query(GeneratedImage)
+            .filter(
+                GeneratedImage.share_id == share_id,
+                GeneratedImage.is_public.is_(True),
+            )
+            .first()
+        )
+    except Exception as e:
+        logger.error("share_page_error", share_id=share_id, error=str(e))
+        raise HTTPException(
+            status_code=500, detail="Failed to load shared artwork"
+        ) from e
+    finally:
+        db_gen.close()
+
+    if image:
+        base_url = str(request.base_url).rstrip("/")
+        image_url = f"{base_url}/api/images/file/{image.filename}"
+        return templates.TemplateResponse(
+            request,
+            "share.html",
+            {
+                "title": f"Artwork by Lumira — {(image.prompt or 'AI Art')[:60]}",
+                "image_url": image_url,
+                "prompt": image.prompt or "AI-generated artwork",
+                "share_id": share_id,
+                "base_url": base_url,
+            },
+        )
+
+    # Image not found — render a friendly 404
+    return templates.TemplateResponse(
+        request,
+        "error.html",
+        {
+            "title": "Artwork Not Found",
+            "status_code": 404,
+            "message": "This shared artwork could not be found. It may have been removed or made private.",
+        },
+        status_code=404,
     )
 
 
@@ -544,9 +550,14 @@ async def sitemap_xml(request: Request):
         <priority>1.0</priority>
     </url>
     <url>
-        <loc>{base_url}/classic</loc>
+        <loc>{base_url}/lumira</loc>
         <changefreq>daily</changefreq>
-        <priority>0.8</priority>
+        <priority>0.9</priority>
+    </url>
+    <url>
+        <loc>{base_url}/classic</loc>
+        <changefreq>weekly</changefreq>
+        <priority>0.5</priority>
     </url>
 </urlset>
 """
@@ -598,6 +609,16 @@ async def test_websocket(request: Request):
         "test_websocket.html",
         {"title": "WebSocket Test"},
     )
+
+
+@app.get("/api/auth-mode", tags=["health"])
+async def auth_mode():
+    """Check if authentication is required for admin actions.
+
+    Used by the frontend to hide admin-only UI controls in production.
+    """
+    config = get_web_config()
+    return {"auth_required": len(config.api_keys) > 0}
 
 
 @app.get("/api/images", response_model=list[ImageMetadata], tags=["images"])
@@ -694,7 +715,15 @@ async def get_image_file(
     except ValueError as e:
         raise HTTPException(status_code=403, detail=ERROR_ACCESS_DENIED) from e
 
-    return FileResponse(full_path, media_type="image/png")
+    # Detect MIME type from file extension
+    mime_types = {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".webp": "image/webp",
+    }
+    media_type = mime_types.get(file_ext, "image/png")
+    return FileResponse(full_path, media_type=media_type)
 
 
 @app.get("/api/stats", response_model=GalleryStats, tags=["images"])
@@ -1049,6 +1078,40 @@ async def create_template(
     )
 
     return new_template
+
+
+@app.put(
+    "/api/templates/{template_id}", response_model=PromptTemplate, tags=["templates"]
+)
+@limiter.limit("60/minute")
+async def update_template(
+    request: Request,
+    template_id: str,
+    template_request: CreateTemplateRequest,
+    _api_key: str = Depends(require_api_key),
+):
+    """Update an existing prompt template."""
+    templates = load_templates()
+
+    for i, t in enumerate(templates):
+        if t["id"] == template_id:
+            templates[i] = {
+                "id": template_id,
+                "name": template_request.name,
+                "prompt": template_request.prompt,
+                "negative_prompt": template_request.negative_prompt,
+                "width": template_request.width,
+                "height": template_request.height,
+                "num_inference_steps": template_request.num_inference_steps,
+                "guidance_scale": template_request.guidance_scale,
+                "created_at": t.get("created_at", datetime.now().isoformat()),
+                "tags": template_request.tags,
+            }
+            save_templates(templates)
+            logger.info("template_updated", template_id=template_id)
+            return templates[i]
+
+    raise HTTPException(status_code=404, detail="Template not found")
 
 
 @app.delete("/api/templates/{template_id}", tags=["templates"])

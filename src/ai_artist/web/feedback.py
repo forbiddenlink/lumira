@@ -5,7 +5,7 @@ Allows users to provide feedback on generated artwork,
 which feeds into the adaptive learning system.
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import structlog
 from fastapi import APIRouter, HTTPException, status
@@ -47,7 +47,7 @@ class LearningStatsResponse(BaseModel):
     moods_learned: int
     best_model: dict | None = None
     exploration_rate: float = 0.0
-    last_updated: datetime = Field(default_factory=datetime.utcnow)
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 @router.post("/submit", response_model=FeedbackResponse)

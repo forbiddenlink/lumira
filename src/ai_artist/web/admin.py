@@ -12,10 +12,13 @@ from sqlalchemy.orm import Session
 from ..db.models import GeneratedImage
 from ..db.session import get_db
 from ..utils.logging import get_logger
+from .dependencies import require_api_key
 
 logger = get_logger(__name__)
 
-router = APIRouter(prefix="/admin", tags=["admin"])
+router = APIRouter(
+    prefix="/admin", tags=["admin"], dependencies=[Depends(require_api_key)]
+)
 
 # Setup templates - templates are in project root, not src directory
 # Path: admin.py -> web -> ai_artist -> src -> lumira -> templates
@@ -153,16 +156,12 @@ async def get_system_info() -> dict[str, Any]:
     """
     try:
         import psutil
-        import torch
 
-        return {
-            "cpu_percent": psutil.cpu_percent(interval=1),
-            "memory": {
-                "total": psutil.virtual_memory().total,
-                "available": psutil.virtual_memory().available,
-                "percent": psutil.virtual_memory().percent,
-            },
-            "gpu": {
+        gpu_info: dict[str, Any] = {"available": False, "device_count": 0}
+        try:
+            import torch
+
+            gpu_info = {
                 "available": torch.cuda.is_available(),
                 "device_count": (
                     torch.cuda.device_count() if torch.cuda.is_available() else 0
@@ -176,7 +175,18 @@ async def get_system_info() -> dict[str, Any]:
                 "memory_reserved": (
                     torch.cuda.memory_reserved(0) if torch.cuda.is_available() else 0
                 ),
+            }
+        except ImportError:
+            pass
+
+        return {
+            "cpu_percent": psutil.cpu_percent(interval=1),
+            "memory": {
+                "total": psutil.virtual_memory().total,
+                "available": psutil.virtual_memory().available,
+                "percent": psutil.virtual_memory().percent,
             },
+            "gpu": gpu_info,
             "timestamp": datetime.now().isoformat(),
         }
 

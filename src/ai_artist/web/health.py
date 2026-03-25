@@ -42,7 +42,7 @@ class LivenessResponse(BaseModel):
 
 # Track application start time
 _start_time = time.time()
-_app_version = "1.0.0"  # TODO: Load from package metadata
+_app_version = "2.0.0"
 
 
 @router.get("/health", response_model=HealthResponse, status_code=status.HTTP_200_OK)

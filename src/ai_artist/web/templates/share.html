@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ title }}</title>
+    <meta name="description" content="{{ prompt[:160] }}" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="{{ title }}" />
+    <meta property="og:description" content="{{ prompt[:200] }}" />
+    <meta property="og:image" content="{{ image_url }}" />
+    <meta property="og:url" content="{{ base_url }}/share/{{ share_id }}" />
+    <meta property="og:site_name" content="Lumira — AI Art Gallery" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{{ title }}" />
+    <meta name="twitter:description" content="{{ prompt[:200] }}" />
+    <meta name="twitter:image" content="{{ image_url }}" />
+
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="512x512"
+      href="/static/icons/icon-512x512.png"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      :focus-visible {
+        outline: 2px solid #58a6ff;
+        outline-offset: 2px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+      @media (prefers-contrast: high) {
+        .brand-name,
+        .artwork-prompt {
+          color: #fff;
+        }
+        .btn-primary {
+          background: #ffff00;
+          color: #000;
+        }
+      }
+      @media (forced-colors: active) {
+        .btn,
+        .artwork-card {
+          border: 2px solid ButtonText;
+        }
+      }
+
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          sans-serif;
+        background: #060810;
+        color: #e6edf3;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      /* Ambient background */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background:
+          radial-gradient(
+            ellipse 70% 50% at 50% -10%,
+            rgba(88, 166, 255, 0.1) 0%,
+            transparent 60%
+          ),
+          radial-gradient(
+            ellipse 40% 50% at 90% 80%,
+            rgba(168, 85, 247, 0.08) 0%,
+            transparent 60%
+          );
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      /* Noise */
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        opacity: 0.025;
+        z-index: 1;
+        pointer-events: none;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        background-size: 220px;
+      }
+
+      ::-webkit-scrollbar {
+        width: 5px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #58a6ff, #a855f7);
+        border-radius: 4px;
+      }
+
+      .share-container {
+        position: relative;
+        z-index: 10;
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 40px 24px 80px;
+        animation: pageReveal 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      }
+      @keyframes pageReveal {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .share-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 48px;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        color: #e6edf3;
+        font-family: "Space Grotesk", sans-serif;
+        font-weight: 700;
+        font-size: 20px;
+        letter-spacing: -0.5px;
+        transition: opacity 0.2s;
+      }
+      .brand:hover {
+        opacity: 0.8;
+      }
+      .brand-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #58a6ff, #a855f7);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 16px rgba(88, 166, 255, 0.3);
+      }
+      .brand-icon img {
+        width: 24px;
+        height: 24px;
+        object-fit: contain;
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        padding: 10px 22px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 14px;
+        font-family: "Space Grotesk", sans-serif;
+        text-decoration: none;
+        transition:
+          transform 0.2s ease,
+          box-shadow 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .btn:hover {
+        transform: translateY(-2px);
+      }
+      .btn-primary {
+        background: linear-gradient(135deg, #58a6ff, #a855f7);
+        color: white;
+        box-shadow: 0 4px 16px rgba(88, 166, 255, 0.3);
+      }
+      .btn-primary:hover {
+        box-shadow: 0 8px 28px rgba(88, 166, 255, 0.45);
+      }
+      .btn-ghost {
+        background: rgba(255, 255, 255, 0.05);
+        color: #8b949e;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .btn-ghost:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: #e6edf3;
+      }
+
+      /* Artwork showcase */
+      .artwork-showcase {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0;
+        border-radius: 24px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: #111520;
+        box-shadow:
+          0 32px 80px rgba(0, 0, 0, 0.6),
+          0 0 0 1px rgba(88, 166, 255, 0.06);
+      }
+
+      .artwork-image-wrap {
+        position: relative;
+        background: #0d1117;
+        overflow: hidden;
+      }
+      .artwork-image {
+        width: 100%;
+        max-height: 72vh;
+        object-fit: contain;
+        display: block;
+      }
+
+      /* Subtle gradient overlay at bottom of image */
+      .artwork-image-wrap::after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 120px;
+        background: linear-gradient(transparent, rgba(17, 21, 32, 0.8));
+        pointer-events: none;
+      }
+
+      .artwork-info {
+        padding: 36px 40px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .artwork-eyebrow {
+        font-size: 11px;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: rgba(88, 166, 255, 0.7);
+        font-family: "Space Grotesk", sans-serif;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .artwork-eyebrow::before {
+        content: "";
+        display: inline-block;
+        width: 24px;
+        height: 1px;
+        background: rgba(88, 166, 255, 0.5);
+      }
+
+      .artwork-prompt {
+        font-size: clamp(16px, 2.5vw, 20px);
+        line-height: 1.65;
+        color: #e6edf3;
+        font-weight: 400;
+        letter-spacing: -0.2px;
+        margin-bottom: 24px;
+        font-style: italic;
+      }
+
+      .artwork-meta {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #8b949e;
+        font-size: 13px;
+      }
+      .artwork-meta-dot {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: rgba(88, 166, 255, 0.5);
+      }
+
+      /* CTA section */
+      .cta-section {
+        text-align: center;
+        margin-top: 48px;
+        padding: 44px 32px;
+        background: rgba(88, 166, 255, 0.04);
+        border: 1px solid rgba(88, 166, 255, 0.1);
+        border-radius: 20px;
+        position: relative;
+        overflow: hidden;
+      }
+      .cta-section::before {
+        content: "";
+        position: absolute;
+        top: -40px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 200px;
+        height: 200px;
+        background: radial-gradient(
+          circle,
+          rgba(88, 166, 255, 0.08) 0%,
+          transparent 70%
+        );
+        pointer-events: none;
+      }
+
+      .cta-section h2 {
+        font-family: "Space Grotesk", "Inter", sans-serif;
+        font-size: clamp(20px, 3vw, 26px);
+        font-weight: 600;
+        letter-spacing: -0.5px;
+        margin-bottom: 10px;
+      }
+      .cta-section p {
+        color: #8b949e;
+        margin-bottom: 28px;
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+        line-height: 1.6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="share-container">
+      <header class="share-header">
+        <a href="/" class="brand">
+          <div class="brand-icon">
+            <img src="/static/images/logo.png" alt="Lumira" />
+          </div>
+          Lumira
+        </a>
+        <div class="header-actions">
+          <a href="/" class="btn btn-ghost">Gallery</a>
+          <a href="/lumira" class="btn btn-primary">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            Creative Studio
+          </a>
+        </div>
+      </header>
+
+      <div class="artwork-showcase">
+        <div class="artwork-image-wrap">
+          <img
+            class="artwork-image"
+            src="{{ image_url }}"
+            alt="{{ prompt[:100] }}"
+            loading="eager"
+          />
+        </div>
+        <div class="artwork-info">
+          <div class="artwork-eyebrow">Created by Lumira</div>
+          <p class="artwork-prompt">"{{ prompt }}"</p>
+          <div class="artwork-meta">
+            <span>Autonomous AI Artist</span>
+            <div class="artwork-meta-dot"></div>
+            <span>Generated with Stable Diffusion XL</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="cta-section">
+        <h2>Lumira makes art with intention.</h2>
+        <p>
+          An AI artist with evolving moods, episodic memory, and creative
+          independence — request something, or let it surprise you.
+        </p>
+        <a href="/lumira" class="btn btn-primary">Enter Creative Studio</a>
+      </div>
+    </div>
+  </body>
+</html>

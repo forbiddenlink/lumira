@@ -12,11 +12,11 @@ const IMAGE_CACHE = `${CACHE_VERSION}-images`;
 // Files to cache on install
 const STATIC_FILES = [
   '/',
-  '/static/css/main.css',
-  '/static/js/gallery.js',
   '/static/icons/icon-192x192.png',
   '/static/icons/icon-512x512.png',
+  '/static/images/logo.png',
   '/manifest.json',
+  '/offline.html',
 ];
 
 // Cache limits
@@ -206,7 +206,8 @@ self.addEventListener('sync', (event) => {
 async function syncArtworks() {
   try {
     console.log('[SW] Syncing artworks...');
-    const response = await fetch('/api/gallery/sync');
+    // Refresh gallery images cache
+    const response = await fetch('/api/images?limit=50');
 
     if (response.ok) {
       console.log('[SW] Artworks synced successfully');
@@ -228,7 +229,7 @@ self.addEventListener('push', (event) => {
   const options = {
     body: data.body || 'A new artwork has been created',
     icon: '/static/icons/icon-192x192.png',
-    badge: '/static/icons/badge-72x72.png',
+    badge: '/static/icons/icon-72x72.png',
     vibrate: [200, 100, 200],
     tag: data.tag || 'lumira-notification',
     data: data.url || '/',

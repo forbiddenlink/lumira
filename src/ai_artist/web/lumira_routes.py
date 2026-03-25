@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Any
 
 import aiofiles
-import torch
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 from PIL import Image
@@ -628,6 +627,8 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
                 )
 
                 # Parse dtype correctly
+                import torch
+
                 dtype = (
                     torch.float32 if config.model.dtype == "float32" else torch.float16
                 )
@@ -1118,6 +1119,8 @@ async def user_request_creation(
                     thought_type="create",
                     content=f"Bringing your vision to life... '{body.prompt}'",
                 )
+
+                import torch
 
                 dtype = (
                     torch.float32 if config.model.dtype == "float32" else torch.float16
@@ -2514,6 +2517,8 @@ async def create_with_reference(
 
         # Background generation with reference
         async def generate_task():
+            import torch
+
             generator = None
             from ..db.session import get_session_factory
 
@@ -2773,6 +2778,8 @@ async def img2img_generation(
 
     # Generate variation using img2img
     try:
+        import torch
+
         from ..core.replicate_generator import ReplicateGenerator as ImageGenerator
 
         config_path = Path("config/config.yaml")
@@ -2953,6 +2960,8 @@ async def generate_variations(
     selected_prompts = random.sample(prompts, min(var_request.count, len(prompts)))
 
     try:
+        import torch
+
         from ..core.replicate_generator import ReplicateGenerator as ImageGenerator
 
         config_path = Path("config/config.yaml")
