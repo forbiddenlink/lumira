@@ -4,8 +4,9 @@ import asyncio
 import io
 import json
 import random
+import time
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -42,6 +43,34 @@ router = APIRouter(prefix="/api/lumira", tags=["lumira"])
 
 # Singleton state for Lumira (initialized on first request)
 _lumira_state: dict[str, Any] | None = None
+
+# In-process autonomy counters (reset on server restart; used by /autonomy-status)
+_autonomy_creation_count: int = 0
+_autonomy_failure_count: int = 0
+
+# Lazy curator singleton (CLIP model loaded on first scoring call)
+_image_curator = None
+
+# Portfolio scan cache — refreshed at most every 30 seconds
+_portfolio_cache: list[dict] | None = None
+_portfolio_cache_ts: float = 0.0
+_PORTFOLIO_CACHE_TTL: float = 30.0
+
+
+def _score_image(image: Image.Image, prompt: str) -> float:
+    """Score an image against a prompt using CLIP; falls back to 0.8 on failure."""
+    global _image_curator
+    try:
+        if _image_curator is None:
+            from ..curation.curator import ImageCurator
+            from ..utils.config import load_config as _lc
+
+            cfg = _lc()
+            _image_curator = ImageCurator(device=cfg.model.device)
+        metrics = _image_curator.evaluate(image, prompt)
+        return round(float(metrics.overall_score), 4)
+    except Exception:
+        return 0.8
 
 
 class LumiraStateResponse(BaseModel):
@@ -80,9 +109,21 @@ class LumiraCreateResponse(BaseModel):
 class UserCreationRequest(BaseModel):
     """Request for user-directed creation."""
 
-    prompt: str = Field(description="What the user wants Lumira to create")
-    style: str | None = Field(default=None, description="Optional style preference")
-    mood: str | None = Field(default=None, description="Optional mood preference")
+    prompt: str = Field(
+        description="What the user wants Lumira to create",
+        min_length=1,
+        max_length=2000,
+    )
+    style: str | None = Field(
+        default=None,
+        description="Optional style preference",
+        max_length=200,
+    )
+    mood: str | None = Field(
+        default=None,
+        description="Optional mood preference",
+        max_length=100,
+    )
     allow_interpretation: bool = Field(
         default=True,
         description="Let Lumira add her own artistic interpretation",
@@ -312,13 +353,59 @@ class BatchCreateResponse(BaseModel):
 # Reference images storage path
 REFERENCE_IMAGES_PATH = Path("gallery/references")
 
+# Personality persistence file — survives server restarts
+_PERSONALITY_FILE = Path("data/lumira_personality.json")
+
+# Default OCEAN trait ranges for Lumira's character archetype
+_DEFAULT_OCEAN_RANGES = {
+    "openness": (0.6, 0.9),  # High - she is a creative
+    "conscientiousness": (0.4, 0.7),
+    "extraversion": (0.3, 0.7),
+    "agreeableness": (0.3, 0.6),
+    "neuroticism": (0.4, 0.7),  # Artistic temperament
+}
+
+
+def _load_personality() -> dict[str, float]:
+    """Load persisted OCEAN traits from disk, or generate and persist new ones."""
+    if _PERSONALITY_FILE.exists():
+        try:
+            data = json.loads(_PERSONALITY_FILE.read_text())
+            traits = data.get("traits", {})
+            # Validate all five traits are present and in [0, 1]
+            if all(
+                k in traits and 0.0 <= float(traits[k]) <= 1.0
+                for k in _DEFAULT_OCEAN_RANGES
+            ):
+                logger.info("personality_loaded", source=str(_PERSONALITY_FILE))
+                return {k: float(traits[k]) for k in _DEFAULT_OCEAN_RANGES}
+        except Exception as e:
+            logger.warning("personality_load_failed", error=str(e))
+
+    # First run — generate stable traits and persist them
+    traits = {key: random.uniform(*rng) for key, rng in _DEFAULT_OCEAN_RANGES.items()}
+    _save_personality(traits)
+    logger.info("personality_created", traits=traits)
+    return traits
+
+
+def _save_personality(traits: dict[str, float]) -> None:
+    """Persist OCEAN traits to disk atomically."""
+    try:
+        _PERSONALITY_FILE.parent.mkdir(parents=True, exist_ok=True)
+        tmp = _PERSONALITY_FILE.with_suffix(".tmp")
+        payload = {"traits": traits, "saved_at": datetime.now(UTC).isoformat()}
+        tmp.write_text(json.dumps(payload, indent=2))
+        tmp.replace(_PERSONALITY_FILE)
+    except Exception as e:
+        logger.warning("personality_save_failed", error=str(e))
+
 
 def _get_lumira_state() -> dict[str, Any]:
-    """Get or initialize Lumira's state."""
+    """Get or initialize Lumira's state, with personality persisted across restarts."""
     global _lumira_state
 
     if _lumira_state is None:
-        # Initialize fresh state
         _lumira_state = {
             "name": "Lumira",
             "mood_system": MoodSystem(),
@@ -326,14 +413,8 @@ def _get_lumira_state() -> dict[str, Any]:
             "profile": ArtisticProfile(name="Lumira"),
             "paintings_created": 0,
             "portfolio": [],
-            # OCEAN personality traits
-            "personality": {
-                "openness": random.uniform(0.6, 0.9),  # High - creative
-                "conscientiousness": random.uniform(0.4, 0.7),
-                "extraversion": random.uniform(0.3, 0.7),
-                "agreeableness": random.uniform(0.3, 0.6),
-                "neuroticism": random.uniform(0.4, 0.7),  # Artistic temperament
-            },
+            # OCEAN personality traits — loaded from disk or generated fresh
+            "personality": _load_personality(),
         }
         logger.info(
             "lumira_state_initialized",
@@ -344,11 +425,25 @@ def _get_lumira_state() -> dict[str, Any]:
 
 
 async def _load_portfolio_from_gallery() -> list[dict]:
-    """Load portfolio from gallery directory using async file I/O."""
+    """Load portfolio from gallery directory using async file I/O.
+
+    Results are cached for _PORTFOLIO_CACHE_TTL seconds to avoid rescanning
+    the gallery tree on every /state request.
+    """
+    global _portfolio_cache, _portfolio_cache_ts
+    now_ts = time.monotonic()
+    if (
+        _portfolio_cache is not None
+        and (now_ts - _portfolio_cache_ts) < _PORTFOLIO_CACHE_TTL
+    ):
+        return _portfolio_cache
+
     portfolio: list[dict] = []
     gallery_path = Path("gallery")
 
     if not gallery_path.exists():
+        _portfolio_cache = portfolio
+        _portfolio_cache_ts = now_ts
         return portfolio
 
     # Find all JSON metadata files
@@ -393,8 +488,11 @@ async def _load_portfolio_from_gallery() -> list[dict]:
 
     # Sort by creation date (newest first)
     portfolio.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    result = portfolio[:50]  # Limit to 50 most recent
 
-    return portfolio[:50]  # Limit to 50 most recent
+    _portfolio_cache = result
+    _portfolio_cache_ts = now_ts
+    return result
 
 
 @router.get("/state", response_model=LumiraStateResponse)
@@ -726,7 +824,7 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
                                         "style": style,
                                         "reasoning": intent.reasoning,
                                     },
-                                    final_score=0.8,  # Default score
+                                    final_score=_score_image(images[0], prompt),
                                     tags=[mood.value, subject, style],
                                     created_at=now,
                                 )
@@ -748,7 +846,7 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
                                         style=style,
                                         mood=mood.value,
                                         reasoning=intent.reasoning,
-                                        quality_score=0.8,
+                                        quality_score=db_image.final_score or 0.8,
                                     )
                                 except Exception as vec_err:
                                     logger.debug(
@@ -782,6 +880,7 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
                         logger.debug("learning_record_failed", error=str(learn_err))
 
                     # RLAIF: Record critic evaluation for self-improvement
+                    critic_score = 0.75  # Default; overwritten if critique available
                     try:
                         critic_score = (
                             critique_history[0]["confidence"]
@@ -831,7 +930,7 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
                             "style": style,
                             "reasoning": intent.reasoning,
                             "image_url": image_url,
-                            "score": critic_score if "critic_score" in dir() else 0.75,
+                            "score": critic_score,
                         },
                         "emotional_state": {
                             "mood": mood.value,
@@ -890,6 +989,11 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
                     # Update mood after successful creation
                     mood_system.update_mood()
 
+                    # Update autonomy counters and bust portfolio cache
+                    global _autonomy_creation_count, _portfolio_cache_ts
+                    _autonomy_creation_count += 1
+                    _portfolio_cache_ts = 0.0  # force re-scan on next /state call
+
                     # Send completion event
                     await ws_manager.send_generation_complete(
                         session_id=session_id,
@@ -920,6 +1024,8 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
                 import traceback
 
                 error_details = traceback.format_exc()
+                global _autonomy_failure_count
+                _autonomy_failure_count += 1
                 logger.error(
                     "lumira_generation_failed",
                     error=str(e),
@@ -984,6 +1090,9 @@ async def evolve_state(request: Request):
     for trait in personality:
         change = random.uniform(-0.02, 0.02)
         personality[trait] = max(0.0, min(1.0, personality[trait] + change))
+
+    # Persist evolved traits so they survive restarts
+    _save_personality(personality)
 
     logger.info(
         "lumira_evolved",
@@ -1234,7 +1343,7 @@ async def user_request_creation(
                                         "style": style,
                                         "user_request": body.prompt,
                                     },
-                                    final_score=0.8,
+                                    final_score=_score_image(images[0], prompt),
                                     tags=[mood.value, subject, style, "user_request"],
                                     created_at=now,
                                 )
@@ -1619,22 +1728,8 @@ async def get_mood_evolution(request: Request) -> MoodEvolutionResponse:
 
     # Generate some history if empty
     if not history:
-        from datetime import timedelta
-
-        moods = ["contemplative", "energized", "serene", "playful", "introspective"]
-        now = datetime.now()
-        for i in range(20):
-            mood = random.choice(moods)
-            history.append(
-                MoodHistoryEntry(
-                    mood=mood,
-                    intensity=random.uniform(0.3, 0.9),
-                    timestamp=now - timedelta(hours=i * 2),
-                    trigger="natural_drift" if i % 3 else "creation",
-                )
-            )
-            mood_counts[mood] = mood_counts.get(mood, 0) + 1
-        history.reverse()
+        # No history yet — return an empty but valid response rather than fake data
+        pass
 
     # Calculate stability (lower variance = more stable)
     if len(history) > 1:
@@ -1800,6 +1895,8 @@ async def get_autonomy_status(request: Request):
 
     Returns comprehensive status for monitoring 24/7 autonomous operation.
     """
+    global _autonomy_creation_count, _autonomy_failure_count
+
     from ..intelligence.desire_engine import get_desire_engine
     from ..intelligence.narrative_engine import get_narrative_engine
     from ..scheduling.resilience import StatePersistence
@@ -1823,16 +1920,21 @@ async def get_autonomy_status(request: Request):
     persistence = StatePersistence()
     latest_backup = persistence.get_latest_backup()
 
+    total = _autonomy_creation_count + _autonomy_failure_count
+    success_rate = _autonomy_creation_count / total if total > 0 else 1.0
+
     logger.info(
         "autonomy_status_retrieved",
         active_series=len(series_status["active"]),
+        creation_count=_autonomy_creation_count,
+        failure_count=_autonomy_failure_count,
     )
 
     return AutonomyStatusResponse(
         running=True,  # If we're responding, we're running
-        creation_count=0,  # Would need to track globally
-        failure_count=0,
-        success_rate=1.0,
+        creation_count=_autonomy_creation_count,
+        failure_count=_autonomy_failure_count,
+        success_rate=round(success_rate, 3),
         circuits={},  # Circuit breakers not yet instantiated globally
         drives=drive_status,
         last_backup=latest_backup.timestamp.isoformat() if latest_backup else None,
@@ -1956,15 +2058,22 @@ async def get_hierarchical_artist_statement(request: Request, regenerate: bool =
 class AsyncGenerationRequest(BaseModel):
     """Request model for async generation."""
 
-    prompt: str | None = None  # Optional - will use mood-based prompt if not provided
-    negative_prompt: str = ""
-    width: int = 1024
-    height: int = 1024
-    num_inference_steps: int = 30
-    guidance_scale: float = 7.5
-    num_images: int = 1
+    prompt: str | None = Field(
+        default=None,
+        description="Optional prompt; mood-based if omitted",
+        max_length=2000,
+    )
+    negative_prompt: str = Field(default="", max_length=1000)
+    width: int = Field(default=1024, ge=64, le=2048)
+    height: int = Field(default=1024, ge=64, le=2048)
+    num_inference_steps: int = Field(default=30, ge=1, le=150)
+    guidance_scale: float = Field(default=7.5, ge=1.0, le=20.0)
+    num_images: int = Field(default=1, ge=1, le=4)
     seed: int | None = None
-    priority: str = "normal"  # high, normal, low
+    priority: str = Field(
+        default="normal",
+        pattern="^(high|normal|low)$",
+    )
 
 
 class AsyncGenerationResponse(BaseModel):
@@ -2625,7 +2734,7 @@ async def create_with_reference(
                                         "reference_id": body.reference_id,
                                         "ip_adapter_scale": body.ip_adapter_scale,
                                     },
-                                    final_score=0.85,
+                                    final_score=_score_image(images[0], prompt),
                                     tags=[mood.value, subject, style, "reference"],
                                     created_at=now,
                                 )
@@ -3084,6 +3193,7 @@ async def batch_create(
         BatchCreateResponse with job IDs for tracking
     """
     job_ids: list[str] = []
+    batch_id = f"batch_{uuid.uuid4().hex[:8]}"
 
     try:
         from ..queue import get_queue
@@ -3092,10 +3202,8 @@ async def batch_create(
 
         if queue.is_available():
             for i in range(batch_request.count):
-                job_id = f"batch_{uuid.uuid4().hex[:8]}"
-
                 # Queue each creation
-                queue.enqueue_generation(
+                queued_job_id = queue.enqueue_generation(
                     prompt=batch_request.theme or "",
                     params={
                         "mood": batch_request.mood,
@@ -3105,14 +3213,23 @@ async def batch_create(
                     priority="normal",
                     meta={
                         "type": "batch",
+                        "batch_id": batch_id,
                         "mood": batch_request.mood,
                         "theme": batch_request.theme,
+                        "batch_index": i,
                     },
                 )
-                job_ids.append(job_id)
+
+                if not queued_job_id:
+                    raise RuntimeError(
+                        f"Failed to enqueue batch item {i + 1} of {batch_request.count}"
+                    )
+
+                job_ids.append(queued_job_id)
 
             logger.info(
                 "batch_creation_queued",
+                batch_id=batch_id,
                 count=batch_request.count,
                 mood=batch_request.mood,
                 theme=batch_request.theme,
@@ -3123,18 +3240,26 @@ async def batch_create(
                 message=f"Queued {batch_request.count} artworks for creation",
             )
         else:
-            # Fallback when queue is not available
-            raise Exception("Queue not available")
+            logger.warning(
+                "batch_creation_queue_unavailable",
+                batch_id=batch_id,
+                count=batch_request.count,
+            )
+            return BatchCreateResponse(
+                job_ids=[],
+                message="Batch creation is unavailable because the job queue is offline.",
+            )
 
     except Exception as e:
-        logger.warning(f"Batch creation without queue: {e}")
-        # Fallback: return placeholder job IDs
-        job_ids = [
-            f"pending_{uuid.uuid4().hex[:8]}" for _ in range(batch_request.count)
-        ]
+        logger.error(
+            "batch_creation_failed",
+            batch_id=batch_id,
+            count=batch_request.count,
+            error=str(e),
+        )
         return BatchCreateResponse(
             job_ids=job_ids,
-            message="Batch creation scheduled (queue unavailable, will process sequentially)",
+            message="Batch creation could not be fully queued. Please try again.",
         )
 
 

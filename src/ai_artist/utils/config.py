@@ -149,6 +149,22 @@ class SocialConfig(BaseModel):
     auto_share: bool = False
     share_threshold: float = 0.3  # Only share artworks above this score
 
+    # Twitter / X credentials
+    twitter_api_key: SecretStr | None = None
+    twitter_api_secret: SecretStr | None = None
+    twitter_access_token: SecretStr | None = None
+    twitter_access_secret: SecretStr | None = None
+    twitter_bearer_token: SecretStr | None = None
+
+    # Instagram credentials
+    instagram_username: str | None = None
+    instagram_password: SecretStr | None = None
+    instagram_session_file: str = "data/instagram_session.json"
+
+    # Bluesky credentials
+    bluesky_handle: str | None = None
+    bluesky_password: SecretStr | None = None
+
 
 class ModelManagerConfig(BaseModel):
     """Model management configuration."""
@@ -197,6 +213,9 @@ class WebConfig(BaseModel):
     rate_limit_generate: str = "5/minute"  # For /api/generate endpoint
     rate_limit_api: str = "60/minute"  # For other API endpoints
 
+    # Debug mode — enables /test/* routes; disabled in production by default
+    debug: bool = False
+
     @classmethod
     def from_env(cls) -> "WebConfig":
         """Create WebConfig from environment variables."""
@@ -206,7 +225,9 @@ class WebConfig(BaseModel):
         if api_key := os.getenv("RAILWAY_API_KEY"):
             api_keys = [SecretStr(api_key)]
 
-        return cls(api_keys=api_keys)
+        debug = os.getenv("DEBUG", "").lower() in ("1", "true", "yes")
+
+        return cls(api_keys=api_keys, debug=debug)
 
 
 class ObservabilityConfig(BaseModel):

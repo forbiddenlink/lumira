@@ -1313,6 +1313,39 @@
         font-weight: 500;
       }
 
+      .empty-actions {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 20px;
+      }
+
+      .empty-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 160px;
+        padding: 12px 20px;
+        border-radius: 12px;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 14px;
+        border: 1px solid transparent;
+        cursor: pointer;
+      }
+
+      .empty-btn-primary {
+        background: linear-gradient(135deg, var(--accent), #a855f7);
+        color: #08111f;
+      }
+
+      .empty-btn-secondary {
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text-primary);
+        border-color: var(--border);
+      }
+
       /* Scroll to top button */
       .scroll-top {
         position: fixed;
@@ -4720,11 +4753,10 @@
         if (filteredImages.length === 0) {
           if (allImages.length === 0 && !currentSearch) {
             gallery.innerHTML =
-              '<div class="empty-state"><div class="empty-icon">✦</div><h2>No artworks yet</h2><p>Create your first artwork with Lumira</p>' +
-              '<a href="/lumira" style="display:inline-block;margin-top:16px;padding:12px 28px;background:linear-gradient(135deg,var(--accent),#a855f7);border-radius:10px;color:white;text-decoration:none;font-weight:700;">Open Creative Studio</a></div>';
+              '<div class="empty-state"><div class="empty-icon">✦</div><h2>No artworks yet</h2><p>The gallery is ready, but there are no creations to show yet.</p><div class="empty-actions"><a href="/lumira" class="empty-btn empty-btn-primary">Open Creative Studio</a></div></div>';
           } else {
             gallery.innerHTML =
-              '<div class="empty-state"><div class="empty-icon">🔍</div><h2>No matches</h2><p>Try adjusting your search or filters</p></div>';
+              '<div class="empty-state"><div class="empty-icon">🔍</div><h2>No matches</h2><p>Your current search and filters did not return any artworks.</p><div class="empty-actions"><button type="button" class="empty-btn empty-btn-secondary" onclick="clearFilters()">Clear Filters</button><button type="button" class="empty-btn empty-btn-secondary" onclick="document.getElementById(\'search\').focus()">Refine Search</button></div></div>';
           }
           return;
         }

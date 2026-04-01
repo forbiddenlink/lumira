@@ -8,9 +8,11 @@ Enhanced with:
 - FLUX model routing based on mood
 """
 
+import json
 import random
 from datetime import datetime
 from enum import Enum
+from pathlib import Path
 from typing import Any, Literal
 
 from ..utils.logging import get_logger
@@ -350,6 +352,9 @@ class MoodSystem:
         # New: timestamp tracking for decay
         self.last_update = datetime.now()
 
+        # Mood history — persisted to disk so it survives restarts
+        self.mood_history: list[dict] = self._load_mood_history()
+
         # New: style axes for granular control
         self.style_axes: StyleAxes = StyleAxes.from_mood(
             self.current_mood, self.mood_intensity
@@ -439,6 +444,52 @@ class MoodSystem:
         else:
             return random.choice([Mood.SERENE, Mood.INTROSPECTIVE, Mood.CONTEMPLATIVE])
 
+    # ── Mood history persistence ──────────────────────────────────────────────
+
+    _HISTORY_FILE = Path("data/lumira_mood_history.json")
+    _MAX_HISTORY = 500  # Cap to prevent unbounded growth
+
+    def _load_mood_history(self) -> list[dict]:
+        """Load persisted mood history from disk."""
+        if not self._HISTORY_FILE.exists():
+            return []
+        try:
+            raw = json.loads(self._HISTORY_FILE.read_text())
+            return raw.get("history", [])
+        except Exception:
+            return []
+
+    def _save_mood_history(self) -> None:
+        """Persist mood history to disk atomically."""
+        try:
+            self._HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
+            tmp = self._HISTORY_FILE.with_suffix(".tmp")
+            # Keep only the most recent entries
+            trimmed = self.mood_history[-self._MAX_HISTORY :]
+            tmp.write_text(json.dumps({"history": trimmed}, indent=2))
+            tmp.replace(self._HISTORY_FILE)
+        except Exception:
+            pass  # Non-critical; swallow silently
+
+    def _record_mood_entry(self, trigger: str = "natural_drift") -> None:
+        """Append current mood/intensity to history and persist."""
+        mood_val = (
+            self.current_mood.value
+            if hasattr(self.current_mood, "value")
+            else str(self.current_mood)
+        )
+        self.mood_history.append(
+            {
+                "mood": mood_val,
+                "intensity": round(self.mood_intensity, 3),
+                "timestamp": datetime.now().isoformat(),
+                "trigger": trigger,
+            }
+        )
+        self._save_mood_history()
+
+    # ── Decay / update ────────────────────────────────────────────────────────
+
     def apply_decay(self) -> None:
         """Apply natural mood decay based on time elapsed.
 
@@ -514,6 +565,11 @@ class MoodSystem:
         # Update style axes based on current state
         self.style_axes = StyleAxes.from_mood(self.current_mood, self.mood_intensity)
         self.last_update = datetime.now()
+
+        # Record to persistent history
+        self._record_mood_entry(
+            trigger="external_factors" if external_factors else "natural_drift"
+        )
 
         logger.info(
             "mood_updated",

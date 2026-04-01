@@ -1,5 +1,6 @@
 """Tests for Inner Dialogue system."""
 
+import asyncio
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -53,7 +54,7 @@ class TestConcept:
             confidence=0.85,
         )
         assert concept.subject == "mountain landscape"
-        assert concept.mood_blend["serene"] == 0.8
+        assert concept.mood_blend["serene"] == pytest.approx(0.8)
         assert concept.approved is True
 
     def test_concept_to_dict(self):
@@ -92,7 +93,7 @@ class TestDialogueTurn:
         d = turn.to_dict()
         assert d["voice"] == "critic"
         assert d["message"] == "This needs more depth."
-        assert d["metadata"]["score"] == 0.6
+        assert d["metadata"]["score"] == pytest.approx(0.6)
 
 
 class TestDreamer:
@@ -292,7 +293,6 @@ class TestRememberer:
         assert "fresh start" in message.lower() or "no specific" in message.lower()
 
 
-@pytest.mark.asyncio
 class TestInnerDialogue:
     """Tests for InnerDialogue orchestrator."""
 
@@ -301,6 +301,7 @@ class TestInnerDialogue:
         """Create an InnerDialogue with default voices."""
         return InnerDialogue()
 
+    @pytest.mark.asyncio
     async def test_deliberate_produces_concept(self, dialogue):
         """Test that deliberate returns an approved concept."""
         concept = await dialogue.deliberate(mood="contemplative")
@@ -310,6 +311,7 @@ class TestInnerDialogue:
         assert concept.approved is True
         assert concept.prompt != ""
 
+    @pytest.mark.asyncio
     async def test_deliberate_records_history(self, dialogue):
         """Test that deliberate records dialogue history."""
         await dialogue.deliberate(mood="playful")
@@ -323,6 +325,7 @@ class TestInnerDialogue:
         assert "dreamer" in voices
         assert "curator" in voices
 
+    @pytest.mark.asyncio
     async def test_deliberate_with_theme(self, dialogue):
         """Test deliberate with a theme suggestion."""
         concept = await dialogue.deliberate(
@@ -333,11 +336,13 @@ class TestInnerDialogue:
         assert concept.approved is True
         # Theme might influence the concept (not guaranteed due to randomness)
 
+    @pytest.mark.asyncio
     async def test_deliberate_with_callback(self):
         """Test that on_turn callback is invoked."""
         turns_received = []
 
         async def on_turn(turn):
+            await asyncio.sleep(0)
             turns_received.append(turn)
 
         dialogue = InnerDialogue(on_turn=on_turn)
@@ -346,6 +351,7 @@ class TestInnerDialogue:
         assert len(turns_received) > 0
         assert all(isinstance(t, DialogueTurn) for t in turns_received)
 
+    @pytest.mark.asyncio
     async def test_deliberate_with_critic(self):
         """Test deliberate with a mock critic."""
         mock_critic = MagicMock()
@@ -360,8 +366,9 @@ class TestInnerDialogue:
         concept = await dialogue.deliberate(mood="curious")
 
         assert concept.approved is True
-        assert concept.confidence == 0.8
+        assert concept.confidence == pytest.approx(0.8)
 
+    @pytest.mark.asyncio
     async def test_deliberate_refinement_loop(self):
         """Test that refinement happens when critic rejects."""
         mock_critic = MagicMock()
@@ -411,6 +418,7 @@ class TestInnerDialogue:
         dialogue.clear_history()
         assert dialogue.history == []
 
+    @pytest.mark.asyncio
     async def test_max_iterations_respected(self):
         """Test that max iterations is respected."""
         mock_critic = MagicMock()
@@ -427,7 +435,7 @@ class TestInnerDialogue:
 
         # Should still return (forced approval)
         assert concept.approved is True
-        assert concept.confidence == 0.5  # Forced approval confidence
+        assert concept.confidence == pytest.approx(0.5)  # Forced approval confidence
 
         # Should not exceed MAX_ITERATIONS
         assert mock_critic.critique_concept.call_count <= InnerDialogue.MAX_ITERATIONS

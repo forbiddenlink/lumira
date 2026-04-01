@@ -99,7 +99,10 @@ class CommentListResponse(BaseModel):
 class ShareRequest(BaseModel):
     """Request to track a share."""
 
-    platform: str = Field(..., pattern="^(twitter|facebook|pinterest|link)$")
+    platform: str = Field(
+        ...,
+        pattern="^(twitter|facebook|pinterest|instagram|bluesky|link)$",
+    )
 
 
 class ShareResponse(BaseModel):
@@ -197,9 +200,7 @@ async def list_public_images(
     search: str | None = None,
 ):
     """List public gallery images with filtering and sorting."""
-    query = db.query(GeneratedImage).filter(
-        GeneratedImage.is_public.is_(True)
-    )  # noqa: E712
+    query = db.query(GeneratedImage).filter(GeneratedImage.is_public.is_(True))  # noqa: E712
 
     # Apply filters
     if tag:

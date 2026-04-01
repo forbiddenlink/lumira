@@ -118,7 +118,9 @@ async def get_statistics(
 
 
 @router.get("/performance")
-async def get_performance_metrics() -> dict[str, Any]:
+async def get_performance_metrics(
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
     """Get performance metrics.
 
     Returns:
@@ -132,9 +134,36 @@ async def get_performance_metrics() -> dict[str, Any]:
         if metric_obj and hasattr(metric_obj, "_value"):
             total_generations = int(metric_obj._value.get())
 
+        # Calculate average generation duration from DB timestamps
+
+        avg_duration_seconds: float = 0.0
+        try:
+            # Use the gap between adjacent created_at values as a proxy for
+            # generation time (works when images are created sequentially).
+            recent = (
+                db.query(GeneratedImage.created_at)
+                .filter(GeneratedImage.status == "curated")
+                .order_by(GeneratedImage.created_at.desc())
+                .limit(20)
+                .all()
+            )
+            if len(recent) >= 2:
+                timestamps = [r[0] for r in recent if r[0]]
+                deltas = [
+                    abs((timestamps[i] - timestamps[i + 1]).total_seconds())
+                    for i in range(len(timestamps) - 1)
+                    if timestamps[i] and timestamps[i + 1]
+                ]
+                # Filter obvious outliers (> 10 min gap means idle time not gen time)
+                valid_deltas = [d for d in deltas if 0 < d < 600]
+                if valid_deltas:
+                    avg_duration_seconds = sum(valid_deltas) / len(valid_deltas)
+        except Exception:
+            pass
+
         return {
             "total_generations": total_generations,
-            "avg_duration": 0,  # TODO: Calculate from histogram
+            "avg_duration": round(avg_duration_seconds, 1),
             "timestamp": datetime.now().isoformat(),
         }
 

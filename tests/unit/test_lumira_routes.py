@@ -1,10 +1,15 @@
 """Tests for Lumira API routes."""
 
+import asyncio
+from unittest.mock import MagicMock, patch
+
 import pytest
 from fastapi.testclient import TestClient
+from starlette.requests import Request
 
 from ai_artist.db.models import Base
 from ai_artist.web.app import app
+from ai_artist.web.lumira_routes import BatchCreateRequest, batch_create
 
 
 @pytest.fixture
@@ -24,6 +29,14 @@ def client(tmp_path):
     # Override the global session factory
     test_session_factory = create_session_factory(db_path)
     set_session_factory(test_session_factory)
+
+    # Reset in-memory slowapi storage to avoid cross-test rate-limit bleed-through
+    if (
+        hasattr(app.state, "limiter")
+        and app.state.limiter
+        and hasattr(app.state.limiter, "_storage")
+    ):
+        app.state.limiter._storage.storage.clear()
 
     yield TestClient(app)
 
@@ -419,6 +432,32 @@ class TestLumiraVariations:
 class TestLumiraBatchCreate:
     """Tests for /api/lumira/batch-create endpoint."""
 
+    @staticmethod
+    def _reset_rate_limiter() -> None:
+        if (
+            hasattr(app.state, "limiter")
+            and app.state.limiter
+            and hasattr(app.state.limiter, "_storage")
+        ):
+            app.state.limiter._storage.storage.clear()
+
+    @staticmethod
+    def _request(api_key: str) -> Request:
+        return Request(
+            {
+                "type": "http",
+                "method": "POST",
+                "path": "/api/lumira/batch-create",
+                "headers": [(b"x-api-key", api_key.encode("utf-8"))],
+                "query_string": b"",
+            }
+        )
+
+    @staticmethod
+    def _call_batch_create(request: Request, body: BatchCreateRequest):
+        handler = getattr(batch_create, "__wrapped__", batch_create)
+        return asyncio.run(handler(request, body))
+
     def test_batch_create_accepts_count(self, client):
         """Batch create should accept count parameter."""
         response = client.post(
@@ -437,3 +476,47 @@ class TestLumiraBatchCreate:
         if response.status_code == 200:
             data = response.json()
             assert "job_ids" in data or "message" in data
+
+    def test_batch_create_returns_real_queue_job_ids(self, client):
+        """Batch create should return the actual IDs returned by the queue."""
+        mock_queue = MagicMock()
+        mock_queue.is_available.return_value = True
+        mock_queue.enqueue_generation.side_effect = ["rq-job-1", "rq-job-2"]
+
+        with patch("ai_artist.queue.get_queue", return_value=mock_queue):
+            response = self._call_batch_create(
+                self._request("batch-test-real-ids"),
+                BatchCreateRequest(count=2, theme="twilight", mood="serene"),
+            )
+
+        assert response.job_ids == ["rq-job-1", "rq-job-2"]
+        assert "Queued 2 artworks" in response.message
+
+    def test_batch_create_returns_empty_ids_when_queue_unavailable(self, client):
+        """Batch create should not fabricate tracking IDs when the queue is offline."""
+        mock_queue = MagicMock()
+        mock_queue.is_available.return_value = False
+
+        with patch("ai_artist.queue.get_queue", return_value=mock_queue):
+            response = self._call_batch_create(
+                self._request("batch-test-queue-offline"),
+                BatchCreateRequest(count=2),
+            )
+
+        assert response.job_ids == []
+        assert "queue is offline" in response.message.lower()
+
+    def test_batch_create_preserves_partial_ids_on_enqueue_failure(self, client):
+        """Batch create should surface already queued IDs if a later enqueue fails."""
+        mock_queue = MagicMock()
+        mock_queue.is_available.return_value = True
+        mock_queue.enqueue_generation.side_effect = ["rq-job-1", None]
+
+        with patch("ai_artist.queue.get_queue", return_value=mock_queue):
+            response = self._call_batch_create(
+                self._request("batch-test-partial-enqueue"),
+                BatchCreateRequest(count=2),
+            )
+
+        assert response.job_ids == ["rq-job-1"]
+        assert "could not be fully queued" in response.message.lower()

@@ -6,27 +6,36 @@ which feeds into the adaptive learning system.
 """
 
 from datetime import UTC, datetime
+from typing import Annotated
 
 import structlog
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
+from ai_artist.db.models import GeneratedImage, UserFeedback
+from ai_artist.db.session import get_db
 from ai_artist.learning import FeedbackSignal, get_adaptive_learner
 
 logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/api/feedback", tags=["feedback"])
 
+DbSession = Annotated[Session, Depends(get_db)]
+
 
 class FeedbackRequest(BaseModel):
     """User feedback submission."""
 
-    artwork_id: str
-    action: str  # "like", "love", "download", "share", "delete", "skip"
-    prompt: str | None = None
-    model_id: str | None = None
+    artwork_id: str = Field(..., max_length=512)
+    action: str = Field(
+        ..., max_length=50
+    )  # "like", "love", "download", "share", "delete", "skip"
+    prompt: str | None = Field(default=None, max_length=2000)
+    model_id: str | None = Field(default=None, max_length=200)
     generation_params: dict | None = None
-    mood: str | None = None
+    mood: str | None = Field(default=None, max_length=50)
+    session_id: str | None = Field(default=None, max_length=64)
 
 
 class FeedbackResponse(BaseModel):
@@ -51,7 +60,10 @@ class LearningStatsResponse(BaseModel):
 
 
 @router.post("/submit", response_model=FeedbackResponse)
-async def submit_feedback(feedback: FeedbackRequest) -> FeedbackResponse:
+async def submit_feedback(
+    feedback: FeedbackRequest,
+    db: DbSession,
+) -> FeedbackResponse:
     """
     Submit user feedback on generated artwork.
 
@@ -67,7 +79,7 @@ async def submit_feedback(feedback: FeedbackRequest) -> FeedbackResponse:
                 detail=f"Invalid action. Must be one of: {valid_actions}",
             )
 
-        # Create feedback signal
+        # Create feedback signal for adaptive learner (JSON-based, existing system)
         signal = FeedbackSignal(
             artwork_id=feedback.artwork_id,
             user_action=feedback.action,
@@ -77,9 +89,46 @@ async def submit_feedback(feedback: FeedbackRequest) -> FeedbackResponse:
             mood=feedback.mood,
         )
 
-        # Record feedback
         learner = get_adaptive_learner()
         learner.record_feedback(signal)
+
+        # Also persist to DB for SQL-queryable analytics
+        try:
+            # Resolve DB artwork id from filename if possible
+            art_db_id = None
+            art_row = (
+                db.query(GeneratedImage)
+                .filter(GeneratedImage.filename == feedback.artwork_id)
+                .first()
+            )
+            if art_row:
+                art_db_id = art_row.id
+
+            # Determine signal value from action
+            action_values = {
+                "love": 1.0,
+                "like": 0.8,
+                "download": 0.9,
+                "share": 0.85,
+                "skip": 0.3,
+                "delete": 0.0,
+            }
+            signal_value = action_values.get(feedback.action)
+
+            db_feedback = UserFeedback(
+                artwork_id=art_db_id,
+                artwork_filename=feedback.artwork_id,
+                action=feedback.action,
+                signal_value=signal_value,
+                generation_params=feedback.generation_params or {},
+                mood=feedback.mood,
+                session_id=feedback.session_id,
+            )
+            db.add(db_feedback)
+            db.commit()
+        except Exception as db_err:
+            logger.warning("feedback_db_persist_failed", error=str(db_err))
+            db.rollback()
 
         # Get updated stats
         stats = learner.get_learning_stats()
@@ -93,7 +142,7 @@ async def submit_feedback(feedback: FeedbackRequest) -> FeedbackResponse:
 
         return FeedbackResponse(
             success=True,
-            message="Feedback recorded successfully. Lumira is learning! 🧠",
+            message="Feedback recorded successfully. Lumira is learning!",
             learning_stats=stats,
         )
 

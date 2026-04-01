@@ -1913,11 +1913,18 @@
         </div>
         <div class="mood-info">
           <div class="mood-label" id="mood-label">Current Mood</div>
-          <div id="mood-text" class="mood-value" aria-labelledby="mood-label">
+          <div
+            id="mood-text"
+            class="mood-value"
+            aria-labelledby="mood-label"
+            aria-live="polite"
+          >
             Awakening...
           </div>
           <div
             id="intensity-text"
+            role="status"
+            aria-live="polite"
             style="
               font-size: 0.7rem;
               color: var(--text-muted);
@@ -2294,6 +2301,8 @@
             font-family: &quot;Space Mono&quot;;
           "
           id="loader-status"
+          role="status"
+          aria-live="polite"
         >
           Beginning creative process
         </div>

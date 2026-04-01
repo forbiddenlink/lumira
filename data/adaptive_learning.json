@@ -2,19 +2,19 @@
   "model_scores": {
     "Lykon/dreamshaper-8": {
       "param_combo_hash": "Lykon/dreamshaper-8",
-      "total_score": 146.30000000000007,
-      "num_samples": 209,
-      "avg_score": 0.7000000000000003,
-      "last_updated": "2026-03-15 02:28:26.548246+00:00"
+      "total_score": 265.29999999999814,
+      "num_samples": 379,
+      "avg_score": 0.6999999999999951,
+      "last_updated": "2026-03-26 13:38:26.214189+00:00"
     }
   },
   "param_scores": {
     "[('guidance_scale', 7.5), ('height', 768), ('num_inference_steps', 40), ('width', 768)]": {
       "param_combo_hash": "[('guidance_scale', 7.5), ('height', 768), ('num_inference_steps', 40), ('width', 768)]",
-      "total_score": 146.30000000000007,
-      "num_samples": 209,
-      "avg_score": 0.7000000000000003,
-      "last_updated": "2026-03-15 02:28:26.548256+00:00"
+      "total_score": 265.29999999999814,
+      "num_samples": 379,
+      "avg_score": 0.6999999999999951,
+      "last_updated": "2026-03-26 13:38:26.214198+00:00"
     }
   },
   "mood_preferences": {
@@ -34,6 +34,12 @@
       "Lykon/dreamshaper-8": 0.7
     },
     "chaotic": {
+      "Lykon/dreamshaper-8": 0.7
+    },
+    "energized": {
+      "Lykon/dreamshaper-8": 0.7
+    },
+    "bold": {
       "Lykon/dreamshaper-8": 0.7
     }
   },
@@ -217,9 +223,54 @@
     "painterly": 0.7,
     "alternate": 0.7,
     "moods": 0.7,
-    "within": 0.7
+    "within": 0.7,
+    "minimalist": 0.7,
+    "expressionist": 0.7,
+    "nouveau": 0.7,
+    "vibrant": 0.7,
+    "acrylic": 0.7,
+    "energized": 0.7,
+    "sunny": 0.7,
+    "direct": 0.7,
+    "wildflower": 0.7,
+    "meadow": 0.7,
+    "sunlit": 0.7,
+    "vivid": 0.7,
+    "crashing": 0.7,
+    "brushwork": 0.7,
+    "linocut": 0.7,
+    "commanding": 0.7,
+    "gold": 0.7,
+    "naive": 0.7,
+    "floating": 0.7,
+    "coral": 0.7,
+    "carnival": 0.7,
+    "cartoon": 0.7,
+    "towering": 0.7,
+    "high": 0.7,
+    "palette": 0.7,
+    "knife": 0.7,
+    "power": 0.7,
+    "blazing": 0.7,
+    "striking": 0.7,
+    "roaring": 0.7,
+    "render": 0.7,
+    "volcanic": 0.7,
+    "composition": 0.7,
+    "screen": 0.7,
+    "print": 0.7,
+    "colors": 0.7,
+    "heroic": 0.7,
+    "warrior": 0.7,
+    "surrealist": 0.7,
+    "wizard": 0.7,
+    "fireworks": 0.7,
+    "mountain": 0.7,
+    "dancing": 0.7,
+    "mystical": 0.7,
+    "train": 0.7
   },
-  "last_updated": "2026-03-15T02:28:26.548280+00:00",
+  "last_updated": "2026-03-26T13:38:26.214217+00:00",
   "alignment_history": [
     {
       "artwork_id": "art1",

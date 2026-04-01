@@ -149,13 +149,13 @@ class CreateTemplateRequest(BaseModel):
 class GenerationRequest(BaseModel):
     """Image generation request model."""
 
-    prompt: str
-    negative_prompt: str = ""
-    width: int = 1024
-    height: int = 1024
-    num_inference_steps: int = 30
-    guidance_scale: float = 7.5
-    num_images: int = 1
+    prompt: str = Field(..., min_length=1, max_length=2000)
+    negative_prompt: str = Field(default="", max_length=1000)
+    width: int = Field(default=1024, ge=64, le=2048)
+    height: int = Field(default=1024, ge=64, le=2048)
+    num_inference_steps: int = Field(default=30, ge=1, le=150)
+    guidance_scale: float = Field(default=7.5, ge=1.0, le=20.0)
+    num_images: int = Field(default=1, ge=1, le=4)
     seed: int | None = None
 
 
@@ -482,6 +482,7 @@ async def share_page(request: Request, share_id: str):
     if image:
         base_url = str(request.base_url).rstrip("/")
         image_url = f"{base_url}/api/images/file/{image.filename}"
+        share_url = f"{base_url}/share/{share_id}"
         return templates.TemplateResponse(
             request,
             "share.html",
@@ -491,6 +492,7 @@ async def share_page(request: Request, share_id: str):
                 "prompt": image.prompt or "AI-generated artwork",
                 "share_id": share_id,
                 "base_url": base_url,
+                "share_url": share_url,
             },
         )
 
@@ -603,7 +605,10 @@ async def classic_gallery(request: Request):
 
 @app.get("/test/websocket", response_class=HTMLResponse, tags=["pages"])
 async def test_websocket(request: Request):
-    """Serve WebSocket test page."""
+    """Serve WebSocket test page — debug builds only."""
+    config = get_web_config()
+    if not getattr(config, "debug", False):
+        raise HTTPException(status_code=404, detail="Not found")
     return templates.TemplateResponse(
         request,
         "test_websocket.html",
@@ -638,6 +643,74 @@ async def list_images(
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
+
+    # --- DB-first path (faster than full filesystem glob + stat per file) ---
+    # Only used when not filtering by featured=True (featured not stored in DB)
+    if featured is not True:
+        try:
+            from ..db.models import GeneratedImage
+            from ..db.session import get_db
+
+            db_gen = get_db()
+            db = next(db_gen)
+            try:
+                query = db.query(GeneratedImage).order_by(
+                    GeneratedImage.created_at.desc()
+                )
+                if search:
+                    query = query.filter(GeneratedImage.prompt.ilike(f"%{search}%"))
+                db_rows = query.all()
+            finally:
+                db_gen.close()
+
+            if db_rows:
+                gallery_base = Path(gallery_path)
+                results: list[ImageMetadata] = []
+                for row in db_rows:
+                    row_path = Path(row.filename)
+                    if not row_path.exists():
+                        continue
+                    is_featured = "featured" in row.filename.replace("\\", "/")
+                    if featured is False and is_featured:
+                        continue
+                    try:
+                        rel = row_path.relative_to(gallery_base)
+                    except ValueError:
+                        rel = row_path
+                    gen_params = row.generation_params or {}
+                    results.append(
+                        ImageMetadata(
+                            path=str(rel),
+                            filename=row_path.name,
+                            prompt=row.prompt or "",
+                            created_at=(
+                                row.created_at.isoformat() if row.created_at else ""
+                            ),
+                            featured=is_featured,
+                            metadata={
+                                "mood": row.status or "",
+                                "model": row.model_id or "",
+                                "final_score": row.final_score,
+                                **gen_params,
+                            },
+                            thumbnail_url=f"/api/images/file/{rel}",
+                            full_url=f"/api/images/file/{rel}",
+                        )
+                    )
+                total_valid = len(results)
+                paginated = results[offset : offset + limit]
+                logger.info(
+                    "images_listed_via_db",
+                    total=len(db_rows),
+                    valid=total_valid,
+                    returned=len(paginated),
+                    featured=featured,
+                    search=search,
+                )
+                return paginated
+        except Exception as db_err:
+            logger.warning("db_list_images_failed_using_filesystem", error=str(db_err))
+    # --- Filesystem fallback ---
 
     # Get image paths
     image_paths = gallery_manager.list_images(featured_only=bool(featured))
@@ -723,7 +796,20 @@ async def get_image_file(
         ".webp": "image/webp",
     }
     media_type = mime_types.get(file_ext, "image/png")
-    return FileResponse(full_path, media_type=media_type)
+
+    # Images are immutable (filenames include timestamp/uuid) — cache aggressively
+    stat = full_path.stat()
+    etag = f'"{int(stat.st_mtime)}-{stat.st_size}"'
+    if_none_match = request.headers.get("if-none-match")
+    if if_none_match and if_none_match == etag:
+        from fastapi.responses import Response as FastAPIResponse
+
+        return FastAPIResponse(status_code=304)
+
+    file_response = FileResponse(full_path, media_type=media_type)
+    file_response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    file_response.headers["ETag"] = etag
+    return file_response
 
 
 @app.get("/api/stats", response_model=GalleryStats, tags=["images"])

@@ -86,11 +86,33 @@ class TwitterPoster:
             logger.warning("twitter_unavailable", reason="tweepy not installed")
             return
 
-        self.api_key = api_key or os.getenv("TWITTER_API_KEY")
-        self.api_secret = api_secret or os.getenv("TWITTER_API_SECRET")
-        self.access_token = access_token or os.getenv("TWITTER_ACCESS_TOKEN")
-        self.access_secret = access_secret or os.getenv("TWITTER_ACCESS_SECRET")
-        self.bearer_token = bearer_token or os.getenv("TWITTER_BEARER_TOKEN")
+        try:
+            from ..utils.config import load_config as _lc
+
+            _social = _lc().social
+
+            def _s(secret):
+                return secret.get_secret_value() if secret else None
+
+            cfg_key = _s(_social.twitter_api_key)
+            cfg_secret = _s(_social.twitter_api_secret)
+            cfg_token = _s(_social.twitter_access_token)
+            cfg_tsecret = _s(_social.twitter_access_secret)
+            cfg_bearer = _s(_social.twitter_bearer_token)
+        except Exception:
+            cfg_key = cfg_secret = cfg_token = cfg_tsecret = cfg_bearer = None
+
+        self.api_key = api_key or cfg_key or os.getenv("TWITTER_API_KEY")
+        self.api_secret = api_secret or cfg_secret or os.getenv("TWITTER_API_SECRET")
+        self.access_token = (
+            access_token or cfg_token or os.getenv("TWITTER_ACCESS_TOKEN")
+        )
+        self.access_secret = (
+            access_secret or cfg_tsecret or os.getenv("TWITTER_ACCESS_SECRET")
+        )
+        self.bearer_token = (
+            bearer_token or cfg_bearer or os.getenv("TWITTER_BEARER_TOKEN")
+        )
 
         if all([self.api_key, self.api_secret, self.access_token, self.access_secret]):
             try:
@@ -213,10 +235,25 @@ class InstagramPoster:
             logger.warning("instagram_unavailable", reason="instagrapi not installed")
             return
 
-        self.username = username or os.getenv("INSTAGRAM_USERNAME")
-        self.password = password or os.getenv("INSTAGRAM_PASSWORD")
+        try:
+            from ..utils.config import load_config as _lc
+
+            _social = _lc().social
+            cfg_user = _social.instagram_username
+            cfg_pass = (
+                _social.instagram_password.get_secret_value()
+                if _social.instagram_password
+                else None
+            )
+            cfg_sess = _social.instagram_session_file
+        except Exception:
+            cfg_user = cfg_pass = cfg_sess = None
+
+        self.username = username or cfg_user or os.getenv("INSTAGRAM_USERNAME")
+        self.password = password or cfg_pass or os.getenv("INSTAGRAM_PASSWORD")
         self.session_file: str = (
             session_file
+            or cfg_sess
             or os.getenv("INSTAGRAM_SESSION_FILE", "data/instagram_session.json")
             or "data/instagram_session.json"
         )
@@ -339,8 +376,21 @@ class BlueskyPoster:
             logger.warning("bluesky_unavailable", reason="atproto not installed")
             return
 
-        self.handle = handle or os.getenv("BLUESKY_HANDLE")
-        self.password = password or os.getenv("BLUESKY_PASSWORD")
+        try:
+            from ..utils.config import load_config as _lc
+
+            _social = _lc().social
+            cfg_handle = _social.bluesky_handle
+            cfg_pass = (
+                _social.bluesky_password.get_secret_value()
+                if _social.bluesky_password
+                else None
+            )
+        except Exception:
+            cfg_handle = cfg_pass = None
+
+        self.handle = handle or cfg_handle or os.getenv("BLUESKY_HANDLE")
+        self.password = password or cfg_pass or os.getenv("BLUESKY_PASSWORD")
 
         if self.handle and self.password:
             try:

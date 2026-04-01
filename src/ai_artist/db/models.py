@@ -13,6 +13,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    event,
 )
 from sqlalchemy.orm import declarative_base, relationship
 
@@ -183,14 +184,16 @@ class GalleryCollection(Base):  # type: ignore[misc, valid-type]
     is_public = Column(Boolean, default=True)
     created_by_aria = Column(Boolean, default=True)
     created_at = Column(DateTime, default=lambda: datetime.now(UTC))
-    updated_at = Column(
-        DateTime,
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
-    )
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
     # Relationships
     cover_image = relationship("GeneratedImage", foreign_keys=[cover_image_id])
+
+
+@event.listens_for(GalleryCollection, "before_update")
+def _update_collection_timestamp(mapper, connection, target):  # type: ignore[misc]
+    """Keep updated_at current on every UPDATE — SQLite-safe replacement for onupdate."""
+    target.updated_at = datetime.now(UTC)
 
 
 class CollectionArtwork(Base):  # type: ignore[misc, valid-type]
@@ -219,3 +222,49 @@ class CollectionArtwork(Base):  # type: ignore[misc, valid-type]
     __table_args__ = (
         UniqueConstraint("collection_id", "image_id", name="unique_collection_artwork"),
     )
+
+
+class UserFeedback(Base):  # type: ignore[misc, valid-type]
+    """Feedback signal recorded by the adaptive learner (RLAIF).
+
+    Replaces flat JSON files so feedback is SQL-queryable for analytics
+    and bandit learning.
+    """
+
+    __tablename__ = "user_feedback"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+
+    # Which artwork this feedback refers to (may be None for session-level signals)
+    artwork_id = Column(
+        Integer,
+        ForeignKey("generated_images.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    # Filename fallback when artwork is not in DB yet
+    artwork_filename = Column(String(512), nullable=True, index=True)
+
+    # Action that triggered this feedback record
+    action = Column(
+        String(50),
+        nullable=False,
+        index=True,
+    )  # e.g. "like", "share", "download", "critic_eval", "regenerate"
+
+    # Numeric signal (e.g. critic confidence score, 0–1)
+    signal_value = Column(Float, nullable=True)
+
+    # Snapshot of generation parameters at feedback time (for bandit learning)
+    generation_params = Column(JSON, default=dict)
+
+    # Mood at generation time
+    mood = Column(String(50), nullable=True, index=True)
+
+    # Session / source identification
+    session_id = Column(String(64), nullable=True, index=True)
+
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), index=True)
+
+    # Relationship
+    artwork = relationship("GeneratedImage")

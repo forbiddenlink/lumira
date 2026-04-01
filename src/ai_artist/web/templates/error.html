@@ -221,13 +221,30 @@
         justify-content: center;
       }
 
+      .recovery-note {
+        margin: -20px auto 28px;
+        max-width: 460px;
+        padding: 14px 16px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        background: rgba(11, 18, 32, 0.82);
+        color: #dbe6f1;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .btn-button {
+        border: 0;
+        cursor: pointer;
+      }
+
       .btn {
         display: inline-flex;
         align-items: center;
         gap: 8px;
         padding: 13px 28px;
         background: linear-gradient(135deg, #58a6ff, #a855f7);
-        color: white;
+        color: #08111f;
         text-decoration: none;
         border-radius: 14px;
         font-weight: 600;
@@ -269,11 +286,34 @@
     <div class="nebula" aria-hidden="true"></div>
     <div class="noise" aria-hidden="true"></div>
 
-    <div class="error-box">
-      <div class="error-eyebrow">Lumira &nbsp;/&nbsp; Error</div>
+    <main class="error-box" role="main" aria-labelledby="error-title">
+      <div class="error-eyebrow">
+        Lumira &nbsp;/&nbsp; {% if status_code == 404 %} Missing Route {% elif
+        status_code == 429 %} Rate Limited {% elif status_code >= 500 %} Runtime
+        Fault {% else %} Error State {% endif %}
+      </div>
       <span class="error-glyph">{{ status_code }}</span>
-      <h1>{{ title }}</h1>
+      <h1 id="error-title">{{ title }}</h1>
       <p>{{ message }}</p>
+
+      {% if status_code == 404 %}
+      <div class="recovery-note">
+        The destination may have moved, been removed, or never existed. The
+        gallery and creative studio links below will get you back to a valid
+        route.
+      </div>
+      {% elif status_code == 429 %}
+      <div class="recovery-note">
+        Lumira is protecting generation capacity right now. Give it a moment,
+        then retry or switch back to browsing existing work.
+      </div>
+      {% elif status_code >= 500 %}
+      <div class="recovery-note">
+        This looks transient rather than permanent. Reloading the page is the
+        fastest retry path; if it persists, return to the gallery and try again.
+      </div>
+      {% endif %}
+
       <div class="actions">
         <a href="/" class="btn">
           <svg
@@ -291,9 +331,18 @@
           </svg>
           Gallery
         </a>
+        {% if status_code == 429 or status_code >= 500 %}
+        <button
+          class="btn btn-button"
+          type="button"
+          onclick="window.location.reload()"
+        >
+          Try Again
+        </button>
+        {% endif %}
         <a href="/lumira" class="btn btn-ghost">Creative Studio</a>
       </div>
-    </div>
+    </main>
 
     <script>
       // Generate stars
