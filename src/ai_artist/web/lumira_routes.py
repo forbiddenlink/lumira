@@ -3867,3 +3867,202 @@ async def get_dialogue_history(request: Request):
     except Exception as e:
         logger.error("dialogue_history_failed", error=str(e))
         return DialogueHistoryResponse(turns=[])
+
+
+# =============================================================================
+# Video Export Endpoint
+# =============================================================================
+
+
+class VideoExportRequest(BaseModel):
+    """Request to export images as video."""
+
+    image_ids: list[int] = Field(
+        ..., description="List of image IDs to include in video", min_length=1
+    )
+    style: str = Field(
+        default="slideshow",
+        description="Video style: 'slideshow' (crossfade) or 'zoom' (Ken Burns on single image)",
+    )
+    duration_per_image: float = Field(
+        default=3.0, ge=0.5, le=30.0, description="Seconds per image"
+    )
+    fps: int = Field(default=24, ge=12, le=60, description="Frames per second")
+    fade_duration: float = Field(
+        default=0.5, ge=0.0, le=5.0, description="Crossfade duration (slideshow only)"
+    )
+    zoom_start: float = Field(
+        default=1.0, ge=0.5, le=2.0, description="Starting zoom level (zoom only)"
+    )
+    zoom_end: float = Field(
+        default=1.3, ge=0.5, le=2.0, description="Ending zoom level (zoom only)"
+    )
+
+
+class VideoExportResponse(BaseModel):
+    """Response from video export."""
+
+    success: bool
+    video_url: str | None = None
+    video_path: str | None = None
+    duration_seconds: float | None = None
+    frame_count: int | None = None
+    error: str | None = None
+
+
+@router.post("/export/video", response_model=VideoExportResponse)
+@limiter.limit("5/minute")
+async def export_video(
+    request: Request,
+    body: VideoExportRequest,
+    db: Session = Depends(get_db),
+):
+    """Export images as a video slideshow or Ken Burns zoom.
+
+    Requires the 'video' optional dependency: pip install lumira[video]
+
+    Supported styles:
+    - slideshow: Multiple images with crossfade transitions
+    - zoom: Ken Burns zoom effect on a single image
+    """
+    from pathlib import Path as PathLib
+
+    from .dependencies import get_gallery_path
+
+    try:
+        gallery_path = get_gallery_path()
+    except Exception as e:
+        raise HTTPException(status_code=503, detail="Gallery not initialized") from e
+
+    # Fetch images from database
+    images = (
+        db.query(GeneratedImage).filter(GeneratedImage.id.in_(body.image_ids)).all()
+    )
+
+    if not images:
+        raise HTTPException(status_code=404, detail="No images found")
+
+    # Preserve order from request
+    id_to_image = {img.id: img for img in images}
+    ordered_images = [id_to_image[id_] for id_ in body.image_ids if id_ in id_to_image]
+
+    if len(ordered_images) != len(body.image_ids):
+        missing = set(body.image_ids) - set(id_to_image.keys())
+        raise HTTPException(
+            status_code=404, detail=f"Images not found: {sorted(missing)}"
+        )
+
+    # Find actual file paths - images stored as gallery_path/year/month/day/...
+    gallery_root = PathLib(gallery_path)
+    image_paths: list[str] = []
+
+    for img in ordered_images:
+        # Search for the file in the gallery directory structure
+        matches = list(gallery_root.glob(f"**/{img.filename}"))
+        if not matches:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Image file not found: {img.filename}",
+            )
+        image_paths.append(str(matches[0]))
+
+    # Validate style-specific requirements
+    if body.style == "zoom" and len(image_paths) != 1:
+        raise HTTPException(
+            status_code=400,
+            detail="Zoom style requires exactly 1 image",
+        )
+
+    if body.style == "slideshow" and len(image_paths) < 2:
+        raise HTTPException(
+            status_code=400,
+            detail="Slideshow style requires at least 2 images",
+        )
+
+    # Generate video using video.py utilities
+    try:
+        from ..utils.video import create_slideshow, create_zoom_video
+
+        if body.style == "zoom":
+            video_path = create_zoom_video(
+                image_path=image_paths[0],
+                duration=body.duration_per_image,
+                fps=body.fps,
+                zoom_start=body.zoom_start,
+                zoom_end=body.zoom_end,
+            )
+            duration = body.duration_per_image
+        else:
+            video_path = create_slideshow(
+                image_paths=image_paths,
+                duration_per_image=body.duration_per_image,
+                fps=body.fps,
+                fade_duration=body.fade_duration,
+            )
+            duration = body.duration_per_image * len(image_paths)
+
+        logger.info(
+            "video_exported",
+            style=body.style,
+            image_count=len(image_paths),
+            duration=duration,
+            path=video_path,
+        )
+
+        return VideoExportResponse(
+            success=True,
+            video_path=video_path,
+            duration_seconds=duration,
+            frame_count=int(duration * body.fps),
+        )
+
+    except ImportError as e:
+        logger.error("video_export_missing_dependency", error=str(e))
+        raise HTTPException(
+            status_code=503,
+            detail="Video export requires moviepy. Install with: pip install lumira[video]",
+        ) from e
+    except Exception as e:
+        logger.error("video_export_failed", error=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Video generation failed: {e}",
+        ) from e
+
+
+@router.get("/export/video/download")
+@limiter.limit("30/minute")
+async def download_video(
+    request: Request,
+    path: str,
+):
+    """Download a generated video file.
+
+    Args:
+        path: Path to the video file (returned by /export/video)
+    """
+    from pathlib import Path as PathLib
+    from tempfile import gettempdir
+
+    from fastapi.responses import FileResponse
+
+    video_path = PathLib(path)
+
+    # Security: only allow files from temp directory
+    temp_dir = PathLib(gettempdir())
+    try:
+        video_path.resolve().relative_to(temp_dir.resolve())
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail="Access denied") from e
+
+    if not video_path.exists():
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    if not video_path.suffix.lower() == ".mp4":
+        raise HTTPException(status_code=400, detail="Invalid file type")
+
+    return FileResponse(
+        video_path,
+        media_type="video/mp4",
+        filename=video_path.name,
+    )
