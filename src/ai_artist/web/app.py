@@ -473,9 +473,7 @@ async def share_page(request: Request, share_id: str):
         )
     except Exception as e:
         logger.error("share_page_error", share_id=share_id, error=str(e))
-        raise HTTPException(
-            status_code=500, detail="Failed to load shared artwork"
-        ) from e
+        image = None
     finally:
         db_gen.close()
 
