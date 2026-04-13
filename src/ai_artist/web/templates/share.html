@@ -447,13 +447,25 @@
       (function () {
         var button = document.getElementById("copy-link-btn");
         var status = document.getElementById("copy-link-status");
-        if (!button || !status || !navigator.clipboard) {
+        if (!button || !status) {
           return;
         }
 
         button.addEventListener("click", async function () {
+          var shareUrl = "{{ share_url }}";
           try {
-            await navigator.clipboard.writeText("{{ share_url }}");
+            if (navigator.clipboard) {
+              await navigator.clipboard.writeText(shareUrl);
+            } else {
+              var ta = document.createElement("textarea");
+              ta.value = shareUrl;
+              ta.style.position = "fixed";
+              ta.style.opacity = "0";
+              document.body.appendChild(ta);
+              ta.select();
+              document.execCommand("copy");
+              document.body.removeChild(ta);
+            }
             status.textContent = "Share link copied.";
             status.dataset.state = "success";
           } catch (error) {

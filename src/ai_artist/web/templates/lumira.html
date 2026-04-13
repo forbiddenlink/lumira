@@ -881,6 +881,36 @@
         }
       }
 
+      .progress-preview {
+        width: 256px;
+        height: 256px;
+        margin: 0 auto 16px;
+        border-radius: 12px;
+        overflow: hidden;
+        position: relative;
+        background: #0a0e17;
+      }
+      .progress-preview canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .progress-preview-label {
+        position: absolute;
+        bottom: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 11px;
+        color: rgba(255,255,255,0.5);
+        background: rgba(0,0,0,0.5);
+        padding: 2px 10px;
+        border-radius: 10px;
+        white-space: nowrap;
+      }
+      @media (max-width: 768px) {
+        .progress-preview { width: 200px; height: 200px; }
+      }
+
       /* Lightbox */
       .lightbox {
         position: fixed;
@@ -1538,6 +1568,94 @@
         opacity: 0.6;
       }
 
+      /* Prompt Suggestion Panel */
+      .prompt-suggestion {
+        margin-top: 8px;
+        padding: 16px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: rgba(255,255,255,0.03);
+        animation: fadeSlideIn 0.3s ease;
+        display: none;
+      }
+      .prompt-suggestion.visible { display: block; }
+      .prompt-suggestion-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted);
+      }
+      .prompt-suggestion-text {
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--text-main);
+        font-style: italic;
+        margin-bottom: 12px;
+      }
+      .prompt-suggestion-actions {
+        display: flex;
+        gap: 8px;
+      }
+      .prompt-suggestion-actions button {
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: 'Space Grotesk', sans-serif;
+      }
+      .prompt-suggestion-use {
+        background: var(--accent);
+        border: none;
+        color: #000;
+      }
+      .prompt-suggestion-use:hover { opacity: 0.8; }
+      .prompt-suggestion-keep {
+        background: none;
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+      }
+      .prompt-suggestion-keep:hover { border-color: var(--text-muted); color: var(--text-main); }
+      .prompt-suggestion-loading {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-muted);
+        font-size: 13px;
+      }
+      .prompt-suggestion-loading::before {
+        content: '';
+        width: 12px;
+        height: 12px;
+        border: 2px solid var(--text-muted);
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      .prompt-suggestion-trust {
+        margin-top: 8px;
+        font-size: 12px;
+        color: var(--text-muted);
+        font-style: italic;
+      }
+      .mood-badge {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: capitalize;
+        color: #000;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
       .request-select {
         width: 100%;
         padding: 0.6rem 0.75rem;
@@ -1844,6 +1962,20 @@
       h1 {
         font-family: "Space Grotesk", "Inter", sans-serif;
       }
+      /* WebSocket status indicator */
+      .ws-status {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        transition: background 0.3s;
+        vertical-align: middle;
+        margin-left: 8px;
+      }
+      .ws-status-connected { background: #3fb950; }
+      .ws-status-reconnecting { background: #d29922; animation: ws-pulse 1s infinite; }
+      .ws-status-disconnected { background: #f85149; }
+      @keyframes ws-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
     </style>
   </head>
   <body>
@@ -1885,7 +2017,7 @@
         >
           <h1>LUMIRA</h1>
         </a>
-        <div class="subtitle" role="doc-subtitle">Autonomous AI Artist</div>
+        <div class="subtitle" role="doc-subtitle">Autonomous AI Artist <span class="ws-status" id="ws-status" title="Real-time updates"></span></div>
         <button
           id="theme-toggle"
           class="theme-toggle"
@@ -2140,6 +2272,8 @@
             aria-label="Describe what you'd like Lumira to create"
             maxlength="2000"
           ></textarea>
+          <div id="prompt-suggestion" class="prompt-suggestion" role="region" aria-live="polite" aria-label="Lumira's prompt suggestion"></div>
+          <div id="prompt-trust" class="prompt-suggestion-trust" style="display:none">Lumira trusts your vision</div>
         </div>
 
         <div class="request-row">
@@ -2292,6 +2426,10 @@
     <!-- Loading Overlay -->
     <div id="creating-overlay">
       <div style="text-align: center">
+        <div class="progress-preview" id="progress-preview-studio">
+          <canvas id="progress-canvas-studio" width="256" height="256"></canvas>
+          <div class="progress-preview-label" id="progress-preview-label-studio">Forming...</div>
+        </div>
         <div class="loader" id="loader-text">DREAMING...</div>
         <div
           style="
@@ -2515,36 +2653,226 @@
 
       // State
       let paintingsData = {};
-      let ws = null;
       let currentLightboxId = null;
 
-      // WebSocket connection
-      function connectWebSocket() {
-        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        ws = new WebSocket(protocol + "//" + window.location.host + "/ws");
+      // WebSocket auto-reconnecting wrapper
+      function createReconnectingWebSocket(url, handlers) {
+        var _ws = null;
+        var retryCount = 0;
+        var maxRetries = 12;
+        var baseDelay = 500;
+        var intentionallyClosed = false;
+        var messageBuffer = [];
+        var maxBufferSize = 50;
 
-        ws.onopen = function () {
-          addLog("SYSTEM", "Connected to Lumira's consciousness");
-        };
+        function updateConnectionStatus(status) {
+          var indicator = document.getElementById('ws-status');
+          if (!indicator) return;
+          indicator.className = 'ws-status ws-status-' + status;
+          indicator.title = status === 'connected' ? 'Real-time updates active'
+            : status === 'reconnecting' ? 'Reconnecting...'
+            : 'Connection lost';
+        }
 
-        ws.onmessage = function (event) {
+        function connect() {
           try {
-            const data = JSON.parse(event.data);
-            handleWebSocketMessage(data);
-          } catch (e) {
-            console.error("WebSocket parse error:", e);
+            _ws = new WebSocket(url);
+          } catch(e) {
+            scheduleReconnect();
+            return;
           }
-        };
 
-        ws.onclose = function () {
-          addLog("SYSTEM", "Connection lost, reconnecting...");
-          setTimeout(connectWebSocket, 3000);
-        };
+          _ws.onopen = function() {
+            retryCount = 0;
+            updateConnectionStatus('connected');
+            if (handlers.onopen) handlers.onopen();
+          };
 
-        ws.onerror = function (error) {
-          console.error("WebSocket error:", error);
-        };
+          _ws.onmessage = function(event) {
+            try {
+              var data = JSON.parse(event.data);
+              messageBuffer.push({data: data, time: Date.now()});
+              if (messageBuffer.length > maxBufferSize) messageBuffer.shift();
+              if (handlers.onmessage) handlers.onmessage(data);
+            } catch(e) {
+              if (handlers.onraw) handlers.onraw(event);
+            }
+          };
+
+          _ws.onclose = function(event) {
+            if (intentionallyClosed) return;
+            updateConnectionStatus('reconnecting');
+            if (handlers.onclose) handlers.onclose(event);
+            scheduleReconnect();
+          };
+
+          _ws.onerror = function(event) {
+            updateConnectionStatus('disconnected');
+            if (handlers.onerror) handlers.onerror(event);
+          };
+        }
+
+        function scheduleReconnect() {
+          if (retryCount >= maxRetries) {
+            updateConnectionStatus('disconnected');
+            showReconnectPrompt();
+            return;
+          }
+          var delay = Math.min(baseDelay * Math.pow(2, retryCount) + Math.random() * 1000, 30000);
+          retryCount++;
+          setTimeout(function() {
+            if (!intentionallyClosed) connect();
+          }, delay);
+        }
+
+        function showReconnectPrompt() {
+          var indicator = document.getElementById('ws-status');
+          if (indicator) {
+            indicator.style.cursor = 'pointer';
+            indicator.onclick = function() {
+              retryCount = 0;
+              indicator.onclick = null;
+              indicator.style.cursor = '';
+              connect();
+            };
+          }
+        }
+
+        function send(data) {
+          if (_ws && _ws.readyState === WebSocket.OPEN) {
+            _ws.send(typeof data === 'string' ? data : JSON.stringify(data));
+            return true;
+          }
+          return false;
+        }
+
+        function close() {
+          intentionallyClosed = true;
+          if (_ws) _ws.close();
+        }
+
+        function getLastMessages(type, count) {
+          return messageBuffer
+            .filter(function(m) { return !type || m.data.type === type; })
+            .slice(-(count || 10));
+        }
+
+        function isConnected() {
+          return _ws && _ws.readyState === WebSocket.OPEN;
+        }
+
+        connect();
+
+        return { send: send, close: close, getLastMessages: getLastMessages, isConnected: isConnected, reconnectNow: function() { retryCount = 0; connect(); } };
       }
+
+      // WebSocket connection
+      var wsUrl = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws';
+      var wsConnection = createReconnectingWebSocket(wsUrl, {
+        onopen: function() {
+          addLog("SYSTEM", "Connected to Lumira's consciousness");
+        },
+        onmessage: function(data) {
+          handleWebSocketMessage(data);
+        },
+        onclose: function() {
+          addLog("SYSTEM", "Connection lost, reconnecting...");
+        },
+        onerror: function(error) {
+          console.error("WebSocket error:", error);
+        }
+      });
+
+      // Reconnect immediately when user returns to tab
+      document.addEventListener('visibilitychange', function() {
+        if (!document.hidden && !wsConnection.isConnected()) {
+          wsConnection.reconnectNow();
+        }
+      });
+
+      /* --- Denoising step reveal visualization --- */
+      var _noiseAnimFrameStudio = null;
+      var _progressPercentStudio = 0;
+      var _lumiraMoodStudio = 'contemplative';
+
+      function initProgressPreviewStudio() {
+        var canvas = document.getElementById('progress-canvas-studio');
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d');
+        _progressPercentStudio = 0;
+        animateNoiseStudio(ctx, canvas);
+      }
+
+      function animateNoiseStudio(ctx, canvas) {
+        var w = canvas.width, h = canvas.height;
+        var imageData = ctx.createImageData(w, h);
+        var d = imageData.data;
+        var noiseLevel = 1 - (_progressPercentStudio / 100);
+        var clarity = _progressPercentStudio / 100;
+        var mc = getMoodRGBStudio();
+        for (var i = 0; i < d.length; i += 4) {
+          var noise = Math.random();
+          var px = (i / 4) % w;
+          var py = Math.floor((i / 4) / w);
+          var freq1 = Math.sin(px * 0.02 + py * 0.03 + _progressPercentStudio * 0.1) * 0.5 + 0.5;
+          var freq2 = Math.sin(px * 0.05 - py * 0.04 + _progressPercentStudio * 0.05) * 0.5 + 0.5;
+          var pattern = (freq1 + freq2) / 2;
+          var value = noise * noiseLevel + pattern * clarity;
+          d[i]     = Math.floor(value * mc[0] * 0.6 + noise * 30 * noiseLevel);
+          d[i + 1] = Math.floor(value * mc[1] * 0.6 + noise * 30 * noiseLevel);
+          d[i + 2] = Math.floor(value * mc[2] * 0.6 + noise * 30 * noiseLevel);
+          d[i + 3] = 255;
+        }
+        ctx.putImageData(imageData, 0, 0);
+        if (clarity > 0.1) {
+          ctx.filter = 'blur(' + Math.max(0, (1 - clarity) * 8) + 'px)';
+          ctx.drawImage(canvas, 0, 0);
+          ctx.filter = 'none';
+        }
+        if (_progressPercentStudio < 100) {
+          _noiseAnimFrameStudio = requestAnimationFrame(function() { animateNoiseStudio(ctx, canvas); });
+        }
+      }
+
+      function getMoodRGBStudio() {
+        var mood = _lumiraMoodStudio || 'contemplative';
+        var map = {
+          contemplative: [106, 76, 147], playful: [248, 165, 194],
+          melancholic: [127, 143, 166], euphoric: [245, 175, 25],
+          serene: [129, 236, 236], anxious: [225, 112, 85],
+          nostalgic: [223, 230, 233], curious: [116, 185, 255],
+          rebellious: [255, 107, 107], transcendent: [212, 165, 255]
+        };
+        return map[mood] || map.contemplative;
+      }
+
+      function updateProgressPreviewStudio(percent, previewBase64) {
+        _progressPercentStudio = percent;
+        var label = document.getElementById('progress-preview-label-studio');
+        if (label) {
+          if (percent < 20) label.textContent = 'Emerging from noise...';
+          else if (percent < 50) label.textContent = 'Taking shape...';
+          else if (percent < 80) label.textContent = 'Refining details...';
+          else label.textContent = 'Almost there...';
+        }
+        if (previewBase64) {
+          var canvas = document.getElementById('progress-canvas-studio');
+          if (!canvas) return;
+          var ctx = canvas.getContext('2d');
+          var img = new Image();
+          img.onload = function() {
+            cancelAnimationFrame(_noiseAnimFrameStudio);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          };
+          img.src = 'data:image/jpeg;base64,' + previewBase64;
+        }
+      }
+
+      function stopProgressPreviewStudio() {
+        if (_noiseAnimFrameStudio) { cancelAnimationFrame(_noiseAnimFrameStudio); _noiseAnimFrameStudio = null; }
+        _progressPercentStudio = 0;
+      }
+      /* --- End denoising visualization --- */
 
       function handleWebSocketMessage(data) {
         switch (data.type) {
@@ -2561,6 +2889,7 @@
             }
             break;
           case "creation_complete":
+            stopProgressPreviewStudio();
             addLog("LUMIRA", data.reflection || "Creation complete");
             fetchState(true);
             break;
@@ -2580,6 +2909,11 @@
               "/" +
               data.total_steps +
               ")";
+            // Start denoising preview on first progress event
+            if (_noiseAnimFrameStudio === null && _progressPercentStudio === 0) {
+              initProgressPreviewStudio();
+            }
+            updateProgressPreviewStudio(pct, data.preview_image);
             if (data.step % 10 === 0) {
               addLog(
                 "GENERATING",
@@ -2594,13 +2928,16 @@
             }
             break;
           case "generation_complete":
+            stopProgressPreviewStudio();
             addLog("LUMIRA", "Generation complete");
             fetchState(true);
             break;
           case "error":
+            stopProgressPreviewStudio();
             addLog("ERROR", data.error || data.message || "Unknown error");
             break;
           case "mood_drift":
+            _lumiraMoodStudio = (data.mood || '').toLowerCase() || _lumiraMoodStudio;
             addLog("MOOD", "Mood naturally drifted to " + data.mood);
             updateMoodDisplay({ mood: data.mood, intensity: data.intensity });
             break;
@@ -3050,6 +3387,7 @@
 
         btn.disabled = true;
         overlay.classList.add("active");
+        initProgressPreviewStudio();
         addLog("SYSTEM", "Initiating creative process...");
 
         var progressSteps = [
@@ -3104,6 +3442,7 @@
             addLog("ERROR", err.message);
           })
           .finally(function () {
+            stopProgressPreviewStudio();
             overlay.classList.remove("active");
             btn.disabled = false;
           });
@@ -4218,6 +4557,7 @@
 
         btn.disabled = true;
         overlay.classList.add("active");
+        initProgressPreviewStudio();
         document.getElementById("loader-text").textContent = "INTERPRETING...";
         document.getElementById("loader-status").textContent =
           "Lumira is considering your request...";
@@ -4324,6 +4664,7 @@
             addLog("ERROR", err.message);
           })
           .finally(function () {
+            stopProgressPreviewStudio();
             overlay.classList.remove("active");
             btn.disabled = false;
           });
@@ -4338,8 +4679,95 @@
         }
       }
 
+      // === PROMPT SUGGESTION PANEL ===
+      var _suggestionTimeout = null;
+      var _currentSuggestion = null;
+
+      function initPromptSuggestion(inputElement) {
+        inputElement.addEventListener('input', function() {
+          clearTimeout(_suggestionTimeout);
+          hideSuggestionPanel();
+          hideTrustNote();
+
+          var text = inputElement.value.trim();
+          if (!text) return;
+
+          var wordCount = text.split(/\s+/).length;
+          if (wordCount > 100) {
+            showTrustNote();
+            return;
+          }
+
+          _suggestionTimeout = setTimeout(function() { fetchSuggestion(text); }, 1000);
+        });
+      }
+
+      function fetchSuggestion(prompt) {
+        var panel = document.getElementById('prompt-suggestion');
+        panel.classList.add('visible');
+        panel.innerHTML = '<div class="prompt-suggestion-loading">Lumira is thinking\u2026</div>';
+
+        fetch('/api/lumira/suggest-prompt', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({prompt: prompt})
+        })
+        .then(function(res) {
+          if (!res.ok) throw new Error();
+          return res.json();
+        })
+        .then(function(data) {
+          _currentSuggestion = data.suggestion;
+          panel.innerHTML =
+            '<div class="prompt-suggestion-header">' +
+              '<span class="mood-badge" style="background:' + data.mood_color + '">' + data.mood + '</span>' +
+              " Lumira\u2019s interpretation" +
+            '</div>' +
+            '<div class="prompt-suggestion-text">' + escapeHtml(data.suggestion) + '</div>' +
+            '<div class="prompt-suggestion-actions">' +
+              '<button class="prompt-suggestion-use" onclick="useSuggestion()">Use Lumira\u2019s version</button>' +
+              '<button class="prompt-suggestion-keep" onclick="hideSuggestionPanel()">Keep mine</button>' +
+            '</div>';
+        })
+        .catch(function() {
+          panel.classList.remove('visible');
+        });
+      }
+
+      function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(text));
+        return div.innerHTML;
+      }
+
+      function useSuggestion() {
+        if (!_currentSuggestion) return;
+        var input = document.getElementById('request-prompt');
+        if (input) input.value = _currentSuggestion;
+        hideSuggestionPanel();
+      }
+
+      function hideSuggestionPanel() {
+        var panel = document.getElementById('prompt-suggestion');
+        if (panel) panel.classList.remove('visible');
+      }
+
+      function showTrustNote() {
+        var el = document.getElementById('prompt-trust');
+        if (el) el.style.display = 'block';
+      }
+
+      function hideTrustNote() {
+        var el = document.getElementById('prompt-trust');
+        if (el) el.style.display = 'none';
+      }
+
       // Initialize
       document.addEventListener("DOMContentLoaded", function () {
+        // Initialize prompt suggestion panel
+        var promptTextarea = document.getElementById('request-prompt');
+        if (promptTextarea) initPromptSuggestion(promptTextarea);
+
         // Initialize Lucide icons
         if (typeof lucide !== "undefined") {
           lucide.createIcons();
@@ -4347,7 +4775,7 @@
         initTheme();
         initLoraPreference();
         fetchState(true);
-        connectWebSocket();
+        // wsConnection is initialized above, no manual connect needed
         setInterval(function () {
           fetchState(false);
         }, 10000);

@@ -203,7 +203,7 @@ class AdvancedExporter:
             _, binary = cv2.threshold(img_np, threshold, 255, cv2.THRESH_BINARY_INV)
             paths = _contours_to_paths(binary, fill="#000000")
             bg_color = "#ffffff"
-            palette_paths = paths if paths else []
+            palette_paths: list[str] = paths if paths else []
         else:
             # Colour mode: quantise then contour-trace each colour
             quantized = image.quantize(colors=n_colors, method=Image.Quantize.MEDIANCUT)
@@ -212,7 +212,7 @@ class AdvancedExporter:
             unique_colors = np.unique(img_np.reshape(-1, 3), axis=0)
             bg_np = img_np[0, 0]  # top-left pixel as background
             bg_color = "#{:02x}{:02x}{:02x}".format(*bg_np)
-            palette_paths: list[str] = []
+            palette_paths = []
             for color in unique_colors:
                 hex_col = "#{:02x}{:02x}{:02x}".format(*color)
                 mask = np.all(img_np == color, axis=2).astype(np.uint8) * 255

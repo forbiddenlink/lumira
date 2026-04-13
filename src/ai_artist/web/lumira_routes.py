@@ -134,6 +134,20 @@ class UserCreationRequest(BaseModel):
     )
 
 
+class PromptSuggestionRequest(BaseModel):
+    """Request for mood-driven prompt suggestion."""
+
+    prompt: str = Field(..., min_length=1, max_length=500)
+
+
+class PromptSuggestionResponse(BaseModel):
+    """Response with Lumira's mood-influenced prompt interpretation."""
+
+    suggestion: str
+    mood: str
+    mood_color: str
+
+
 class LumiraStatementResponse(BaseModel):
     """Artist statement response."""
 
@@ -371,22 +385,24 @@ def _load_personality() -> dict[str, float]:
     if _PERSONALITY_FILE.exists():
         try:
             data = json.loads(_PERSONALITY_FILE.read_text())
-            traits = data.get("traits", {})
+            loaded = data.get("traits", {})
             # Validate all five traits are present and in [0, 1]
             if all(
-                k in traits and 0.0 <= float(traits[k]) <= 1.0
+                k in loaded and 0.0 <= float(loaded[k]) <= 1.0
                 for k in _DEFAULT_OCEAN_RANGES
             ):
                 logger.info("personality_loaded", source=str(_PERSONALITY_FILE))
-                return {k: float(traits[k]) for k in _DEFAULT_OCEAN_RANGES}
+                return {k: float(loaded[k]) for k in _DEFAULT_OCEAN_RANGES}
         except Exception as e:
             logger.warning("personality_load_failed", error=str(e))
 
     # First run — generate stable traits and persist them
-    traits = {key: random.uniform(*rng) for key, rng in _DEFAULT_OCEAN_RANGES.items()}
-    _save_personality(traits)
-    logger.info("personality_created", traits=traits)
-    return traits
+    generated: dict[str, float] = {
+        key: random.uniform(*rng) for key, rng in _DEFAULT_OCEAN_RANGES.items()
+    }
+    _save_personality(generated)
+    logger.info("personality_created", traits=generated)
+    return generated
 
 
 def _save_personality(traits: dict[str, float]) -> None:
@@ -530,6 +546,87 @@ async def get_lumira_state(request: Request):
         portfolio=portfolio,
         experience=experience_progress,
         style_axes=style_axes,
+    )
+
+
+MOOD_COLORS = {
+    "contemplative": "#6a4c93",
+    "playful": "#f8a5c2",
+    "melancholic": "#7f8fa6",
+    "euphoric": "#f5af19",
+    "serene": "#81ecec",
+    "anxious": "#e17055",
+    "nostalgic": "#dfe6e9",
+    "curious": "#74b9ff",
+    "rebellious": "#ff6b6b",
+    "transcendent": "#d4a5ff",
+}
+
+MOOD_TEMPLATES = {
+    "contemplative": "Through quiet introspection: {prompt} — rendered in muted tones and soft focus, a meditation on {prompt}",
+    "playful": "With mischievous delight: {prompt} — bursting with unexpected color and whimsical details",
+    "melancholic": "Tinged with longing: {prompt} — fading into blue-grey shadows, haunted by memory",
+    "euphoric": "Ablaze with joy: {prompt} — saturated in gold and warmth, every element radiating energy",
+    "serene": "In perfect stillness: {prompt} — crystalline calm, gentle light, infinite peace",
+    "anxious": "With restless energy: {prompt} — fractured perspectives, sharp edges, tension in every line",
+    "nostalgic": "Echoing the past: {prompt} — warm sepia undertones, soft grain, a feeling of time suspended",
+    "curious": "Exploring the unknown: {prompt} — vivid detail, unexpected angles, every corner holding discovery",
+    "rebellious": "Against all convention: {prompt} — raw, defiant, breaking form with aggressive beauty",
+    "transcendent": "Beyond the material: {prompt} — ethereal luminescence, dissolving boundaries between real and sublime",
+}
+
+
+@router.post("/suggest-prompt", response_model=PromptSuggestionResponse)
+@limiter.limit("30/minute")
+async def suggest_prompt(request: Request, body: PromptSuggestionRequest):
+    """Generate a mood-influenced prompt suggestion.
+
+    Uses the Anthropic LLM (via CreativeMind) to reinterpret the user's prompt
+    through Lumira's current emotional lens. Falls back to mood-specific
+    templates if LLM is unavailable.
+    """
+    state = _get_lumira_state()
+    mood_system = state["mood_system"]
+    mood_name = mood_system.current_mood.value.lower()
+    mood_color = MOOD_COLORS.get(mood_name, "#6a4c93")
+
+    # Try LLM-powered suggestion
+    suggestion = None
+    try:
+        import os
+
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if api_key:
+            import anthropic
+
+            client = anthropic.Anthropic(api_key=api_key)
+            response = client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=150,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": (
+                            f"You are Lumira, an AI artist currently feeling {mood_name}. "
+                            f"Reinterpret this theme through your emotional lens in under "
+                            f"50 words. Be vivid and specific: {body.prompt}"
+                        ),
+                    }
+                ],
+            )
+            suggestion = response.content[0].text.strip()
+    except Exception as e:
+        logger.debug("suggest_prompt_llm_failed", error=str(e))
+
+    # Fallback to template
+    if not suggestion:
+        template = MOOD_TEMPLATES.get(mood_name, MOOD_TEMPLATES["contemplative"])
+        suggestion = template.format(prompt=body.prompt)
+
+    return PromptSuggestionResponse(
+        suggestion=suggestion,
+        mood=mood_name,
+        mood_color=mood_color,
     )
 
 

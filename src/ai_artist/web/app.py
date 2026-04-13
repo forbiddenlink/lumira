@@ -637,6 +637,8 @@ async def list_images(
     limit: int = Query(50, ge=1, le=500, description="Number of images to return"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
     search: str | None = Query(None, description="Search in prompts"),
+    sort_by: str = Query("created_at", description="Sort field: created_at or score"),
+    mood: str | None = Query(None, description="Filter by creation mood"),
 ):
     """List all images with metadata."""
     # Prevent caching to ensure fresh results
@@ -654,9 +656,14 @@ async def list_images(
             db_gen = get_db()
             db = next(db_gen)
             try:
-                query = db.query(GeneratedImage).order_by(
-                    GeneratedImage.created_at.desc()
-                )
+                if sort_by == "score":
+                    query = db.query(GeneratedImage).order_by(
+                        GeneratedImage.final_score.desc().nulls_last()
+                    )
+                else:
+                    query = db.query(GeneratedImage).order_by(
+                        GeneratedImage.created_at.desc()
+                    )
                 if search:
                     query = query.filter(GeneratedImage.prompt.ilike(f"%{search}%"))
                 db_rows = query.all()
@@ -697,6 +704,12 @@ async def list_images(
                             full_url=f"/api/images/file/{rel}",
                         )
                     )
+                if mood:
+                    results = [
+                        r
+                        for r in results
+                        if (r.metadata.get("mood", "").lower() == mood.lower())
+                    ]
                 total_valid = len(results)
                 paginated = results[offset : offset + limit]
                 logger.info(

@@ -455,7 +455,8 @@ class MoodSystem:
             return []
         try:
             raw = json.loads(self._HISTORY_FILE.read_text())
-            return raw.get("history", [])
+            history: list[dict] = raw.get("history", [])  # type: ignore[type-arg]
+            return history
         except Exception:
             return []
 

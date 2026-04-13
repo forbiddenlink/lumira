@@ -266,8 +266,8 @@
         font-weight: 800;
         color: white;
         box-shadow:
-          0 8px 24px var(--glow),
-          0 4px 16px var(--glow-pink);
+          0 8px 24px var(--mood-accent, var(--glow)),
+          0 4px 16px var(--mood-accent, var(--glow-pink));
         animation:
           logoFloat 3s ease infinite,
           logoPulse 2s ease-in-out infinite;
@@ -286,13 +286,13 @@
         0%,
         100% {
           box-shadow:
-            0 8px 24px var(--glow),
-            0 4px 16px var(--glow-pink);
+            0 8px 24px var(--mood-accent, var(--glow)),
+            0 4px 16px var(--mood-accent, var(--glow-pink));
         }
         50% {
           box-shadow:
-            0 12px 36px var(--glow),
-            0 6px 24px var(--glow-purple);
+            0 12px 36px var(--mood-accent, var(--glow)),
+            0 6px 24px var(--mood-accent, var(--glow-purple));
         }
       }
 
@@ -526,8 +526,8 @@
         bottom: 0;
         background: linear-gradient(
           135deg,
-          rgba(99, 102, 241, 0.1),
-          rgba(168, 85, 247, 0.1)
+          var(--mood-glow, rgba(99, 102, 241, 0.1)),
+          var(--mood-glow, rgba(168, 85, 247, 0.1))
         );
         opacity: 0;
         transition: opacity 0.4s ease;
@@ -543,9 +543,9 @@
         transform: perspective(900px) rotateX(var(--rx, 0deg))
           rotateY(var(--ry, 0deg)) translateY(-14px) scale(1.02);
         box-shadow:
-          0 28px 56px rgba(99, 102, 241, 0.35),
-          0 0 0 1px rgba(88, 166, 255, 0.4);
-        border-color: var(--accent);
+          0 28px 56px var(--mood-glow, rgba(99, 102, 241, 0.35)),
+          0 0 0 1px var(--mood-glow, rgba(88, 166, 255, 0.4));
+        border-color: var(--mood-accent, var(--accent));
       }
 
       .gallery-item-image-container {
@@ -558,7 +558,14 @@
         height: 240px;
         object-fit: cover;
         display: block;
-        transition: transform 0.6s ease;
+        transition: transform 0.6s ease, filter 0.5s ease;
+      }
+      .gallery-item img.loading {
+        filter: blur(10px);
+        transform: scale(1.05) !important;
+      }
+      .gallery-item img.loaded {
+        filter: blur(0);
       }
 
       .gallery.large .gallery-item img {
@@ -897,6 +904,36 @@
         border-radius: 12px;
         color: var(--accent);
         font-weight: 700;
+      }
+
+      .progress-preview {
+        width: 256px;
+        height: 256px;
+        margin: 0 auto 16px;
+        border-radius: 12px;
+        overflow: hidden;
+        position: relative;
+        background: #0a0e17;
+      }
+      .progress-preview canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .progress-preview-label {
+        position: absolute;
+        bottom: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 11px;
+        color: rgba(255,255,255,0.5);
+        background: rgba(0,0,0,0.5);
+        padding: 2px 10px;
+        border-radius: 10px;
+        white-space: nowrap;
+      }
+      @media (max-width: 768px) {
+        .progress-preview { width: 200px; height: 200px; }
       }
 
       .progress-bar-container {
@@ -1849,19 +1886,7 @@
         gap: 8px;
       }
 
-      /* Comparison close */
-      .comparison-close-btn {
-        padding: 10px 20px;
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        color: var(--text-primary);
-        cursor: pointer;
-        font-weight: 600;
-        font-size: 14px;
-        font-family: inherit;
-        margin-left: 12px;
-      }
+
 
       /* FAB more link */
       .fab-more-link {
@@ -1980,9 +2005,6 @@
           display: none !important;
         }
 
-        .comparison-btn {
-          display: none !important;
-        }
 
         .logo-subtitle {
           display: none;
@@ -2012,172 +2034,73 @@
         }
       }
 
-      /* Comparison Mode */
-      .comparison-mode {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.95);
-        z-index: 2000;
-        display: none;
-      }
-
-      .comparison-header {
-        padding: 20px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: rgba(0, 0, 0, 0.8);
-        border-bottom: 2px solid var(--accent);
-      }
-
-      .comparison-controls {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-      }
-
-      .comparison-content {
-        display: flex;
-        height: calc(100% - 80px);
+      /* Comparison Slider (inline in modal) */
+      .comparison-container {
         position: relative;
-      }
-
-      .comparison-panel {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        padding: 20px;
-        overflow: hidden;
-      }
-
-      .comparison-panel.slider-mode {
-        position: absolute;
         width: 100%;
         height: 100%;
-        padding: 0;
+        overflow: hidden;
+        cursor: col-resize;
+        display: none;
       }
-
-      .comparison-image-container {
-        flex: 1;
+      .comparison-container.active {
+        display: flex;
+      }
+      .comparison-image {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+      .comparison-image-top {
+        clip-path: inset(0 50% 0 0);
+        z-index: 2;
+      }
+      .comparison-divider {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: white;
+        z-index: 3;
+        cursor: col-resize;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+      .comparison-divider::before {
+        content: '\21C6';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        color: #000;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        position: relative;
-        overflow: hidden;
-        background: rgba(0, 0, 0, 0.5);
-        border-radius: 12px;
-        margin-bottom: 20px;
+        font-size: 16px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
       }
-
-      .comparison-image {
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-        cursor: grab;
-      }
-
-      .comparison-image:active {
-        cursor: grabbing;
-      }
-
-      .comparison-slider {
+      .comparison-label {
         position: absolute;
-        top: 0;
-        left: 50%;
-        bottom: 0;
-        width: 4px;
-        background: var(--accent);
-        cursor: ew-resize;
-        z-index: 10;
-      }
-
-      .comparison-slider::before {
-        content: "";
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        width: 40px;
-        height: 40px;
-        background: var(--accent);
-        border-radius: 50%;
-        box-shadow: 0 0 20px var(--glow);
-      }
-
-      .comparison-slider::after {
-        content: "⬌";
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
+        bottom: 16px;
+        padding: 6px 14px;
+        background: rgba(0,0,0,0.7);
         color: white;
-        font-size: 20px;
-        font-weight: bold;
-        z-index: 1;
-      }
-
-      .comparison-metadata {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 16px;
-        max-height: 200px;
-        overflow-y: auto;
-      }
-
-      .comparison-diff-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 13px;
-      }
-
-      .comparison-diff-table th {
-        text-align: left;
-        padding: 8px;
-        color: var(--text-secondary);
-        font-weight: 600;
-        border-bottom: 1px solid var(--border);
-      }
-
-      .comparison-diff-table td {
-        padding: 8px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      }
-
-      .comparison-diff-table td:first-child {
-        color: var(--text-secondary);
-        font-weight: 600;
-      }
-
-      .comparison-diff-table td.diff {
-        background: rgba(255, 193, 7, 0.1);
-        color: var(--accent-tertiary);
-        font-weight: 700;
-      }
-
-      .mode-toggle {
-        padding: 8px 16px;
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid var(--border);
         border-radius: 8px;
-        color: var(--text-primary);
-        cursor: pointer;
-        font-weight: 600;
-        transition: all 0.3s;
+        font-size: 13px;
+        z-index: 4;
+        pointer-events: none;
       }
+      .comparison-label-left { left: 16px; }
+      .comparison-label-right { right: 16px; }
 
-      .mode-toggle.active {
-        background: linear-gradient(
-          135deg,
-          var(--accent),
-          var(--accent-secondary)
-        );
-        border-color: var(--accent);
-        box-shadow: 0 4px 12px var(--glow);
-      }
+
 
       /* === CREATION REQUEST FAB & PANEL === */
       .creation-fab {
@@ -2418,6 +2341,142 @@
         color: var(--text-primary);
       }
 
+      .welcome-hero-inner .mood-badge {
+        display: inline-block;
+        padding: 4px 14px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: capitalize;
+        letter-spacing: 0.03em;
+        margin-bottom: 10px;
+        color: #fff;
+      }
+
+      .welcome-hero-text .hero-body {
+        margin-top: 6px;
+        font-size: 14px;
+        color: var(--text-secondary);
+        line-height: 1.7;
+        opacity: 0.85;
+      }
+
+      .welcome-hero-cta-secondary {
+        padding: 10px 24px;
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        color: var(--text-primary);
+        font-weight: 700;
+        font-size: 14px;
+        cursor: pointer;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: all 0.3s;
+      }
+
+      .welcome-hero-cta-secondary:hover {
+        border-color: var(--text-secondary);
+        background: rgba(255,255,255,0.03);
+      }
+
+      /* Creation Story in modal */
+      .creation-story {
+        border-top: 1px solid var(--border);
+        margin-top: 16px;
+        padding-top: 12px;
+      }
+
+      .creation-story-toggle {
+        background: none;
+        border: none;
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 4px 0;
+        transition: color 0.2s;
+      }
+
+      .creation-story-toggle:hover {
+        color: var(--text-primary);
+      }
+
+      .creation-story-content {
+        display: none;
+        padding-top: 12px;
+      }
+
+      .creation-story-content.expanded {
+        display: block;
+      }
+
+      .creation-story .mood-badge {
+        display: inline-block;
+        padding: 3px 12px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: capitalize;
+        letter-spacing: 0.03em;
+        color: #fff;
+        margin-bottom: 10px;
+      }
+
+      .thinking-step {
+        margin-bottom: 10px;
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--text-secondary);
+      }
+
+      .thinking-step-label {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-muted, #888);
+        margin-bottom: 2px;
+      }
+
+      .critic-note {
+        margin-top: 8px;
+        padding: 8px 12px;
+        background: rgba(255,255,255,0.03);
+        border-left: 3px solid var(--accent);
+        border-radius: 4px;
+        font-size: 13px;
+        color: var(--text-secondary);
+      }
+
+      /* Personality-driven empty states */
+      .empty-state-personality {
+        text-align: center;
+        padding: 80px 40px;
+      }
+
+      .empty-state-personality h2 {
+        font-size: 20px;
+        font-weight: 800;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+      }
+
+      .empty-state-personality p {
+        font-size: 15px;
+        color: var(--text-secondary);
+        margin-bottom: 20px;
+        line-height: 1.6;
+      }
+
+      .empty-state-personality .empty-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
       @media (max-width: 768px) {
         .welcome-hero {
           padding: 24px 24px 0;
@@ -2624,6 +2683,211 @@
         transition: color 0.3s;
       }
 
+      /* Ensure content sits above body::before ambient overlay */
+      #main-content, .welcome-hero, .page-loader, .noise-overlay {
+        position: relative;
+        z-index: 1;
+      }
+
+      /* Mood ambient overrides */
+      body[data-mood="contemplative"] { --mood-glow: rgba(106,76,147,0.15); --mood-accent: #6a4c93; }
+      body[data-mood="playful"] { --mood-glow: rgba(248,165,194,0.15); --mood-accent: #f8a5c2; }
+      body[data-mood="melancholic"] { --mood-glow: rgba(127,143,166,0.15); --mood-accent: #7f8fa6; }
+      body[data-mood="euphoric"] { --mood-glow: rgba(245,175,25,0.15); --mood-accent: #ffeaa7; }
+      body[data-mood="serene"] { --mood-glow: rgba(129,236,236,0.15); --mood-accent: #81ecec; }
+      body[data-mood="anxious"] { --mood-glow: rgba(225,112,85,0.15); --mood-accent: #e17055; }
+      body[data-mood="nostalgic"] { --mood-glow: rgba(223,230,233,0.10); --mood-accent: #dfe6e9; }
+      body[data-mood="curious"] { --mood-glow: rgba(116,185,255,0.15); --mood-accent: #74b9ff; }
+      body[data-mood="rebellious"] { --mood-glow: rgba(255,107,107,0.15); --mood-accent: #ff6b6b; }
+      body[data-mood="transcendent"] { --mood-glow: rgba(212,165,255,0.15); --mood-accent: #d4a5ff; }
+
+      body::before {
+        content: '';
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: radial-gradient(ellipse at 20% 50%, var(--mood-glow, transparent), transparent 70%);
+        pointer-events: none;
+        z-index: 0;
+        transition: background 2s ease;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        body::before { transition: none; }
+      }
+
+      /* Gallery view tabs */
+      .gallery-view-tabs {
+        max-width: 1800px;
+        margin: 0 auto;
+        padding: 20px 48px 0;
+        display: flex;
+        gap: 4px;
+        border-bottom: 1px solid var(--border);
+        position: relative;
+        z-index: 1;
+      }
+      .view-tab {
+        padding: 10px 20px;
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: var(--text-secondary);
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: 'Space Grotesk', sans-serif;
+      }
+      .view-tab:hover { color: var(--text-primary); }
+      .view-tab.active {
+        color: var(--mood-accent, var(--accent));
+        border-bottom-color: var(--mood-accent, var(--accent));
+      }
+      .mood-pills {
+        max-width: 1800px;
+        margin: 0 auto;
+        padding: 12px 48px 0;
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        position: relative;
+        z-index: 1;
+      }
+      .mood-pills::-webkit-scrollbar { display: none; }
+      .mood-pill {
+        padding: 6px 16px;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        background: none;
+        color: var(--text-secondary);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.2s;
+        font-family: 'Space Grotesk', sans-serif;
+      }
+      .mood-pill:hover {
+        border-color: var(--pill-color, var(--accent));
+        color: var(--pill-color, var(--accent));
+      }
+      .mood-pill.active {
+        background: var(--pill-color, var(--accent));
+        border-color: var(--pill-color, var(--accent));
+        color: #000;
+      }
+
+      @media (max-width: 768px) {
+        .gallery-view-tabs { padding: 16px 24px 0; }
+        .mood-pills { padding: 8px 24px 0; }
+        .evolution-timeline { padding: 16px 24px; }
+        .evo-item { width: 64px; }
+        .evo-item-thumb { width: 56px; height: 56px; }
+      }
+
+      /* Evolution Timeline */
+      .evolution-timeline {
+        max-width: 1800px;
+        margin: 0 auto;
+        padding: 24px 48px;
+      }
+      .evolution-scroll {
+        display: flex;
+        gap: 2px;
+        overflow-x: auto;
+        padding-bottom: 16px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+        min-height: 220px;
+        align-items: flex-end;
+      }
+      .evolution-scroll::-webkit-scrollbar { height: 6px; }
+      .evolution-scroll::-webkit-scrollbar-track { background: transparent; }
+      .evolution-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+      .evo-item {
+        flex-shrink: 0;
+        width: 80px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        transition: transform 0.2s;
+        position: relative;
+      }
+      .evo-item:hover { transform: translateY(-4px); }
+      .evo-item-thumb {
+        width: 72px;
+        height: 72px;
+        border-radius: 8px;
+        object-fit: cover;
+        border: 2px solid transparent;
+        transition: border-color 0.2s;
+      }
+      .evo-item:hover .evo-item-thumb { border-color: var(--mood-accent, var(--accent)); }
+      .evo-item-mood {
+        width: 100%;
+        height: 4px;
+        border-radius: 2px;
+        opacity: 0.7;
+      }
+      .evo-item-date {
+        font-size: 9px;
+        color: var(--text-secondary);
+        white-space: nowrap;
+      }
+      .evo-item-score {
+        font-size: 10px;
+        color: var(--text-secondary);
+        font-weight: 600;
+      }
+
+      .evo-period-marker {
+        flex-shrink: 0;
+        width: 1px;
+        background: var(--border);
+        align-self: stretch;
+        margin: 0 8px;
+        position: relative;
+      }
+      .evo-period-label {
+        position: absolute;
+        top: -20px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 10px;
+        font-weight: 600;
+        white-space: nowrap;
+        padding: 2px 8px;
+        border-radius: 10px;
+        color: #000;
+      }
+
+      .evolution-legend {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+        margin-top: 8px;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+      .legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+
       /* Card scroll-reveal */
       .gallery-item-reveal {
         opacity: 0;
@@ -2636,6 +2900,21 @@
         opacity: 1;
         transform: translateY(0);
       }
+
+      /* WebSocket status indicator */
+      .ws-status {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        transition: background 0.3s;
+        vertical-align: middle;
+        margin-left: 8px;
+      }
+      .ws-status-connected { background: #3fb950; }
+      .ws-status-reconnecting { background: #d29922; animation: ws-pulse 1s infinite; }
+      .ws-status-disconnected { background: #f85149; }
+      @keyframes ws-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
     </style>
   </head>
   <body>
@@ -2672,6 +2951,7 @@
               Lumira
             </h1>
             <span class="logo-subtitle">Gallery</span>
+            <span class="ws-status" id="ws-status" title="Real-time updates"></span>
           </div>
         </div>
         <div class="stats">
@@ -2749,25 +3029,54 @@
 
     <!-- Welcome hero (first-time visitors) -->
     <div class="welcome-hero" id="welcome-hero" style="display: none">
-      <div class="welcome-hero-inner">
-        <div class="welcome-hero-text">
-          <h2>Welcome to Lumira</h2>
-          <p>
-            Lumira is an autonomous AI artist. Browse the gallery below, or head
-            to the Creative Studio to request custom artwork.
-          </p>
+      <div class="welcome-hero-inner" id="welcome-hero-inner">
+        <div class="welcome-hero-text" id="welcome-hero-text">
+          <span class="mood-badge" id="hero-mood-badge" style="display:none"></span>
+          <h2 id="hero-headline">Meet Lumira</h2>
+          <p id="hero-subhead">An autonomous AI artist with moods, memory, and creative independence.</p>
+          <p class="hero-body" id="hero-body">This isn't a gallery of AI images — it's an artist's portfolio. Every piece was created because Lumira felt something.</p>
         </div>
         <div class="welcome-hero-actions">
-          <a href="/lumira" class="welcome-hero-cta">Open Creative Studio</a>
-          <button class="welcome-hero-dismiss" onclick="dismissHero()">
-            Dismiss
-          </button>
+          <a href="#gallery" class="welcome-hero-cta" onclick="event.preventDefault(); document.getElementById('gallery').scrollIntoView({behavior:'smooth'}); return false;">Explore Her Work &#8595;</a>
+          <a href="/lumira" class="welcome-hero-cta-secondary">Watch Her Create &#8594;</a>
+          <button class="welcome-hero-dismiss" onclick="dismissHero()" aria-label="Dismiss welcome message">&times;</button>
         </div>
       </div>
     </div>
 
     <!-- Main Content -->
     <main id="main-content">
+      <!-- Gallery View Tabs -->
+      <div class="gallery-view-tabs" role="tablist" aria-label="Gallery view">
+        <button class="view-tab active" role="tab" aria-selected="true" data-view-mode="recent" onclick="switchViewMode('recent')">Recent</button>
+        <button class="view-tab" role="tab" aria-selected="false" data-view-mode="picks" onclick="switchViewMode('picks')">Lumira's Picks</button>
+        <button class="view-tab" role="tab" aria-selected="false" data-view-mode="mood" onclick="switchViewMode('mood')">By Mood</button>
+        <button class="view-tab" role="tab" aria-selected="false" data-view-mode="evolution" onclick="switchViewMode('evolution')">Evolution</button>
+      </div>
+
+      <!-- Mood Filter Pills (shown only in "By Mood" view) -->
+      <div class="mood-pills" id="mood-pills" style="display:none" role="group" aria-label="Filter by mood">
+        <button class="mood-pill active" data-mood-filter="" onclick="filterByMood('')">All</button>
+        <button class="mood-pill" data-mood-filter="contemplative" onclick="filterByMood('contemplative')" style="--pill-color:#6a4c93">Contemplative</button>
+        <button class="mood-pill" data-mood-filter="playful" onclick="filterByMood('playful')" style="--pill-color:#f8a5c2">Playful</button>
+        <button class="mood-pill" data-mood-filter="melancholic" onclick="filterByMood('melancholic')" style="--pill-color:#7f8fa6">Melancholic</button>
+        <button class="mood-pill" data-mood-filter="euphoric" onclick="filterByMood('euphoric')" style="--pill-color:#f5af19">Euphoric</button>
+        <button class="mood-pill" data-mood-filter="serene" onclick="filterByMood('serene')" style="--pill-color:#81ecec">Serene</button>
+        <button class="mood-pill" data-mood-filter="anxious" onclick="filterByMood('anxious')" style="--pill-color:#e17055">Anxious</button>
+        <button class="mood-pill" data-mood-filter="nostalgic" onclick="filterByMood('nostalgic')" style="--pill-color:#dfe6e9">Nostalgic</button>
+        <button class="mood-pill" data-mood-filter="curious" onclick="filterByMood('curious')" style="--pill-color:#74b9ff">Curious</button>
+        <button class="mood-pill" data-mood-filter="rebellious" onclick="filterByMood('rebellious')" style="--pill-color:#ff6b6b">Rebellious</button>
+        <button class="mood-pill" data-mood-filter="transcendent" onclick="filterByMood('transcendent')" style="--pill-color:#d4a5ff">Transcendent</button>
+      </div>
+
+      <!-- Evolution Timeline (shown only in "Evolution" view) -->
+      <div class="evolution-timeline" id="evolution-timeline" style="display:none">
+        <div class="evolution-scroll" id="evolution-scroll">
+          <!-- Populated by JS -->
+        </div>
+        <div class="evolution-legend" id="evolution-legend"></div>
+      </div>
+
       <!-- Controls -->
       <div class="controls" role="search">
         <div class="search-container">
@@ -3021,6 +3330,11 @@
         <div class="progress-status" id="progress-status">In Progress</div>
       </div>
 
+      <div class="progress-preview" id="progress-preview">
+        <canvas id="progress-canvas" width="256" height="256"></canvas>
+        <div class="progress-preview-label" id="progress-preview-label">Forming...</div>
+      </div>
+
       <div class="progress-bar-container">
         <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
       </div>
@@ -3134,6 +3448,13 @@
             alt=""
             draggable="false"
           />
+        </div>
+        <div class="comparison-container" id="comparison-container">
+          <img class="comparison-image comparison-image-top" id="comparison-img-left" src="" alt="Current artwork" />
+          <img class="comparison-image" id="comparison-img-right" src="" alt="Comparison artwork" />
+          <div class="comparison-divider" id="comparison-divider"></div>
+          <span class="comparison-label comparison-label-left" id="comparison-label-left"></span>
+          <span class="comparison-label comparison-label-right" id="comparison-label-right"></span>
         </div>
       </div>
 
@@ -3405,57 +3726,7 @@
       </div>
     </div>
 
-    <!-- Comparison Mode -->
-    <div id="comparison-mode" class="comparison-mode">
-      <div class="comparison-header">
-        <h2
-          style="
-            margin: 0;
-            font-size: 24px;
-            font-weight: 800;
-            color: var(--text-primary);
-          "
-        >
-          Image Comparison
-        </h2>
-        <div class="comparison-controls">
-          <button
-            class="mode-toggle"
-            id="side-by-side-btn"
-            onclick="setComparisonMode('sideBySide')"
-          >
-            Side by Side
-          </button>
-          <button
-            class="mode-toggle"
-            id="slider-btn"
-            onclick="setComparisonMode('slider')"
-          >
-            Slider
-          </button>
-          <button class="comparison-close-btn" onclick="exitComparison()">
-            Close (Esc)
-          </button>
-        </div>
-      </div>
-      <div class="comparison-content" id="comparison-content">
-        <!-- Side by side panels -->
-        <div class="comparison-panel" id="comparison-left">
-          <div class="comparison-image-container" id="compare-container-1">
-            <img id="compare-image-1" class="comparison-image" alt="Image 1" />
-          </div>
-          <div class="comparison-metadata" id="compare-metadata-1"></div>
-        </div>
-        <div class="comparison-panel" id="comparison-right">
-          <div class="comparison-image-container" id="compare-container-2">
-            <img id="compare-image-2" class="comparison-image" alt="Image 2" />
-          </div>
-          <div class="comparison-metadata" id="compare-metadata-2"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Bulk actions bar (shown when images are selected) -->
+<!-- Bulk actions bar (shown when images are selected) -->
     <div id="bulk-actions-bar" class="bulk-actions-bar">
       <div class="bulk-selection-info">
         <span id="selection-count" class="bulk-selection-count"></span>
@@ -3528,8 +3799,171 @@
     </div>
 
     <script>
+      // ===== Shared mood color mapping (used by hero, modal, empty states) =====
+      const MOOD_COLORS = {
+        contemplative: { bg: 'linear-gradient(135deg, rgba(106,76,147,0.12), rgba(22,33,62,0.12))', accent: '#6a4c93', badge: '#6a4c93' },
+        playful: { bg: 'linear-gradient(135deg, rgba(248,165,194,0.12), rgba(17,153,142,0.12))', accent: '#f8a5c2', badge: '#f8a5c2' },
+        melancholic: { bg: 'linear-gradient(135deg, rgba(127,143,166,0.12), rgba(48,43,99,0.12))', accent: '#7f8fa6', badge: '#7f8fa6' },
+        euphoric: { bg: 'linear-gradient(135deg, rgba(241,39,17,0.08), rgba(245,175,25,0.08))', accent: '#ffeaa7', badge: '#f5af19' },
+        serene: { bg: 'linear-gradient(135deg, rgba(129,236,236,0.10), rgba(44,83,100,0.10))', accent: '#81ecec', badge: '#81ecec' },
+        anxious: { bg: 'linear-gradient(135deg, rgba(225,112,85,0.10), rgba(74,25,66,0.10))', accent: '#e17055', badge: '#e17055' },
+        nostalgic: { bg: 'linear-gradient(135deg, rgba(223,230,233,0.08), rgba(74,55,40,0.08))', accent: '#dfe6e9', badge: '#dfe6e9' },
+        curious: { bg: 'linear-gradient(135deg, rgba(116,185,255,0.10), rgba(26,58,92,0.10))', accent: '#74b9ff', badge: '#74b9ff' },
+        rebellious: { bg: 'linear-gradient(135deg, rgba(255,107,107,0.10), rgba(61,0,0,0.10))', accent: '#ff6b6b', badge: '#ff6b6b' },
+        transcendent: { bg: 'linear-gradient(135deg, rgba(212,165,255,0.10), rgba(21,0,80,0.10))', accent: '#d4a5ff', badge: '#d4a5ff' }
+      };
+
+      // Global mood cache for empty states and other features
+      window._lumiraMood = null;
+
+      // Fetch Lumira's current mood and statement, apply to hero
+      async function fetchLumiraMoodAndStatement() {
+        try {
+          const [stateRes, statementRes] = await Promise.allSettled([
+            fetch('/api/lumira/state'),
+            fetch('/api/lumira/statement')
+          ]);
+
+          let mood = null;
+          let statement = null;
+
+          if (stateRes.status === 'fulfilled' && stateRes.value.ok) {
+            const stateData = await stateRes.value.json();
+            mood = (stateData.mood || stateData.current_mood || '').toLowerCase();
+          }
+
+          if (statementRes.status === 'fulfilled' && statementRes.value.ok) {
+            const statementData = await statementRes.value.json();
+            statement = statementData.statement || statementData.artist_statement || null;
+          }
+
+          if (mood) {
+            window._lumiraMood = mood;
+            // Ambient mood: set data-mood on body to activate CSS overrides
+            document.body.setAttribute('data-mood', mood);
+          }
+
+          // Apply to hero if visible
+          const heroInner = document.getElementById('welcome-hero-inner');
+          const heroBadge = document.getElementById('hero-mood-badge');
+          const heroSubhead = document.getElementById('hero-subhead');
+
+          if (mood && MOOD_COLORS[mood] && heroInner) {
+            heroInner.style.background = MOOD_COLORS[mood].bg;
+            heroBadge.style.backgroundColor = MOOD_COLORS[mood].badge;
+            heroBadge.textContent = mood;
+            heroBadge.style.display = '';
+          }
+
+          if (statement && heroSubhead) {
+            heroSubhead.textContent = statement;
+          }
+        } catch (e) {
+          // Silently fall back to static content
+        }
+      }
+
+      // Fire mood fetch on load
+      fetchLumiraMoodAndStatement();
+
+      // ===== Gallery helpers for creation narrative =====
+      function getCreationStoryHTML(image) {
+        if (!image.metadata) return '';
+        const meta = image.metadata;
+        const mood = (meta.mood || '').toLowerCase();
+        const thinking = meta.thinking;
+        const criticScore = meta.critic_score;
+        const criticNote = meta.critic_note;
+
+        // Only show if there's meaningful narrative data
+        if (!mood && !thinking && criticScore == null) {
+          if (image.prompt) {
+            return `
+              <div class="creation-story">
+                <button class="creation-story-toggle" onclick="this.nextElementSibling.classList.toggle('expanded'); this.textContent = this.nextElementSibling.classList.contains('expanded') ? 'Hide creation story' : 'Read creation story';">Read creation story</button>
+                <div class="creation-story-content">
+                  <p class="thinking-step"><span class="thinking-step-label">Prompt</span>${escapeHTML(image.prompt)}</p>
+                </div>
+              </div>`;
+          }
+          return '';
+        }
+
+        let storyParts = [];
+
+        if (mood && MOOD_COLORS[mood]) {
+          storyParts.push(`<span class="mood-badge" style="background-color:${MOOD_COLORS[mood].badge}">${mood}</span>`);
+        } else if (mood) {
+          storyParts.push(`<span class="mood-badge" style="background-color:var(--accent)">${mood}</span>`);
+        }
+
+        if (thinking) {
+          const steps = ['observe', 'reflect', 'decide', 'express'];
+          steps.forEach(function(step) {
+            if (thinking[step]) {
+              storyParts.push(`<p class="thinking-step"><span class="thinking-step-label">${step}</span>${escapeHTML(thinking[step])}</p>`);
+            }
+          });
+        }
+
+        if (criticScore != null) {
+          let scoreText = `Lumira rated this ${criticScore}/10`;
+          if (criticNote) {
+            scoreText += ` — "${escapeHTML(criticNote)}"`;
+          }
+          storyParts.push(`<div class="critic-note">${scoreText}</div>`);
+        }
+
+        if (storyParts.length === 0) return '';
+
+        return `
+          <div class="creation-story">
+            <button class="creation-story-toggle" onclick="this.nextElementSibling.classList.toggle('expanded'); this.textContent = this.nextElementSibling.classList.contains('expanded') ? 'Hide creation story' : 'Read creation story';">Read creation story</button>
+            <div class="creation-story-content">
+              ${storyParts.join('\n')}
+            </div>
+          </div>`;
+      }
+
+      function escapeHTML(str) {
+        if (!str) return '';
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+      }
+
+      // ===== Personality-driven empty states =====
+      function getEmptyGalleryHTML() {
+        const mood = window._lumiraMood;
+        const colors = mood && MOOD_COLORS[mood] ? MOOD_COLORS[mood] : null;
+        const bgStyle = colors ? colors.bg : 'linear-gradient(135deg, rgba(88,166,255,0.06), rgba(168,85,247,0.06))';
+        const moodText = mood ? mood : 'inspired';
+        return '<div class="empty-state-personality" style="background:' + bgStyle + '; border-radius: 16px;">' +
+          '<div class="empty-icon" style="font-size:48px; margin-bottom:16px;">&#10022;</div>' +
+          '<h2>Lumira hasn\'t created anything yet</h2>' +
+          '<p>But she\'s feeling <strong>' + moodText + '</strong>.</p>' +
+          '<div class="empty-actions">' +
+          '<a href="/lumira" class="empty-btn empty-btn-primary">Watch her create her first piece &#8594;</a>' +
+          '</div></div>';
+      }
+
+      function getSearchNoResultsHTML(query) {
+        var safeQuery = escapeHTML(query);
+        var encodedQuery = encodeURIComponent(query);
+        return '<div class="empty-state-personality">' +
+          '<div class="empty-icon" style="font-size:48px; margin-bottom:16px;">&#128269;</div>' +
+          '<h2>Nothing matches \'' + safeQuery + '\'</h2>' +
+          '<p>That theme doesn\'t appear in Lumira\'s work yet.</p>' +
+          '<div class="empty-actions">' +
+          '<button type="button" class="empty-btn empty-btn-secondary" onclick="clearFilters()">Browse all work</button>' +
+          '<a href="/lumira?theme=' + encodedQuery + '" class="empty-btn empty-btn-primary">Ask Lumira to create this &#8594;</a>' +
+          '</div></div>';
+      }
+
       let currentSearch = "";
       let currentSort = "newest";
+      let currentViewMode = 'recent';
+      let currentMoodFilter = '';
       let allImages = [];
       let selectedImages = new Set(); // Multi-select support
       let isSelectionMode = false;
@@ -3991,193 +4425,124 @@
         };
       }
 
-      // Image Comparison Mode
-      let comparisonImage1 = null;
-      let comparisonImage2 = null;
-      let comparisonMode = "sideBySide";
-      let sliderPosition = 50;
+      // Image Comparison Slider (inline in modal)
+      let isComparisonMode = false;
+      let isComparisonDragging = false;
 
       function startComparison() {
-        if (currentImageIndex === null || !filteredImages.length) {
-          showToast("Open an image first to start comparison", "error");
+        if (isComparisonMode) {
+          exitComparison();
           return;
         }
 
-        // Set first image as the currently opened image
-        comparisonImage1 = filteredImages[currentImageIndex];
-
-        // Prompt user to select second image
-        showToast("Click another image in the gallery to compare", "info");
-
-        // Close modal and enable comparison selection mode
-        document.getElementById("modal").style.display = "none";
-        document.body.style.cursor = "crosshair";
-
-        // Add click handler to gallery items
-        const galleryItems = document.querySelectorAll(".gallery-item");
-        galleryItems.forEach((item, index) => {
-          item.style.outline = "2px dashed var(--accent)";
-          item.style.cursor = "crosshair";
-          const originalClick = item.onclick;
-          item.onclick = (e) => {
-            e.stopPropagation();
-            selectComparisonImage(index);
-          };
-        });
-      }
-
-      function selectComparisonImage(index) {
-        // Set second image
-        comparisonImage2 = filteredImages[index];
-
-        // Remove selection handlers and restore normal gallery behavior
-        const galleryItems = document.querySelectorAll(".gallery-item");
-        galleryItems.forEach((item, idx) => {
-          item.style.outline = "none";
-          item.style.cursor = "pointer";
-          item.onclick = () => openModal(idx);
-        });
-        document.body.style.cursor = "default";
-
-        // Show comparison mode
-        showComparisonMode();
-      }
-
-      function showComparisonMode() {
-        const modal = document.getElementById("comparison-mode");
-        modal.style.display = "block";
-
-        // Load images
-        document.getElementById("compare-image-1").src =
-          comparisonImage1.full_url;
-        document.getElementById("compare-image-2").src =
-          comparisonImage2.full_url;
-
-        // Set initial mode
-        setComparisonMode("sideBySide");
-
-        // Render metadata
-        renderComparisonMetadata();
-      }
-
-      function setComparisonMode(mode) {
-        comparisonMode = mode;
-        const content = document.getElementById("comparison-content");
-        const leftPanel = document.getElementById("comparison-left");
-        const rightPanel = document.getElementById("comparison-right");
-        const sideBySideBtn = document.getElementById("side-by-side-btn");
-        const sliderBtn = document.getElementById("slider-btn");
-
-        // Update button states
-        sideBySideBtn.classList.toggle("active", mode === "sideBySide");
-        sliderBtn.classList.toggle("active", mode === "slider");
-
-        if (mode === "sideBySide") {
-          // Side by side layout
-          leftPanel.style.display = "flex";
-          rightPanel.style.display = "flex";
-          leftPanel.classList.remove("slider-mode");
-          rightPanel.classList.remove("slider-mode");
-
-          // Remove slider if exists
-          const existingSlider = content.querySelector(".comparison-slider");
-          if (existingSlider) existingSlider.remove();
-        } else if (mode === "slider") {
-          // Slider overlay layout
-          leftPanel.classList.add("slider-mode");
-          rightPanel.classList.add("slider-mode");
-          leftPanel.style.display = "block";
-          rightPanel.style.display = "block";
-
-          // Create slider
-          if (!content.querySelector(".comparison-slider")) {
-            const slider = document.createElement("div");
-            slider.className = "comparison-slider";
-            slider.style.left = sliderPosition + "%";
-            content.appendChild(slider);
-
-            // Add slider drag functionality
-            let isDragging = false;
-            slider.addEventListener("mousedown", () => (isDragging = true));
-            document.addEventListener("mouseup", () => (isDragging = false));
-            content.addEventListener("mousemove", (e) => {
-              if (isDragging) {
-                const rect = content.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                sliderPosition = (x / rect.width) * 100;
-                sliderPosition = Math.max(0, Math.min(100, sliderPosition));
-                slider.style.left = sliderPosition + "%";
-                rightPanel.style.clipPath = `inset(0 0 0 ${sliderPosition}%)`;
-              }
-            });
-          }
-
-          // Apply clip path
-          rightPanel.style.clipPath = `inset(0 0 0 ${sliderPosition}%)`;
+        // Need at least 2 images
+        if (allImages.length < 2) {
+          showToast('Need at least 2 artworks to compare', 'warning');
+          return;
         }
-      }
 
-      function renderComparisonMetadata() {
-        const meta1 = comparisonImage1.metadata || {};
-        const meta2 = comparisonImage2.metadata || {};
+        const currentImage = allImages[currentModalIndex];
+        const nextIndex = (currentModalIndex + 1) % allImages.length;
+        const nextImage = allImages[nextIndex];
 
-        // Create diff table
-        const fields = [
-          "prompt",
-          "negative_prompt",
-          "width",
-          "height",
-          "num_inference_steps",
-          "guidance_scale",
-          "seed",
-        ];
-        const labels = {
-          prompt: "Prompt",
-          negative_prompt: "Negative Prompt",
-          width: "Width",
-          height: "Height",
-          num_inference_steps: "Steps",
-          guidance_scale: "Guidance",
-          seed: "Seed",
-        };
+        const container = document.getElementById('comparison-container');
+        const imgLeft = document.getElementById('comparison-img-left');
+        const imgRight = document.getElementById('comparison-img-right');
+        const labelLeft = document.getElementById('comparison-label-left');
+        const labelRight = document.getElementById('comparison-label-right');
+        const imageContainer = document.getElementById('modal-image-container');
 
-        let tableHTML =
-          '<table class="comparison-diff-table"><thead><tr><th>Property</th><th>Image 1</th><th>Image 2</th></tr></thead><tbody>';
+        imgLeft.src = '/api/images/file/' + currentImage.path;
+        imgRight.src = '/api/images/file/' + nextImage.path;
 
-        fields.forEach((field) => {
-          const val1 = meta1[field] || "N/A";
-          const val2 = meta2[field] || "N/A";
-          const isDiff = val1 !== val2;
-          const diffClass = isDiff ? ' class="diff"' : "";
+        // Labels: show mood if available, else index
+        labelLeft.textContent = currentImage.metadata && currentImage.metadata.mood
+          ? (currentImage.metadata.mood + ' \u2014 #' + (currentModalIndex + 1))
+          : 'Image #' + (currentModalIndex + 1);
+        labelRight.textContent = nextImage.metadata && nextImage.metadata.mood
+          ? (nextImage.metadata.mood + ' \u2014 #' + (nextIndex + 1))
+          : 'Image #' + (nextIndex + 1);
 
-          let displayVal1 = val1;
-          let displayVal2 = val2;
+        // Show comparison, hide normal view
+        imageContainer.style.display = 'none';
+        container.classList.add('active');
+        isComparisonMode = true;
 
-          // Truncate long prompts
-          if (field === "prompt" || field === "negative_prompt") {
-            displayVal1 =
-              String(val1).substring(0, 50) +
-              (String(val1).length > 50 ? "..." : "");
-            displayVal2 =
-              String(val2).substring(0, 50) +
-              (String(val2).length > 50 ? "..." : "");
-          }
+        // Set initial position
+        updateComparisonPosition(50);
 
-          tableHTML += `<tr><td>${labels[field]}</td><td${diffClass}>${displayVal1}</td><td${diffClass}>${displayVal2}</td></tr>`;
-        });
+        // Add drag listeners
+        const divider = document.getElementById('comparison-divider');
+        divider.addEventListener('mousedown', comparisonStartDrag);
+        container.addEventListener('mousemove', comparisonOnDrag);
+        container.addEventListener('mouseup', comparisonStopDrag);
+        container.addEventListener('mouseleave', comparisonStopDrag);
+        // Touch support
+        divider.addEventListener('touchstart', comparisonStartDrag, {passive: true});
+        container.addEventListener('touchmove', comparisonOnDragTouch, {passive: false});
+        container.addEventListener('touchend', comparisonStopDrag);
 
-        tableHTML += "</tbody></table>";
-
-        // Show in both panels
-        document.getElementById("compare-metadata-1").innerHTML = tableHTML;
-        document.getElementById("compare-metadata-2").innerHTML = tableHTML;
+        // Highlight the comparison button
+        var btn = document.querySelector('.comparison-btn');
+        if (btn) { btn.style.background = 'var(--accent)'; btn.style.color = '#000'; }
       }
 
       function exitComparison() {
-        document.getElementById("comparison-mode").style.display = "none";
-        comparisonImage1 = null;
-        comparisonImage2 = null;
-        sliderPosition = 50;
+        var container = document.getElementById('comparison-container');
+        var imageContainer = document.getElementById('modal-image-container');
+
+        container.classList.remove('active');
+        imageContainer.style.display = '';
+        isComparisonMode = false;
+
+        // Remove drag listeners to avoid stacking
+        var divider = document.getElementById('comparison-divider');
+        divider.removeEventListener('mousedown', comparisonStartDrag);
+        container.removeEventListener('mousemove', comparisonOnDrag);
+        container.removeEventListener('mouseup', comparisonStopDrag);
+        container.removeEventListener('mouseleave', comparisonStopDrag);
+        divider.removeEventListener('touchstart', comparisonStartDrag);
+        container.removeEventListener('touchmove', comparisonOnDragTouch);
+        container.removeEventListener('touchend', comparisonStopDrag);
+
+        // Reset button style
+        var btn = document.querySelector('.comparison-btn');
+        if (btn) { btn.style.background = ''; btn.style.color = ''; }
+      }
+
+      function comparisonStartDrag(e) {
+        isComparisonDragging = true;
+        if (e.preventDefault) e.preventDefault();
+      }
+
+      function comparisonOnDrag(e) {
+        if (!isComparisonDragging) return;
+        var container = document.getElementById('comparison-container');
+        var rect = container.getBoundingClientRect();
+        var x = e.clientX - rect.left;
+        var percent = (x / rect.width) * 100;
+        updateComparisonPosition(Math.max(0, Math.min(100, percent)));
+      }
+
+      function comparisonOnDragTouch(e) {
+        if (!isComparisonDragging) return;
+        e.preventDefault();
+        var container = document.getElementById('comparison-container');
+        var rect = container.getBoundingClientRect();
+        var x = e.touches[0].clientX - rect.left;
+        var percent = (x / rect.width) * 100;
+        updateComparisonPosition(Math.max(0, Math.min(100, percent)));
+      }
+
+      function comparisonStopDrag() {
+        isComparisonDragging = false;
+      }
+
+      function updateComparisonPosition(percent) {
+        var imgLeft = document.getElementById('comparison-img-left');
+        var divider = document.getElementById('comparison-divider');
+        imgLeft.style.clipPath = 'inset(0 ' + (100 - percent) + '% 0 0)';
+        divider.style.left = percent + '%';
       }
 
       // Selection management
@@ -4334,9 +4699,7 @@
         if (e.key === "Escape") {
           const modal = document.getElementById("modal");
           const shortcutsModal = document.getElementById("shortcuts-modal");
-          const comparisonModal = document.getElementById("comparison-mode");
-
-          if (comparisonModal.style.display === "block") {
+          if (isComparisonMode) {
             exitComparison();
           } else if (modal.classList.contains("active")) {
             closeModal();
@@ -4492,6 +4855,8 @@
           _t: Date.now(),
         });
         if (currentSearch) params.append("search", currentSearch);
+        if (currentViewMode === 'picks') params.append("sort_by", "score");
+        if (currentMoodFilter) params.append("mood", currentMoodFilter);
 
         try {
           const response = await fetch(`/api/images?${params}`);
@@ -4523,6 +4888,157 @@
           allImages.sort((a, b) =>
             (a.prompt || "").localeCompare(b.prompt || ""),
           );
+        }
+      }
+
+      // View mode switching (Recent / Lumira's Picks / By Mood)
+      function switchViewMode(mode) {
+        currentViewMode = mode;
+        // Update tab active states
+        document.querySelectorAll('.view-tab').forEach(t => {
+          t.classList.toggle('active', t.dataset.viewMode === mode);
+          t.setAttribute('aria-selected', t.dataset.viewMode === mode ? 'true' : 'false');
+        });
+        // Show/hide mood pills
+        document.getElementById('mood-pills').style.display = mode === 'mood' ? 'flex' : 'none';
+        // Show/hide evolution timeline vs gallery
+        const evoTimeline = document.getElementById('evolution-timeline');
+        const galleryControls = document.querySelector('.controls');
+        const galleryContainer = document.querySelector('.gallery-container');
+        if (mode === 'evolution') {
+          evoTimeline.style.display = 'block';
+          if (galleryControls) galleryControls.style.display = 'none';
+          if (galleryContainer) galleryContainer.style.display = 'none';
+          loadEvolutionTimeline();
+        } else {
+          evoTimeline.style.display = 'none';
+          if (galleryControls) galleryControls.style.display = '';
+          if (galleryContainer) galleryContainer.style.display = '';
+        }
+        // Update URL
+        const url = new URL(window.location);
+        url.searchParams.set('view', mode);
+        if (mode !== 'mood') {
+          url.searchParams.delete('mood');
+          currentMoodFilter = '';
+          // Reset mood pill active states
+          document.querySelectorAll('.mood-pill').forEach(p => {
+            p.classList.toggle('active', p.dataset.moodFilter === '');
+          });
+        }
+        history.replaceState(null, '', url);
+        // Reload gallery for non-evolution views
+        if (mode !== 'evolution') {
+          loadImages();
+        }
+      }
+
+      function filterByMood(mood) {
+        currentMoodFilter = mood;
+        document.querySelectorAll('.mood-pill').forEach(p => {
+          p.classList.toggle('active', p.dataset.moodFilter === mood);
+        });
+        const url = new URL(window.location);
+        if (mood) url.searchParams.set('mood', mood);
+        else url.searchParams.delete('mood');
+        history.replaceState(null, '', url);
+        loadImages();
+      }
+
+
+      // Evolution Timeline
+      const MOOD_HEX = {
+        contemplative: '#6a4c93', playful: '#f8a5c2', melancholic: '#7f8fa6',
+        euphoric: '#f5af19', serene: '#81ecec', anxious: '#e17055',
+        nostalgic: '#dfe6e9', curious: '#74b9ff', rebellious: '#ff6b6b',
+        transcendent: '#d4a5ff'
+      };
+
+      async function loadEvolutionTimeline() {
+        const scroll = document.getElementById('evolution-scroll');
+        const legend = document.getElementById('evolution-legend');
+        if (!scroll) return;
+
+        scroll.innerHTML = '<div style="color:var(--text-secondary);padding:40px;text-align:center;">Loading evolution...</div>';
+
+        try {
+          const res = await fetch('/api/images?limit=500&_t=' + Date.now());
+          if (!res.ok) throw new Error();
+          const images = await res.json();
+
+          if (images.length === 0) {
+            scroll.innerHTML = '<div style="color:var(--text-secondary);padding:40px;text-align:center;width:100%;">No artworks yet. Lumira\'s evolution will appear here as she creates.</div>';
+            legend.innerHTML = '';
+            return;
+          }
+
+          // Sort chronologically (oldest first)
+          images.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+          scroll.innerHTML = '';
+          let lastMood = null;
+          const moodsSeen = new Set();
+
+          images.forEach((img, i) => {
+            const mood = (img.metadata?.mood || '').toLowerCase();
+            const moodColor = MOOD_HEX[mood] || '#666';
+
+            // Add period marker when mood changes
+            if (mood && mood !== lastMood && lastMood !== null) {
+              const marker = document.createElement('div');
+              marker.className = 'evo-period-marker';
+              marker.innerHTML = '<span class="evo-period-label" style="background:' + moodColor + '">' + mood + '</span>';
+              scroll.appendChild(marker);
+            }
+            lastMood = mood;
+            if (mood) moodsSeen.add(mood);
+
+            const item = document.createElement('div');
+            item.className = 'evo-item';
+            item.onclick = () => openModal(img);
+
+            const thumb = document.createElement('img');
+            thumb.className = 'evo-item-thumb';
+            thumb.src = '/api/images/file/' + img.path;
+            thumb.alt = img.prompt || 'Artwork';
+            thumb.loading = 'lazy';
+
+            const moodBar = document.createElement('div');
+            moodBar.className = 'evo-item-mood';
+            moodBar.style.backgroundColor = moodColor;
+
+            const date = document.createElement('div');
+            date.className = 'evo-item-date';
+            date.textContent = img.created_at ? new Date(img.created_at).toLocaleDateString('en-US', {month:'short', day:'numeric'}) : '';
+
+            item.appendChild(thumb);
+            item.appendChild(moodBar);
+
+            if (img.metadata?.final_score) {
+              const score = document.createElement('div');
+              score.className = 'evo-item-score';
+              score.textContent = parseFloat(img.metadata.final_score).toFixed(1);
+              item.appendChild(score);
+            }
+
+            item.appendChild(date);
+            scroll.appendChild(item);
+          });
+
+          // Auto-scroll to end (most recent)
+          scroll.scrollLeft = scroll.scrollWidth;
+
+          // Build legend
+          legend.innerHTML = '';
+          moodsSeen.forEach(mood => {
+            const item = document.createElement('div');
+            item.className = 'legend-item';
+            item.innerHTML = '<span class="legend-dot" style="background:' + (MOOD_HEX[mood] || '#666') + '"></span>' + mood;
+            legend.appendChild(item);
+          });
+
+        } catch(e) {
+          scroll.innerHTML = '<div style="color:var(--text-secondary);padding:40px;text-align:center;">Could not load evolution timeline.</div>';
         }
       }
 
@@ -4751,12 +5267,16 @@
         const filteredImages = filterImages(allImages);
 
         if (filteredImages.length === 0) {
-          if (allImages.length === 0 && !currentSearch) {
+          if (currentViewMode === 'mood' && currentMoodFilter) {
             gallery.innerHTML =
-              '<div class="empty-state"><div class="empty-icon">✦</div><h2>No artworks yet</h2><p>The gallery is ready, but there are no creations to show yet.</p><div class="empty-actions"><a href="/lumira" class="empty-btn empty-btn-primary">Open Creative Studio</a></div></div>';
+              `<div class="empty-state"><div class="empty-icon" style="color:${MOOD_COLORS[currentMoodFilter]?.accent || 'var(--accent)'}">&#10043;</div><h2>Lumira hasn't explored ${currentMoodFilter} much yet</h2><p>Moods shift often &mdash; check back soon.</p><div class="empty-actions"><button type="button" class="empty-btn empty-btn-secondary" onclick="filterByMood('')">Show All Moods</button></div></div>`;
+          } else if (currentViewMode === 'picks' && allImages.length === 0) {
+            gallery.innerHTML =
+              '<div class="empty-state"><div class="empty-icon">&#10024;</div><h2>Lumira is still developing her artistic voice</h2><p>Browse her recent work instead.</p><div class="empty-actions"><button type="button" class="empty-btn empty-btn-primary" onclick="switchViewMode(\'recent\')">View Recent</button></div></div>';
+          } else if (allImages.length === 0 && !currentSearch) {
+            gallery.innerHTML = getEmptyGalleryHTML();
           } else {
-            gallery.innerHTML =
-              '<div class="empty-state"><div class="empty-icon">🔍</div><h2>No matches</h2><p>Your current search and filters did not return any artworks.</p><div class="empty-actions"><button type="button" class="empty-btn empty-btn-secondary" onclick="clearFilters()">Clear Filters</button><button type="button" class="empty-btn empty-btn-secondary" onclick="document.getElementById(\'search\').focus()">Refine Search</button></div></div>';
+            gallery.innerHTML = getSearchNoResultsHTML(currentSearch || 'your filters');
           }
           return;
         }
@@ -4861,15 +5381,30 @@
           deleteBtn.title = "Delete";
           deleteBtn.onclick = (e) => deleteImage(image.path, e);
 
+          const shareBtn = document.createElement("button");
+          shareBtn.className = "action-btn";
+          shareBtn.innerHTML =
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>';
+          shareBtn.title = "Share";
+          shareBtn.onclick = (e) => {
+            e.stopPropagation();
+            const idx = allImages.indexOf(image);
+            if (idx !== -1) currentModalIndex = idx;
+            shareArtwork(e);
+          };
+
           actions.appendChild(featuredBtn);
+          actions.appendChild(shareBtn);
           actions.appendChild(downloadBtn);
           actions.appendChild(deleteBtn);
           imageContainer.appendChild(actions);
 
           const img = document.createElement("img");
+          img.className = "loading";
           img.src = `/api/images/file/${image.path}`;
           img.alt = image.prompt;
           img.loading = "lazy";
+          img.onload = function() { this.className = "loaded"; };
 
           imageContainer.appendChild(img);
 
@@ -4968,6 +5503,9 @@
 
         // Create action buttons
         modalActions.innerHTML = `
+                <button class="modal-btn" onclick="shareArtwork(event)" style="width: 100%;">
+                    <span>↗</span> Share
+                </button>
                 <button class="modal-btn" onclick="toggleFeaturedInModal(event)" style="width: 100%;">
                     <span>${image.featured ? "⭐" : "☆"}</span> ${image.featured ? "Unfeature" : "Feature"}
                 </button>
@@ -5000,10 +5538,12 @@
                 `
                     : ""
                 }
+                ${getCreationStoryHTML(image)}
             `;
       }
 
       function navigateModal(direction) {
+        exitComparison();
         const newIndex = currentModalIndex + direction;
         if (newIndex >= 0 && newIndex < allImages.length) {
           currentModalIndex = newIndex;
@@ -5081,6 +5621,45 @@
         zoomModal(delta);
       });
 
+      async function shareArtwork(e) {
+        e?.stopPropagation();
+        const image = allImages[currentModalIndex];
+        const shareUrl = window.location.origin + '/api/images/file/' + image.path;
+        const shareData = {
+          title: image.prompt || 'Artwork by Lumira',
+          text: 'Created by Lumira, an autonomous AI artist' + (image.metadata?.mood ? ' feeling ' + image.metadata.mood : ''),
+          url: shareUrl
+        };
+
+        // Try Web Share API first (mobile)
+        if (navigator.share) {
+          try {
+            await navigator.share(shareData);
+            showToast('Shared successfully', 'success');
+            return;
+          } catch(err) {
+            if (err.name === 'AbortError') return; // user cancelled
+          }
+        }
+
+        // Fallback: copy to clipboard
+        try {
+          await navigator.clipboard.writeText(shareUrl);
+          showToast('Link copied to clipboard', 'success');
+        } catch(err) {
+          // Final fallback: textarea hack
+          const ta = document.createElement('textarea');
+          ta.value = shareUrl;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          showToast('Link copied to clipboard', 'success');
+        }
+      }
+
       function toggleFeaturedInModal(event) {
         const image = allImages[currentModalIndex];
         toggleFeatured(image.path, image.featured, event);
@@ -5104,6 +5683,7 @@
       }
 
       function closeModal() {
+        exitComparison();
         document.getElementById("modal").classList.remove("active");
         document.body.style.overflow = "";
         resetZoom();
@@ -5259,7 +5839,11 @@
 
       // Welcome hero for first-time visitors
       function dismissHero() {
-        document.getElementById("welcome-hero").style.display = "none";
+        var hero = document.getElementById("welcome-hero");
+        hero.style.transition = "opacity 0.4s ease, transform 0.4s ease";
+        hero.style.opacity = "0";
+        hero.style.transform = "translateY(-10px)";
+        setTimeout(function() { hero.style.display = "none"; }, 400);
         localStorage.setItem("lumira_hero_dismissed", "1");
       }
 
@@ -5285,6 +5869,35 @@
         const gallery = document.getElementById("gallery");
         gallery.className = "gallery";
         if (savedView !== "grid") gallery.classList.add(savedView);
+      }
+
+      // Restore view mode from URL params
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlView = urlParams.get('view');
+      if (urlView && ['recent', 'picks', 'mood', 'evolution'].includes(urlView)) {
+        currentViewMode = urlView;
+        document.querySelectorAll('.view-tab').forEach(t => {
+          t.classList.toggle('active', t.dataset.viewMode === urlView);
+          t.setAttribute('aria-selected', t.dataset.viewMode === urlView ? 'true' : 'false');
+        });
+        if (urlView === 'mood') {
+          document.getElementById('mood-pills').style.display = 'flex';
+        }
+        if (urlView === 'evolution') {
+          document.getElementById('evolution-timeline').style.display = 'block';
+          const gc = document.querySelector('.controls');
+          const gcont = document.querySelector('.gallery-container');
+          if (gc) gc.style.display = 'none';
+          if (gcont) gcont.style.display = 'none';
+          loadEvolutionTimeline();
+        }
+      }
+      const urlMood = urlParams.get('mood');
+      if (urlMood) {
+        currentMoodFilter = urlMood;
+        document.querySelectorAll('.mood-pill').forEach(p => {
+          p.classList.toggle('active', p.dataset.moodFilter === urlMood);
+        });
       }
 
       // Initialize
@@ -5313,52 +5926,230 @@
         .addEventListener("change", applyFilters);
 
       // ============================================================
-      // Live Preview - WebSocket Integration
+      // Live Preview - WebSocket Integration (Auto-Reconnecting)
       // ============================================================
 
-      let ws = null;
-      let currentSessionId = null;
-      let reconnectAttempts = 0;
-      const maxReconnectAttempts = 5;
+      function createReconnectingWebSocket(url, handlers) {
+        var _ws = null;
+        var retryCount = 0;
+        var maxRetries = 12;
+        var baseDelay = 500;
+        var intentionallyClosed = false;
+        var messageBuffer = [];
+        var maxBufferSize = 50;
 
-      function connectWebSocket() {
-        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-        const wsUrl = `${protocol}//${window.location.host}/ws`;
+        function updateConnectionStatus(status) {
+          var indicator = document.getElementById('ws-status');
+          if (!indicator) return;
+          indicator.className = 'ws-status ws-status-' + status;
+          indicator.title = status === 'connected' ? 'Real-time updates active'
+            : status === 'reconnecting' ? 'Reconnecting...'
+            : 'Connection lost';
+        }
 
-        ws = new WebSocket(wsUrl);
-
-        ws.onopen = () => {
-          console.log("WebSocket connected");
-          reconnectAttempts = 0;
-          // Send ping to keep alive
-          ws.send(JSON.stringify({ type: "ping" }));
-        };
-
-        ws.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-          handleWebSocketMessage(data);
-        };
-
-        ws.onerror = (error) => {
-          console.error("WebSocket error:", error);
-        };
-
-        ws.onclose = () => {
-          console.log("WebSocket disconnected");
-          // Attempt reconnect with exponential backoff
-          if (reconnectAttempts < maxReconnectAttempts) {
-            const delay = Math.min(
-              1000 * Math.pow(2, reconnectAttempts),
-              10000,
-            );
-            reconnectAttempts++;
-            console.log(
-              `Reconnecting in ${delay}ms... (attempt ${reconnectAttempts}/${maxReconnectAttempts})`,
-            );
-            setTimeout(connectWebSocket, delay);
+        function connect() {
+          try {
+            _ws = new WebSocket(url);
+          } catch(e) {
+            scheduleReconnect();
+            return;
           }
-        };
+
+          _ws.onopen = function() {
+            retryCount = 0;
+            updateConnectionStatus('connected');
+            if (handlers.onopen) handlers.onopen();
+          };
+
+          _ws.onmessage = function(event) {
+            try {
+              var data = JSON.parse(event.data);
+              messageBuffer.push({data: data, time: Date.now()});
+              if (messageBuffer.length > maxBufferSize) messageBuffer.shift();
+              if (handlers.onmessage) handlers.onmessage(data);
+            } catch(e) {
+              if (handlers.onraw) handlers.onraw(event);
+            }
+          };
+
+          _ws.onclose = function(event) {
+            if (intentionallyClosed) return;
+            updateConnectionStatus('reconnecting');
+            if (handlers.onclose) handlers.onclose(event);
+            scheduleReconnect();
+          };
+
+          _ws.onerror = function(event) {
+            updateConnectionStatus('disconnected');
+            if (handlers.onerror) handlers.onerror(event);
+          };
+        }
+
+        function scheduleReconnect() {
+          if (retryCount >= maxRetries) {
+            updateConnectionStatus('disconnected');
+            showReconnectPrompt();
+            return;
+          }
+          var delay = Math.min(baseDelay * Math.pow(2, retryCount) + Math.random() * 1000, 30000);
+          retryCount++;
+          setTimeout(function() {
+            if (!intentionallyClosed) connect();
+          }, delay);
+        }
+
+        function showReconnectPrompt() {
+          if (typeof showToast === 'function') {
+            showToast('Connection lost. Click status dot to reconnect.', 'warning');
+          }
+          var indicator = document.getElementById('ws-status');
+          if (indicator) {
+            indicator.style.cursor = 'pointer';
+            indicator.onclick = function() {
+              retryCount = 0;
+              indicator.onclick = null;
+              indicator.style.cursor = '';
+              connect();
+            };
+          }
+        }
+
+        function send(data) {
+          if (_ws && _ws.readyState === WebSocket.OPEN) {
+            _ws.send(typeof data === 'string' ? data : JSON.stringify(data));
+            return true;
+          }
+          return false;
+        }
+
+        function close() {
+          intentionallyClosed = true;
+          if (_ws) _ws.close();
+        }
+
+        function getLastMessages(type, count) {
+          return messageBuffer
+            .filter(function(m) { return !type || m.data.type === type; })
+            .slice(-(count || 10));
+        }
+
+        function isConnected() {
+          return _ws && _ws.readyState === WebSocket.OPEN;
+        }
+
+        connect();
+
+        return { send: send, close: close, getLastMessages: getLastMessages, isConnected: isConnected, reconnectNow: function() { retryCount = 0; connect(); } };
       }
+
+      let currentSessionId = null;
+
+      var wsUrl = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws';
+      var wsConnection = createReconnectingWebSocket(wsUrl, {
+        onopen: function() {
+          console.log("WebSocket connected");
+          wsConnection.send(JSON.stringify({ type: "ping" }));
+        },
+        onmessage: function(data) {
+          handleWebSocketMessage(data);
+        },
+        onclose: function() {
+          console.log("WebSocket disconnected");
+        },
+        onerror: function(error) {
+          console.error("WebSocket error:", error);
+        }
+      });
+
+      // Reconnect immediately when user returns to tab
+      document.addEventListener('visibilitychange', function() {
+        if (!document.hidden && !wsConnection.isConnected()) {
+          wsConnection.reconnectNow();
+        }
+      });
+
+      /* --- Denoising step reveal visualization --- */
+      var _noiseAnimFrame = null;
+      var _progressPercent = 0;
+
+      function initProgressPreview() {
+        var canvas = document.getElementById('progress-canvas');
+        if (!canvas) return;
+        var ctx = canvas.getContext('2d');
+        _progressPercent = 0;
+        animateNoise(ctx, canvas);
+      }
+
+      function animateNoise(ctx, canvas) {
+        var w = canvas.width, h = canvas.height;
+        var imageData = ctx.createImageData(w, h);
+        var d = imageData.data;
+        var noiseLevel = 1 - (_progressPercent / 100);
+        var clarity = _progressPercent / 100;
+        var mc = getMoodRGB();
+        for (var i = 0; i < d.length; i += 4) {
+          var noise = Math.random();
+          var px = (i / 4) % w;
+          var py = Math.floor((i / 4) / w);
+          var freq1 = Math.sin(px * 0.02 + py * 0.03 + _progressPercent * 0.1) * 0.5 + 0.5;
+          var freq2 = Math.sin(px * 0.05 - py * 0.04 + _progressPercent * 0.05) * 0.5 + 0.5;
+          var pattern = (freq1 + freq2) / 2;
+          var value = noise * noiseLevel + pattern * clarity;
+          d[i]     = Math.floor(value * mc[0] * 0.6 + noise * 30 * noiseLevel);
+          d[i + 1] = Math.floor(value * mc[1] * 0.6 + noise * 30 * noiseLevel);
+          d[i + 2] = Math.floor(value * mc[2] * 0.6 + noise * 30 * noiseLevel);
+          d[i + 3] = 255;
+        }
+        ctx.putImageData(imageData, 0, 0);
+        if (clarity > 0.1) {
+          ctx.filter = 'blur(' + Math.max(0, (1 - clarity) * 8) + 'px)';
+          ctx.drawImage(canvas, 0, 0);
+          ctx.filter = 'none';
+        }
+        if (_progressPercent < 100) {
+          _noiseAnimFrame = requestAnimationFrame(function() { animateNoise(ctx, canvas); });
+        }
+      }
+
+      function getMoodRGB() {
+        var mood = window._lumiraMood || 'contemplative';
+        var map = {
+          contemplative: [106, 76, 147], playful: [248, 165, 194],
+          melancholic: [127, 143, 166], euphoric: [245, 175, 25],
+          serene: [129, 236, 236], anxious: [225, 112, 85],
+          nostalgic: [223, 230, 233], curious: [116, 185, 255],
+          rebellious: [255, 107, 107], transcendent: [212, 165, 255]
+        };
+        return map[mood] || map.contemplative;
+      }
+
+      function updateProgressPreview(percent, previewBase64) {
+        _progressPercent = percent;
+        var label = document.getElementById('progress-preview-label');
+        if (label) {
+          if (percent < 20) label.textContent = 'Emerging from noise...';
+          else if (percent < 50) label.textContent = 'Taking shape...';
+          else if (percent < 80) label.textContent = 'Refining details...';
+          else label.textContent = 'Almost there...';
+        }
+        if (previewBase64) {
+          var canvas = document.getElementById('progress-canvas');
+          if (!canvas) return;
+          var ctx = canvas.getContext('2d');
+          var img = new Image();
+          img.onload = function() {
+            cancelAnimationFrame(_noiseAnimFrame);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          };
+          img.src = 'data:image/jpeg;base64,' + previewBase64;
+        }
+      }
+
+      function stopProgressPreview() {
+        if (_noiseAnimFrame) { cancelAnimationFrame(_noiseAnimFrame); _noiseAnimFrame = null; }
+        _progressPercent = 0;
+      }
+      /* --- End denoising visualization --- */
 
       function handleWebSocketMessage(data) {
         switch (data.type) {
@@ -5378,6 +6169,14 @@
           case "pong":
             // Keep alive response
             break;
+          case "mood_drift": {
+            const newMood = (data.mood || '').toLowerCase();
+            if (newMood) {
+              document.body.setAttribute('data-mood', newMood);
+              window._lumiraMood = newMood;
+            }
+            break;
+          }
         }
       }
 
@@ -5403,6 +6202,11 @@
         panel.classList.add("active");
         cancelBtn.disabled = false;
 
+        // Start denoising preview on first progress event
+        if (_noiseAnimFrame === null && _progressPercent === 0) {
+          initProgressPreview();
+        }
+
         const percent =
           data.progress_percent ||
           Math.round((data.step / data.total_steps) * 100);
@@ -5411,10 +6215,14 @@
         percentText.textContent = `${percent}%`;
         message.textContent = data.message || "Generating...";
 
+        // Update denoising preview
+        updateProgressPreview(percent, data.preview_image);
+
         currentSessionId = data.session_id;
       }
 
       function handleGenerationComplete(data) {
+        stopProgressPreview();
         const panel = document.getElementById("progress-panel");
         const status = document.getElementById("progress-status");
         const message = document.getElementById("progress-message");
@@ -5452,6 +6260,7 @@
       }
 
       function handleGenerationError(data) {
+        stopProgressPreview();
         const status = document.getElementById("progress-status");
         const message = document.getElementById("progress-message");
         const cancelBtn = document.getElementById("cancel-btn");
@@ -5468,6 +6277,7 @@
       }
 
       function hideProgressPanel() {
+        stopProgressPreview();
         document.getElementById("progress-panel").classList.remove("active");
       }
 
@@ -5488,15 +6298,10 @@
         }
       }
 
-      // Connect WebSocket on page load
-      connectWebSocket();
-
-      // Keep connection alive with periodic pings
-      setInterval(() => {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ type: "ping" }));
-        }
-      }, 30000); // Ping every 30 seconds
+      // Keep connection alive with periodic pings (wsConnection created above)
+      setInterval(function() {
+        wsConnection.send(JSON.stringify({ type: "ping" }));
+      }, 30000);
 
       // ===== AWWWARDS: Page loader =====
       window.addEventListener("load", function () {
