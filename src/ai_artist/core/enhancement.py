@@ -59,9 +59,9 @@ class ImageEnhancer:
             return True
 
         try:
-            from realesrgan import RealESRGANer
-            from basicsr.archs.rrdbnet_arch import RRDBNet
             import torch
+            from basicsr.archs.rrdbnet_arch import RRDBNet
+            from realesrgan import RealESRGANer
 
             logger.info("loading_realesrgan_model")
 

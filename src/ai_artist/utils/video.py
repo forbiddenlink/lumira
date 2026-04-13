@@ -19,6 +19,7 @@ def _check_moviepy() -> None:
     if _moviepy_available is None:
         try:
             import moviepy  # noqa: F401
+
             _moviepy_available = True
         except ImportError:
             _moviepy_available = False
@@ -88,10 +89,12 @@ def create_slideshow(
 
         # Apply fade effects if requested
         if fade_duration > 0:
-            clip = clip.with_effects([
-                CrossFadeIn(fade_duration),
-                CrossFadeOut(fade_duration),
-            ])
+            clip = clip.with_effects(
+                [
+                    CrossFadeIn(fade_duration),
+                    CrossFadeOut(fade_duration),
+                ]
+            )
 
         clips.append(clip)
 
@@ -169,7 +172,7 @@ def create_zoom_video(
 
     # Load image
     clip = ImageClip(image_path, duration=duration)
-    original_size = clip.size
+    _ = clip.size  # used for reference, zoom operates on frames directly
 
     def zoom_effect(get_frame, t):
         """Apply zoom effect at time t."""
@@ -181,8 +184,8 @@ def create_zoom_video(
         frame = get_frame(t)
 
         # Import here to avoid circular dependency
-        from PIL import Image
         import numpy as np
+        from PIL import Image
 
         img = Image.fromarray(frame)
         w, h = img.size

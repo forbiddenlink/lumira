@@ -137,7 +137,7 @@ class TestGalleryCollectionUpdatedAt:
             )
             session.add(col)
             session.commit()
-            original_ts = col.updated_at
+            _ = col.updated_at  # capture before mutation
 
             # Mutate a field to trigger 'before_update'
             col.name = "Renamed"
@@ -423,4 +423,4 @@ class TestAdminPerformance:
         resp = client.get("/admin/performance")
         data = resp.json()
         assert "avg_duration" in data
-        assert isinstance(data["avg_duration"], (int, float))
+        assert isinstance(data["avg_duration"], int | float)
