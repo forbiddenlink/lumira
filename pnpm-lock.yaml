@@ -14,6 +14,15 @@ overrides:
   vite: '>=8.0.5'
   transformers: '>=5.0.0rc3'
   next: '>=16.2.3'
+  protobufjs: '>=7.5.5'
+  fast-uri: '>=3.1.2'
+  axios: '>=1.13.5'
+  hono: '>=4.13.0'
+  minimatch: '>=10.2.5'
+  picomatch: '>=4.0.4'
+  lodash: '>=4.17.21'
+  flatted: '>=3.3.4'
+  undici: '>=7.0.0'
 
 importers:
 
@@ -712,7 +721,7 @@ packages:
     resolution: {integrity: sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==}
     engines: {node: '>=12.0.0'}
     peerDependencies:
-      picomatch: ^3 || ^4
+      picomatch: '>=4.0.4'
     peerDependenciesMeta:
       picomatch:
         optional: true
