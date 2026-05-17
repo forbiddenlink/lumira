@@ -14,15 +14,28 @@ overrides:
   vite: '>=8.0.5'
   transformers: '>=5.0.0rc3'
   next: '>=16.2.3'
-  protobufjs: '>=7.5.5'
+  protobufjs: ^7.5.8
   fast-uri: '>=3.1.2'
   axios: '>=1.13.5'
   hono: '>=4.13.0'
   minimatch: '>=10.2.5'
-  picomatch: '>=4.0.4'
-  lodash: '>=4.17.21'
-  flatted: '>=3.3.4'
+  picomatch: ^4.0.4
+  lodash: ^4.18.1
+  flatted: '>=3.4.2'
   undici: '>=7.0.0'
+  defu: '>=6.1.5'
+  serialize-javascript: '>=7.0.3'
+  systeminformation: '>=5.31.6'
+  yaml: '>=2.8.3'
+  cookie: '>=0.7.0'
+  dompurify: '>=3.4.0'
+  fast-xml-parser: '>=5.7.0'
+  uuid: '>=14.0.0'
+  '@protobufjs/utf8': '>=1.1.1'
+  basic-ftp: '>=5.3.1'
+  ip-address: '>=10.1.1'
+  fast-xml-builder: '>=1.1.7'
+  postcss: '>=8.5.14'
 
 importers:
 
@@ -721,7 +734,7 @@ packages:
     resolution: {integrity: sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==}
     engines: {node: '>=12.0.0'}
     peerDependencies:
-      picomatch: '>=4.0.4'
+      picomatch: ^4.0.4
     peerDependenciesMeta:
       picomatch:
         optional: true
@@ -955,12 +968,8 @@ packages:
     resolution: {integrity: sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A==}
     engines: {node: '>=12'}
 
-  postcss@8.4.31:
-    resolution: {integrity: sha512-PS08Iboia9mts/2ygV3eLpY5ghnUcfLV/EXTOW1E2qYxJKGGBUtNjN76FYHnMs36RmARn41bC0AZmn+rR0OVpQ==}
-    engines: {node: ^10 || ^12 || >=14}
-
-  postcss@8.5.8:
-    resolution: {integrity: sha512-OW/rX8O/jXnm82Ey1k44pObPtdblfiuWnrd8X7GJ7emImCOstunGbXUpp7HdBrFQX6rJzn3sPT397Wp5aCwCHg==}
+  postcss@8.5.14:
+    resolution: {integrity: sha512-SoSL4+OSEtR99LHFZQiJLkT59C5B1amGO1NzTwj7TT1qCUgUO6hxOvzkOYxD+vMrXBM3XJIKzokoERdqQq/Zmg==}
     engines: {node: ^10 || ^12 || >=14}
 
   pretty-format@27.5.1:
@@ -1135,7 +1144,7 @@ packages:
       sugarss: ^5.0.0
       terser: ^5.16.0
       tsx: ^4.8.1
-      yaml: ^2.4.2
+      yaml: '>=2.8.3'
     peerDependenciesMeta:
       '@types/node':
         optional: true
@@ -1897,7 +1906,7 @@ snapshots:
       '@swc/helpers': 0.5.15
       baseline-browser-mapping: 2.10.13
       caniuse-lite: 1.0.30001784
-      postcss: 8.4.31
+      postcss: 8.5.14
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
       styled-jsx: 5.1.6(react@19.2.4)
@@ -1938,13 +1947,7 @@ snapshots:
 
   picomatch@4.0.4: {}
 
-  postcss@8.4.31:
-    dependencies:
-      nanoid: 3.3.11
-      picocolors: 1.1.1
-      source-map-js: 1.2.1
-
-  postcss@8.5.8:
+  postcss@8.5.14:
     dependencies:
       nanoid: 3.3.11
       picocolors: 1.1.1
@@ -2119,7 +2122,7 @@ snapshots:
     dependencies:
       lightningcss: 1.32.0
       picomatch: 4.0.4
-      postcss: 8.5.8
+      postcss: 8.5.14
       rolldown: 1.0.0-rc.12(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)
       tinyglobby: 0.2.15
     optionalDependencies:
