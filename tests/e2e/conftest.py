@@ -3,11 +3,14 @@
 import json
 import os
 import re
+import shutil
 import socket
+import subprocess
+import sys
 import tempfile
 import time
 from collections.abc import Generator
-from contextlib import closing
+from contextlib import closing, suppress
 from pathlib import Path
 
 import pytest
@@ -84,23 +87,28 @@ def _seed_e2e_runtime(root: Path) -> None:
     )
     (data_dir / "lumira_mood_history.json").write_text("[]", encoding="utf-8")
 
-    sample_img = gallery_dir / "e2e-sample.png"
-    sample_json = gallery_dir / "e2e-sample.json"
-    if not sample_img.exists():
+    for index, color in enumerate(((120, 80, 200), (80, 150, 120)), start=1):
+        sample_img = gallery_dir / f"e2e-sample-{index}.png"
+        sample_json = gallery_dir / f"e2e-sample-{index}.json"
         try:
             from PIL import Image
 
-            Image.new("RGB", (64, 64), color=(120, 80, 200)).save(sample_img)
+            Image.new("RGB", (64, 64), color=color).save(sample_img)
         except Exception:
             sample_img.write_bytes(
                 b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00@\x00\x00\x00@\x08\x02"
                 b"\x00\x00\x00%\x0b\xe6\x89\x00\x00\x00\nIDATx\x9cc``\x00\x00\x00\x02"
                 b"\x00\x01\xe2!\xbc3\x00\x00\x00\x00IEND\xaeB`\x82"
             )
-    sample_json.write_text(
-        '{"prompt": "E2E test artwork", "created_at": "2026-06-25T12:00:00"}',
-        encoding="utf-8",
-    )
+        sample_json.write_text(
+            json.dumps(
+                {
+                    "prompt": f"E2E test artwork {index}",
+                    "created_at": f"2026-06-25T12:0{index}:00",
+                }
+            ),
+            encoding="utf-8",
+        )
 
 
 @pytest.fixture(scope="session")
@@ -116,9 +124,6 @@ def server_process(test_port: int) -> Generator[None, None, None]:
     This fixture starts the server in a subprocess and waits for it
     to be ready before yielding. Shuts down the server after tests.
     """
-    import subprocess
-    import sys
-
     import httpx
 
     e2e_root = Path(tempfile.mkdtemp(prefix="lumira-e2e-"))
@@ -145,8 +150,8 @@ def server_process(test_port: int) -> Generator[None, None, None]:
         ],
         cwd=e2e_root,
         env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
 
     # Wait for server to be ready (with timeout)
@@ -164,22 +169,22 @@ def server_process(test_port: int) -> Generator[None, None, None]:
         time.sleep(0.5)
     else:
         proc.terminate()
-        stdout, stderr = proc.communicate(timeout=5)
+        proc.wait(timeout=5)
         raise RuntimeError(
-            f"Server failed to start within {max_wait}s.\n"
-            f"stdout: {stdout.decode()}\n"
-            f"stderr: {stderr.decode()}"
+            f"Server failed to start within {max_wait}s.\n" f"isolated cwd: {e2e_root}"
         )
 
-    yield
-
-    # Shutdown server
-    proc.terminate()
     try:
-        proc.wait(timeout=5)
-    except subprocess.TimeoutExpired:
-        proc.kill()
-        proc.wait()
+        yield
+    finally:
+        # Shutdown server
+        proc.terminate()
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait()
+        shutil.rmtree(e2e_root, ignore_errors=True)
 
 
 @pytest.fixture(scope="session")
@@ -197,20 +202,12 @@ def browser_type_launch_args():
     }
 
 
-@pytest.fixture(scope="session")
-def browser_context_args():
-    """Reuse one context per session to avoid Chromium startup churn."""
-    return {
-        "viewport": {"width": 1280, "height": 720},
-        "service_workers": "block",
-    }
-
-
-@pytest.fixture(scope="session")
-def e2e_browser_context(
+@pytest.fixture(scope="function")
+def page_with_server(
     browser: Browser,
-) -> Generator:
-    """Session-scoped browser context with external assets blocked."""
+    base_url: str,
+) -> Generator[Page, None, None]:
+    """Create an isolated page connected to the running test server."""
     context = browser.new_context(
         viewport={"width": 1280, "height": 720},
         service_workers="block",
@@ -220,23 +217,13 @@ def e2e_browser_context(
         r"https?://unpkg\.com/.*",
     ):
         context.route(re.compile(pattern), lambda route: route.abort())
-    context.add_init_script(
-        "() => { try { localStorage.clear(); sessionStorage.clear(); } catch (e) {} }"
-    )
-    yield context
-    context.close()
-
-
-@pytest.fixture(scope="function")
-def page_with_server(
-    e2e_browser_context,
-    base_url: str,
-) -> Generator[Page, None, None]:
-    """Create a page connected to the running test server."""
-    page = e2e_browser_context.new_page()
+    page = context.new_page()
     page.set_default_timeout(10000)
-    yield page
-    page.close()
+    try:
+        yield page
+    finally:
+        page.close()
+        context.close()
 
 
 def _wait_for_page_loader(page: Page, timeout: int = 5000) -> None:
@@ -266,12 +253,10 @@ def lumira_page(page_with_server: Page, base_url: str) -> Page:
     _wait_for_page_loader(page)
 
     # Mood may stay on Awakening if API is slow; don't block the full suite
-    try:
+    with suppress(Exception):
         page.wait_for_selector(
             "#mood-text:not(:has-text('Awakening...'))", timeout=5000
         )
-    except Exception:
-        pass
 
     return page
 

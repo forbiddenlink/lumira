@@ -150,8 +150,14 @@ jobs:
 
     - name: Run E2E tests
       run: |
-        uv run --python 3.11 pytest tests/e2e -v --browser chromium --timeout=120
-      continue-on-error: true
+        uv run --frozen --python 3.11 pytest \
+          tests/e2e/test_gallery_ui.py \
+          tests/e2e/test_lumira_ui.py \
+          -v \
+          --browser chromium \
+          --tb=short \
+          --durations=10 \
+          --junitxml=e2e-results.xml
 
     - name: Upload Playwright traces
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -159,6 +165,13 @@ jobs:
       with:
         name: playwright-traces
         path: test-results/
+
+    - name: Upload E2E test results
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      if: always()
+      with:
+        name: e2e-test-results
+        path: e2e-results.xml
 
   security:
     name: Security Scan
