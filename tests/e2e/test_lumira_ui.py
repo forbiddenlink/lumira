@@ -115,11 +115,15 @@ class TestThemeToggle:
         """Test toggling from light back to dark theme."""
         page = lumira_page
         html = page.locator("html")
-
-        # Toggle to light
         toggle_btn = page.locator("#theme-toggle")
-        toggle_btn.click()
-        expect(html).to_have_attribute("data-theme", "light")
+
+        # Ensure known starting state (previous tests may have toggled theme)
+        page.evaluate(
+            "() => {"
+            " document.documentElement.setAttribute('data-theme', 'light');"
+            " localStorage.setItem('lumira-theme', 'light');"
+            "}"
+        )
 
         # Toggle back to dark
         toggle_btn.click()
@@ -270,7 +274,7 @@ class TestLightbox:
             pytest.skip("No art cards in gallery")
 
         # Click close button
-        close_btn = page.locator(".close-btn")
+        close_btn = page.locator("#lightbox .close-btn")
         close_btn.click()
 
         # Verify lightbox is closed

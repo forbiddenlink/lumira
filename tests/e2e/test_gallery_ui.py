@@ -22,6 +22,14 @@ class TestGalleryPageLoad:
         privacy = page.locator('a[href="/privacy"]')
         expect(privacy).to_be_visible()
 
+    def test_llms_txt_endpoint(self, page_with_server: Page, base_url: str):
+        page = page_with_server
+        response = page.request.get(f"{base_url}/llms.txt")
+        assert response.ok
+        body = response.text()
+        assert "Lumira" in body
+        assert "/lumira" in body
+
     def test_footer_discloses_ai_content(self, gallery_page: Page):
         page = gallery_page
         expect(page.locator("footer")).to_contain_text("AI")

@@ -96,3 +96,10 @@ class TestLaunchSmoke:
         client, _ = smoke_client
         response = client.post("/api/cancel/not-a-real-session")
         assert response.status_code == 404
+
+    def test_llms_txt_served(self, smoke_client):
+        client, _ = smoke_client
+        response = client.get("/llms.txt")
+        assert response.status_code == 200
+        assert "Lumira" in response.text
+        assert "/api/lumira/state" in response.text

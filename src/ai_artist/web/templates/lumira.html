@@ -5347,12 +5347,17 @@
         }, 10000);
 
         // ===== AWWWARDS: Page loader =====
-        window.addEventListener("load", function () {
-          setTimeout(function () {
+        (function () {
+          function dismissPageLoader() {
             var loader = document.getElementById("page-loader");
             if (loader) loader.classList.add("loaded");
-          }, 600);
-        });
+          }
+          window.addEventListener("load", function () {
+            setTimeout(dismissPageLoader, 600);
+          });
+          // Fallback so slow/missing assets never block interaction
+          setTimeout(dismissPageLoader, 2500);
+        })();
 
         // ===== AWWWARDS: Custom cursor (pointer devices only) =====
         (function () {

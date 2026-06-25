@@ -2239,17 +2239,47 @@
 
       @media (max-width: 768px) {
         .creation-fab {
-          bottom: 24px;
+          left: 16px;
+          right: 16px;
+          bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+          transform: none;
+          justify-content: center;
+          width: auto;
         }
         .creation-panel {
           flex-wrap: wrap;
-          max-width: calc(100vw - 100px);
+          max-width: min(420px, calc(100vw - 32px));
         }
         .creation-panel-input {
           min-width: 150px;
+          font-size: 16px;
         }
         .creation-panel-select {
           max-width: 120px;
+          font-size: 16px;
+        }
+
+        .modal-nav-btn {
+          width: 48px;
+          height: 48px;
+          font-size: 22px;
+        }
+
+        .modal-nav-prev {
+          left: 8px;
+        }
+
+        .modal-nav-next {
+          right: 8px;
+        }
+
+        .modal-close {
+          min-width: 44px;
+          min-height: 44px;
+        }
+
+        .modal-image-counter {
+          top: calc(16px + env(safe-area-inset-top, 0px));
         }
       }
 
@@ -6429,12 +6459,16 @@
       }, 30000);
 
       // ===== AWWWARDS: Page loader =====
-      window.addEventListener("load", function () {
-        setTimeout(function () {
+      (function () {
+        function dismissPageLoader() {
           var loader = document.getElementById("page-loader");
           if (loader) loader.classList.add("loaded");
-        }, 600);
-      });
+        }
+        window.addEventListener("load", function () {
+          setTimeout(dismissPageLoader, 600);
+        });
+        setTimeout(dismissPageLoader, 2500);
+      })();
 
       // ===== AWWWARDS: Custom cursor =====
       (function () {

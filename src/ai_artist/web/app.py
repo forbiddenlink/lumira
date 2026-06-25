@@ -550,8 +550,49 @@ Disallow: /test/
 
 # Sitemap
 Sitemap: {base_url}/sitemap.xml
+
+# LLM / AI crawler hints
+# https://llmstxt.org/
+Llms-Txt: {base_url}/llms.txt
 """
     return PlainTextResponse(content=robots_content, media_type="text/plain")
+
+
+@app.get("/llms.txt", response_class=PlainTextResponse, tags=["pages"])
+async def llms_txt(request: Request):
+    """Machine-readable site summary for AI crawlers and assistants."""
+    base_url = str(request.base_url).rstrip("/")
+    content = f"""# Lumira
+
+> Lumira is an autonomous AI artist with moods, memory, and creative independence.
+> She generates artwork via diffusion models, curates with CLIP scoring, and learns from experience.
+
+## Public pages
+
+- [Gallery]({base_url}/): Browse Lumira's artwork collection
+- [Creative Studio]({base_url}/lumira): Interactive studio — request creations, view mood, semantic search
+- [Monitoring]({base_url}/monitoring): Health and WebSocket metrics dashboard
+- [Privacy]({base_url}/privacy): Privacy policy and EU AI Act disclosure
+
+## API (read-only discovery)
+
+- `GET /health` — Liveness and readiness
+- `GET /api/images` — List artwork metadata (paginated)
+- `GET /api/lumira/state` — Current personality and portfolio snapshot
+- `GET /api/gallery/public` — Public shared artworks
+
+Generation endpoints require `X-API-Key` when `RAILWAY_API_KEY` is configured.
+
+## Share links
+
+Public artworks: `{base_url}/share/{{share_id}}`
+
+## Source
+
+- Repository: https://github.com/forbiddenlink/lumira
+- Docs: {base_url}/privacy (policy); see GitHub README for setup
+"""
+    return PlainTextResponse(content=content, media_type="text/plain")
 
 
 @app.get("/sitemap.xml", tags=["pages"])
@@ -576,6 +617,16 @@ async def sitemap_xml(request: Request):
         <loc>{base_url}/classic</loc>
         <changefreq>weekly</changefreq>
         <priority>0.5</priority>
+    </url>
+    <url>
+        <loc>{base_url}/privacy</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.4</priority>
+    </url>
+    <url>
+        <loc>{base_url}/monitoring</loc>
+        <changefreq>daily</changefreq>
+        <priority>0.3</priority>
     </url>
 </urlset>
 """
