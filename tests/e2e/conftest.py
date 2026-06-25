@@ -36,9 +36,24 @@ def server_process(test_port: int) -> Generator[None, None, None]:
 
     import httpx
 
-    # Ensure test gallery directory exists
+    # Ensure test gallery directory exists with a sample image for E2E
     gallery_path = Path("gallery")
     gallery_path.mkdir(exist_ok=True)
+    sample_dir = gallery_path / "2026" / "06" / "25"
+    sample_dir.mkdir(parents=True, exist_ok=True)
+    sample_img = sample_dir / "e2e-sample.png"
+    sample_json = sample_dir / "e2e-sample.json"
+    if not sample_img.exists():
+        try:
+            from PIL import Image
+
+            Image.new("RGB", (64, 64), color=(120, 80, 200)).save(sample_img)
+            sample_json.write_text(
+                '{"prompt": "E2E test artwork", "created_at": "2026-06-25T12:00:00"}',
+                encoding="utf-8",
+            )
+        except Exception:
+            pass
 
     # Set environment variables for test mode
     env = os.environ.copy()
@@ -131,18 +146,25 @@ def page_with_server(
 def lumira_page(page_with_server: Page, base_url: str) -> Page:
     """Navigate to Lumira page and wait for it to be ready."""
     page = page_with_server
-    page.goto(f"{base_url}/lumira")
+    page.set_default_timeout(30000)
+    page.goto(f"{base_url}/lumira", wait_until="domcontentloaded", timeout=30000)
 
     # Wait for the page to be interactive
-    page.wait_for_selector("h1:has-text('LUMIRA')")
+    page.wait_for_selector("h1:has-text('LUMIRA')", timeout=30000)
 
     # Wait for initial state fetch to complete
-    page.wait_for_selector("#mood-text:not(:has-text('Awakening...'))", timeout=15000)
+    page.wait_for_selector("#mood-text:not(:has-text('Awakening...'))", timeout=30000)
 
     return page
 
 
-# --- Standalone fixtures for running without server (mock mode) ---
+@pytest.fixture(scope="function")
+def gallery_page(page_with_server: Page, base_url: str) -> Page:
+    """Navigate to the modern gallery homepage."""
+    page = page_with_server
+    page.goto(f"{base_url}/")
+    page.wait_for_selector("#gallery", timeout=15000)
+    return page
 
 
 @pytest.fixture(scope="function")

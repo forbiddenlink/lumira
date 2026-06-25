@@ -3360,7 +3360,15 @@
     </div>
 
     <!-- Modal -->
-    <div class="modal" id="modal">
+    <div
+      class="modal"
+      id="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+      tabindex="-1"
+    >
+      <h2 id="modal-title" class="sr-only">Artwork viewer</h2>
       <button
         class="modal-close"
         onclick="closeModal()"
@@ -3402,6 +3410,7 @@
         class="modal-nav-btn modal-nav-prev"
         id="modal-prev"
         onclick="navigateModal(-1)"
+        aria-label="Previous artwork"
       >
         ‹
       </button>
@@ -3409,6 +3418,7 @@
         class="modal-nav-btn modal-nav-next"
         id="modal-next"
         onclick="navigateModal(1)"
+        aria-label="Next artwork"
       >
         ›
       </button>
@@ -3526,10 +3536,17 @@
     <div class="toast" id="toast"></div>
 
     <!-- Keyboard shortcuts help modal -->
-    <div class="modal" id="shortcuts-modal" style="z-index: 2001">
+    <div
+      class="modal"
+      id="shortcuts-modal"
+      style="z-index: 2001"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="shortcuts-title"
+    >
       <div class="modal-content" style="max-width: 600px">
         <div class="modal-header">
-          <h2 style="margin: 0; color: var(--text-primary)">
+          <h2 id="shortcuts-title" style="margin: 0; color: var(--text-primary)">
             ⌨️ Keyboard Shortcuts
           </h2>
           <button
@@ -5456,11 +5473,14 @@
       let dragStartX = 0;
       let dragStartY = 0;
       let isModalInfoVisible = true;
+      let _modalReturnFocus = null;
 
       function openModal(image, index = null) {
         const modal = document.getElementById("modal");
         const modalInfo = document.getElementById("modal-info");
         const modalInfoToggle = document.getElementById("modal-info-toggle");
+
+        _modalReturnFocus = document.activeElement;
 
         modalImages = filterImages(allImages);
 
@@ -5487,6 +5507,9 @@
 
         document.body.style.overflow = "hidden";
         resetZoom();
+
+        const closeBtn = modal.querySelector(".modal-close");
+        if (closeBtn) closeBtn.focus();
       }
 
       function updateModalContent() {
@@ -5501,6 +5524,12 @@
 
         const imagePath = `/api/images/file/${image.path}`;
         modalImage.src = imagePath;
+        modalImage.alt = image.prompt || image.filename || "Artwork";
+
+        const modalTitle = document.getElementById("modal-title");
+        if (modalTitle) {
+          modalTitle.textContent = (image.prompt || "Artwork").slice(0, 120);
+        }
 
         // Update counter
         modalCounter.textContent = `${currentModalIndex + 1} of ${modalImages.length}`;
@@ -5734,6 +5763,10 @@
         document.getElementById("modal").classList.remove("active");
         document.body.style.overflow = "";
         resetZoom();
+        if (_modalReturnFocus && typeof _modalReturnFocus.focus === "function") {
+          _modalReturnFocus.focus();
+        }
+        _modalReturnFocus = null;
       }
 
       document.getElementById("modal").addEventListener("click", (e) => {

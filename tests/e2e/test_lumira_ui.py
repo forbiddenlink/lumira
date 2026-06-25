@@ -68,6 +68,10 @@ class TestPageLoad:
         memory_btn = page.locator("button:has-text('MEMORY')")
         expect(memory_btn).to_be_visible()
 
+        # Check MOODS button (mood evolution graph)
+        moods_btn = page.locator("button:has-text('MOODS')")
+        expect(moods_btn).to_be_visible()
+
     def test_semantic_search_bar_visible(self, lumira_page: Page):
         """Test that semantic search bar is rendered."""
         page = lumira_page
