@@ -461,6 +461,16 @@ pnpm update
 
 Dependabot may still flag chromadb/transformers until upstream patches ship or alerts are dismissed with documented rationale.
 
+### WebSocket Hardening
+
+`/ws` enforces:
+
+- **Origin validation** — matches CORS allowlist; when `RAILWAY_API_KEY` is set, connections without an `Origin` header are rejected
+- **Connection cap** — `WS_MAX_CONNECTIONS` (default 100)
+- **Inbound rate limit** — `WS_MAX_MESSAGES_PER_MINUTE` (default 60); only `ping` and `subscribe` message types accepted
+
+Never expose ChromaDB's HTTP server on a public port (see chromadb row above).
+
 ### Pin Versions
 
 Use specific versions in `requirements.txt`:

@@ -12,6 +12,69 @@ from ..utils.logging import get_logger
 
 logger = get_logger(__name__)
 
+DEFAULT_DEV_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8000",
+]
+
+
+def resolve_allowed_origins(cors_origins: list[str] | None = None) -> list[str]:
+    """Resolve allowed browser origins for CORS and WebSocket checks."""
+    import os
+
+    if cors_origins:
+        return cors_origins
+
+    allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
+    if allowed_origins_env:
+        return [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
+
+    return DEFAULT_DEV_ORIGINS.copy()
+
+
+def build_content_security_policy() -> str:
+    """Build Content-Security-Policy header value."""
+    csp_directives = [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' https://unpkg.com",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com",
+        "font-src 'self' https://fonts.gstatic.com",
+        "img-src 'self' data: blob:",
+        "connect-src 'self'",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "frame-ancestors 'none'",
+        "frame-src 'none'",
+        "manifest-src 'self'",
+    ]
+    return "; ".join(csp_directives)
+
+
+def is_websocket_origin_allowed(
+    origin: str | None,
+    host: str | None,
+    *,
+    allowed_origins: list[str] | None = None,
+    require_origin: bool = False,
+) -> bool:
+    """Validate WebSocket Origin header against allowed origins."""
+    if origin is None:
+        return not require_origin
+
+    origins = resolve_allowed_origins(allowed_origins)
+    if origin in origins:
+        return True
+
+    if host:
+        for scheme in ("https", "http"):
+            if origin == f"{scheme}://{host}":
+                return True
+
+    return False
+
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Add security headers to all responses."""
@@ -28,19 +91,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
 
         # Content Security Policy
-        csp_directives = [
-            "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' https://unpkg.com",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com",
-            "font-src 'self' https://fonts.gstatic.com",
-            "img-src 'self' data: blob:",
-            "connect-src 'self' ws: wss:",
-            "object-src 'none'",
-            "base-uri 'self'",
-            "form-action 'self'",
-            "frame-ancestors 'none'",
-        ]
-        response.headers["Content-Security-Policy"] = "; ".join(csp_directives)
+        response.headers["Content-Security-Policy"] = build_content_security_policy()
 
         # Prevent MIME type sniffing
         response.headers["X-Content-Type-Options"] = "nosniff"
@@ -154,28 +205,7 @@ def add_cors_middleware(app, cors_origins: list[str] | None = None):
     Set ALLOWED_ORIGINS environment variable or use config for production.
     Example: ALLOWED_ORIGINS=https://example.com,https://app.example.com
     """
-    import os
-
-    # Secure default: only localhost for development
-    default_origins = [
-        "http://localhost:3000",
-        "http://localhost:8000",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:8000",
-    ]
-
-    # Priority: config -> environment variable -> defaults
-    if cors_origins:
-        allowed_origins = cors_origins
-    else:
-        # Allow override via environment variable for production
-        allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
-        if allowed_origins_env:
-            allowed_origins = [
-                origin.strip() for origin in allowed_origins_env.split(",")
-            ]
-        else:
-            allowed_origins = default_origins
+    allowed_origins = resolve_allowed_origins(cors_origins)
 
     app.add_middleware(
         CORSMiddleware,

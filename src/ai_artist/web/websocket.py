@@ -1,6 +1,9 @@
 """WebSocket manager for real-time updates."""
 
 import asyncio
+import os
+import time
+from collections import deque
 from datetime import datetime
 
 from fastapi import WebSocket, WebSocketDisconnect
@@ -8,6 +11,10 @@ from fastapi import WebSocket, WebSocketDisconnect
 from ..utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+ALLOWED_CLIENT_MESSAGE_TYPES = frozenset({"ping", "subscribe"})
+DEFAULT_WS_MAX_CONNECTIONS = 100
+DEFAULT_WS_MAX_MESSAGES_PER_MINUTE = 60
 
 
 class ConnectionManager:
@@ -22,28 +29,66 @@ class ConnectionManager:
         self.active_connections: list[WebSocket] = []
         self.generation_sessions: dict[str, dict] = {}
         self._lock = asyncio.Lock()
+        self.max_connections = int(
+            os.getenv("WS_MAX_CONNECTIONS", str(DEFAULT_WS_MAX_CONNECTIONS))
+        )
+        self.max_messages_per_minute = int(
+            os.getenv(
+                "WS_MAX_MESSAGES_PER_MINUTE",
+                str(DEFAULT_WS_MAX_MESSAGES_PER_MINUTE),
+            )
+        )
+        self._message_times: dict[int, deque[float]] = {}
 
-    async def connect(self, websocket: WebSocket, client_id: str = ""):
+    async def connect(self, websocket: WebSocket, client_id: str = "") -> bool:
         """Accept and register a WebSocket connection."""
+        async with self._lock:
+            if len(self.active_connections) >= self.max_connections:
+                logger.warning(
+                    "websocket_connection_limit_reached",
+                    client_id=client_id,
+                    max_connections=self.max_connections,
+                )
+                return False
+
         await websocket.accept()
         async with self._lock:
             self.active_connections.append(websocket)
+        self._message_times[id(websocket)] = deque()
         logger.info(
             "websocket_connected",
             client_id=client_id,
             total_connections=len(self.active_connections),
         )
+        return True
 
     async def disconnect(self, websocket: WebSocket, client_id: str = ""):
         """Remove a WebSocket connection."""
         async with self._lock:
             if websocket in self.active_connections:
                 self.active_connections.remove(websocket)
+        self._message_times.pop(id(websocket), None)
         logger.info(
             "websocket_disconnected",
             client_id=client_id,
             total_connections=len(self.active_connections),
         )
+
+    def allow_client_message(self, websocket: WebSocket) -> bool:
+        """Rate-limit inbound client messages."""
+        now = time.monotonic()
+        window_start = now - 60.0
+        key = id(websocket)
+        times = self._message_times.setdefault(key, deque())
+
+        while times and times[0] < window_start:
+            times.popleft()
+
+        if len(times) >= self.max_messages_per_minute:
+            return False
+
+        times.append(now)
+        return True
 
     async def send_personal_message(self, message: dict, websocket: WebSocket):
         """Send message to a specific connection."""

@@ -36,6 +36,19 @@ class TestConnectionManager:
         mock_websocket.accept.assert_called_once()
 
     @pytest.mark.asyncio
+    async def test_connect_rejects_when_at_limit(self, ws_manager):
+        """Test connection limit enforcement."""
+        ws_manager.max_connections = 1
+        first = MagicMock()
+        first.accept = AsyncMock()
+        second = MagicMock()
+        second.accept = AsyncMock()
+
+        assert await ws_manager.connect(first, client_id="first") is True
+        assert await ws_manager.connect(second, client_id="second") is False
+        second.accept.assert_not_called()
+
+    @pytest.mark.asyncio
     async def test_disconnect(self, ws_manager):
         """Test WebSocket disconnection."""
         mock_websocket = MagicMock()
@@ -182,13 +195,20 @@ class TestWebSocketEndpoint:
             # Should be subscribed (no error)
             # In real implementation, would verify subscription
 
+    def test_websocket_rejects_unsupported_message_type(self, client):
+        """Test unsupported inbound message types are rejected."""
+        with client.websocket_connect("/ws") as websocket:
+            websocket.send_json({"type": "admin_command", "payload": "evil"})
+            data = websocket.receive_json()
+            assert data["type"] == "error"
+            assert "Unsupported" in data["error"]
+
     def test_websocket_multiple_connections(self, client):
         """Test multiple concurrent WebSocket connections."""
         with (
             client.websocket_connect("/ws") as ws1,
             client.websocket_connect("/ws") as ws2,
         ):
-            # Both connections should work
             ws1.send_json({"type": "ping"})
             ws2.send_json({"type": "ping"})
 

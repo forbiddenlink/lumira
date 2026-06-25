@@ -10,6 +10,9 @@ from ai_artist.web.middleware import (
     RequestLoggingMiddleware,
     SecurityHeadersMiddleware,
     add_cors_middleware,
+    build_content_security_policy,
+    is_websocket_origin_allowed,
+    resolve_allowed_origins,
 )
 
 
@@ -34,6 +37,34 @@ class TestSecurityHeadersMiddleware:
         assert response.headers["Referrer-Policy"] == "strict-origin-when-cross-origin"
         assert "Content-Security-Policy" in response.headers
         assert "default-src 'self'" in response.headers["Content-Security-Policy"]
+        assert "connect-src 'self'" in response.headers["Content-Security-Policy"]
+        assert "ws:" not in response.headers["Content-Security-Policy"]
+
+    def test_build_content_security_policy_excludes_global_ws(self):
+        policy = build_content_security_policy()
+        assert "connect-src 'self'" in policy
+        assert "ws:" not in policy
+
+    def test_is_websocket_origin_allowed_same_host(self):
+        assert is_websocket_origin_allowed(
+            "http://localhost:8000",
+            "localhost:8000",
+            allowed_origins=["http://localhost:8000"],
+        )
+
+    def test_is_websocket_origin_allowed_requires_origin_in_production_mode(self):
+        assert is_websocket_origin_allowed(
+            None,
+            "localhost:8000",
+            require_origin=True,
+        ) is False
+
+    def test_resolve_allowed_origins_env_override(self):
+        with patch.dict(
+            "os.environ",
+            {"ALLOWED_ORIGINS": "https://lumira.example.com"},
+        ):
+            assert resolve_allowed_origins() == ["https://lumira.example.com"]
 
 
 class TestErrorHandlingMiddleware:

@@ -70,7 +70,7 @@ from .middleware import (
 )
 from .prompt_routes import router as prompt_router
 from .rate_limit import rate_limit_exceeded_handler
-from .websocket import manager as ws_manager
+from .websocket import ALLOWED_CLIENT_MESSAGE_TYPES, manager as ws_manager
 
 # Error message constants
 ERROR_INVALID_FILE_TYPE = "Invalid file type"
@@ -1477,18 +1477,45 @@ async def generate_artwork(
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for real-time updates."""
+    from .middleware import is_websocket_origin_allowed
+
+    config = get_web_config()
+    origin = websocket.headers.get("origin")
+    host = websocket.headers.get("host")
+    require_origin = len(config.api_keys) > 0
+
+    if not is_websocket_origin_allowed(
+        origin,
+        host,
+        allowed_origins=config.cors_origins or None,
+        require_origin=require_origin,
+    ):
+        await websocket.close(code=1008, reason="Origin not allowed")
+        return
+
     client_id = f"client_{id(websocket)}"
-    await ws_manager.connect(websocket, client_id)
+    if not await ws_manager.connect(websocket, client_id):
+        await websocket.close(code=1013, reason="Too many connections")
+        return
+
     try:
         while True:
-            # Receive messages from client (for subscriptions, etc.)
-            data = await websocket.receive_json()
+            if not ws_manager.allow_client_message(websocket):
+                await websocket.close(code=1008, reason="Rate limit exceeded")
+                break
 
-            # Handle different message types
-            if data.get("type") == "ping":
+            data = await websocket.receive_json()
+            message_type = data.get("type")
+
+            if message_type not in ALLOWED_CLIENT_MESSAGE_TYPES:
+                await websocket.send_json(
+                    {"type": "error", "error": "Unsupported message type"}
+                )
+                continue
+
+            if message_type == "ping":
                 await websocket.send_json({"type": "pong"})
-            elif data.get("type") == "subscribe":
-                # Client wants to subscribe to specific events
+            elif message_type == "subscribe":
                 session_id = data.get("session_id")
                 if session_id:
                     logger.info("client_subscribed", session_id=session_id)
