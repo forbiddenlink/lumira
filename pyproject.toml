@@ -10,10 +10,10 @@ authors = [
 ]
 
 dependencies = [
-    "torch>=2.2.0",
+    "torch>=2.12.1",
     "torchvision>=0.17.0",
     "diffusers>=0.38.0",
-    "transformers>=4.38.0",
+    "transformers>=4.57.6,<5.0.0",
     "accelerate>=0.27.0",
     "peft>=0.7.0",
     "safetensors>=0.4.0",
@@ -41,7 +41,7 @@ dependencies = [
     "rq>=1.16.0", # Redis job queue
     "replicate>=1.0.0", # Cloud image generation via Replicate API
     "anthropic>=0.84.0",
-    "chromadb>=1.5.4",
+    "chromadb>=1.5.9",
 ]
 
 [project.scripts]
@@ -84,7 +84,7 @@ quality = [
 ]
 aesthetics = [
     "simple-aesthetics-predictor>=0.1.2",
-    "transformers>=4.38.0",
+    "transformers>=4.57.6,<5.0.0",
 ]
 monitoring = [
     "sentry-sdk[fastapi]>=2.0.0",
@@ -130,6 +130,8 @@ override-dependencies = [
     # moviepy caps pillow<12, but pillow>=12.2.0 is required for security; override the cap
     "moviepy>=2.2.0 ; python_version >= '3.11'",
     "pillow>=12.2.0",
+    # GHSA OpenSSL wheel fix; atproto caps <47 but works with 48+ at runtime
+    "cryptography>=48.0.1",
 ]
 
 [tool.ruff]

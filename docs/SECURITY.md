@@ -442,13 +442,24 @@ def setup_secure_logging():
 ### Keep Dependencies Updated
 
 ```bash
-# Check for vulnerabilities
-pip install safety
-safety check
+# Check for vulnerabilities (CI runs these on PRs)
+uv run pip-audit
+pnpm audit
 
-# Update dependencies
-pip install --upgrade -r requirements.txt
+# Refresh lockfiles after pyproject.toml / package.json changes
+uv lock
+pnpm update
 ```
+
+### Known Advisory Status (2026-06)
+
+| Package | Severity | Lumira exposure | Mitigation |
+|---------|----------|-----------------|------------|
+| **chromadb** | Critical (CVE-2026-45829) | **Low** — we use `PersistentClient` (embedded, no HTTP API) | Do **not** run ChromaDB's Python FastAPI server on a public port. No upstream patch as of 1.5.9. |
+| **transformers** | Medium (Trainer RCE) | **Not affected** — CLIP inference only; no `Trainer` with untrusted checkpoints | Pinned to 4.57.x; blocked from 5.x by `simple-aesthetics-predictor` |
+| **torch** | Low (`torch.jit.script`) | **Low** — Lumira does not expose JIT scripting to users | Bumped to ≥2.12.1 |
+
+Dependabot may still flag chromadb/transformers until upstream patches ship or alerts are dismissed with documented rationale.
 
 ### Pin Versions
 
