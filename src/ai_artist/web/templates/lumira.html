@@ -1198,6 +1198,162 @@
         transform: none;
       }
 
+      .lightbox-details {
+        min-width: 0;
+        overflow-x: hidden;
+      }
+
+      .lightbox-actions .action-btn {
+        flex: 1 1 auto;
+        min-width: 0;
+        white-space: nowrap;
+      }
+
+      /* Lumira 2.0: Preview panel */
+      .preview-panel {
+        margin-top: 1rem;
+        padding: 1rem;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        display: none;
+      }
+
+      .preview-panel.visible {
+        display: block;
+      }
+
+      .preview-panel img {
+        width: 100%;
+        max-height: 280px;
+        object-fit: contain;
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      .preview-meta {
+        margin-top: 0.75rem;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+
+      .preview-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+        flex-wrap: wrap;
+      }
+
+      .btn-preview {
+        background: rgba(187, 134, 252, 0.15);
+        border: 1px solid var(--accent);
+        color: var(--text-main);
+        border-radius: 8px;
+        padding: 0.55rem 0.9rem;
+        cursor: pointer;
+        font-size: 0.8rem;
+      }
+
+      .btn-preview:hover {
+        background: var(--accent);
+        color: #000;
+      }
+
+      /* Inner dialogue panel */
+      .dialogue-panel {
+        margin-top: 1rem;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.02);
+        max-height: 220px;
+        overflow-y: auto;
+      }
+
+      .dialogue-turn {
+        padding: 0.65rem 0.85rem;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .dialogue-turn:last-child {
+        border-bottom: none;
+      }
+
+      .dialogue-voice {
+        font-size: 0.65rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 0.25rem;
+      }
+
+      .dialogue-content {
+        font-size: 0.82rem;
+        line-height: 1.45;
+        color: var(--text-main);
+      }
+
+      /* Explore modal */
+      .explore-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 1200;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+      }
+
+      .explore-modal.open {
+        display: flex;
+      }
+
+      .explore-content {
+        background: var(--bg-panel, #12121a);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        width: min(900px, 100%);
+        max-height: 90vh;
+        overflow-y: auto;
+        padding: 1.25rem;
+      }
+
+      .explore-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.75rem;
+        margin-top: 1rem;
+      }
+
+      .explore-grid img {
+        width: 100%;
+        border-radius: 8px;
+        aspect-ratio: 1;
+        object-fit: cover;
+        background: rgba(0, 0, 0, 0.3);
+      }
+
+      .explore-field {
+        margin-bottom: 0.75rem;
+      }
+
+      .explore-field label {
+        display: block;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        margin-bottom: 0.35rem;
+      }
+
+      .explore-field input {
+        width: 100%;
+        padding: 0.55rem 0.75rem;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text-main);
+        font-family: inherit;
+      }
+
       /* Semantic Search */
       .semantic-search-container {
         margin: 1rem 0;
@@ -2190,6 +2346,20 @@
         </div>
       </div>
 
+      <div class="section-header">Inner Dialogue</div>
+      <div
+        id="dialogue-panel"
+        class="dialogue-panel"
+        role="log"
+        aria-live="polite"
+        aria-label="Lumira inner dialogue"
+      >
+        <div class="dialogue-turn">
+          <div class="dialogue-voice">SYSTEM</div>
+          <div class="dialogue-content">Inner voices awaiting deliberation…</div>
+        </div>
+      </div>
+
       <!-- Controls -->
       <nav class="controls" role="group" aria-label="Primary actions">
         <button
@@ -2237,6 +2407,13 @@
           aria-label="View memory dashboard"
         >
           MEMORY
+        </button>
+        <button
+          class="btn-outline"
+          onclick="window.location.href = '/monitoring'"
+          aria-label="View monitoring dashboard"
+        >
+          MONITOR
         </button>
         <button
           class="btn-outline"
@@ -2307,16 +2484,16 @@
               aria-label="Select mood"
             >
               <option value="">Match current mood</option>
-              <option value="SERENE">Serene</option>
-              <option value="EUPHORIC">Euphoric</option>
-              <option value="MELANCHOLIC">Melancholic</option>
-              <option value="CHAOTIC">Chaotic</option>
-              <option value="CONTEMPLATIVE">Contemplative</option>
-              <option value="PASSIONATE">Passionate</option>
-              <option value="MYSTERIOUS">Mysterious</option>
-              <option value="PLAYFUL">Playful</option>
-              <option value="NOSTALGIC">Nostalgic</option>
-              <option value="TRANSCENDENT">Transcendent</option>
+              <option value="contemplative">Contemplative</option>
+              <option value="chaotic">Chaotic</option>
+              <option value="melancholic">Melancholic</option>
+              <option value="energized">Energized</option>
+              <option value="rebellious">Rebellious</option>
+              <option value="serene">Serene</option>
+              <option value="restless">Restless</option>
+              <option value="playful">Playful</option>
+              <option value="introspective">Introspective</option>
+              <option value="bold">Bold</option>
             </select>
           </div>
         </div>
@@ -2360,12 +2537,45 @@
             Create for Me
           </button>
           <button
+            id="request-preview-btn"
+            class="btn-preview"
+            onclick="generatePreview()"
+            aria-label="Generate a fast preview"
+          >
+            Quick Preview
+          </button>
+          <button
+            class="btn-preview"
+            onclick="openExploreModal()"
+            aria-label="Explore latent space between concepts"
+          >
+            Explore
+          </button>
+          <button
             class="btn-autonomous"
             onclick="triggerCreate()"
             aria-label="Let Lumira create autonomously"
           >
             Or let Lumira decide
           </button>
+        </div>
+
+        <div id="preview-panel" class="preview-panel" aria-live="polite">
+          <img id="preview-image" src="" alt="Preview artwork" />
+          <div id="preview-meta" class="preview-meta"></div>
+          <div class="preview-actions">
+            <button
+              type="button"
+              class="btn-preview"
+              onclick="approvePreview()"
+              id="preview-approve-btn"
+            >
+              Approve Full Render
+            </button>
+            <button type="button" class="btn-preview" onclick="clearPreview()">
+              Dismiss
+            </button>
+          </div>
         </div>
 
         <!-- Result display -->
@@ -2474,6 +2684,33 @@
         >
           DISMISS
         </button>
+      </div>
+    </div>
+
+    <!-- Explore Modal -->
+    <div
+      id="explore-modal"
+      class="explore-modal"
+      onclick="closeExploreModal(event)"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="explore-title"
+    >
+      <div class="explore-content" onclick="event.stopPropagation()">
+        <div style="display: flex; justify-content: space-between; align-items: center">
+          <h2 id="explore-title" style="margin: 0; font-size: 1rem">Latent Exploration</h2>
+          <button type="button" class="close-btn" onclick="closeExploreModal()">&times;</button>
+        </div>
+        <div class="explore-field">
+          <label for="explore-concept-a">Starting concept</label>
+          <input id="explore-concept-a" type="text" placeholder="e.g. misty forest at dawn" />
+        </div>
+        <div class="explore-field">
+          <label for="explore-concept-b">Ending concept</label>
+          <input id="explore-concept-b" type="text" placeholder="e.g. neon city at midnight" />
+        </div>
+        <button type="button" class="btn-preview" onclick="runExplore()">Run Exploration</button>
+        <div id="explore-grid" class="explore-grid"></div>
       </div>
     </div>
 
@@ -2637,6 +2874,27 @@
         return div.innerHTML;
       }
 
+      var _authRequired = false;
+      var _pendingStudioGeneration = false;
+
+      function lumiraApiHeaders(extra) {
+        var headers = Object.assign({ "Content-Type": "application/json" }, extra || {});
+        if (_authRequired) {
+          var key = sessionStorage.getItem("lumira_api_key");
+          if (key) headers["X-API-Key"] = key;
+        }
+        return headers;
+      }
+
+      function finishStudioCreationOverlay() {
+        _pendingStudioGeneration = false;
+        var overlay = document.getElementById("creating-overlay");
+        var btn = document.getElementById("create-btn");
+        if (overlay) overlay.classList.remove("active");
+        if (btn) btn.disabled = false;
+        stopProgressPreviewStudio();
+      }
+
       // Mood colors
       const MOOD_COLORS = {
         contemplative: "#7B8FA1",
@@ -2651,9 +2909,21 @@
         bold: "#FFD700",
       };
 
+      function normalizeMood(value) {
+        if (!value || typeof value !== "string") return "contemplative";
+        var mood = value.trim().toLowerCase();
+        if (MOOD_COLORS[mood]) return mood;
+        var upper = value.trim().toUpperCase();
+        for (var key in MOOD_COLORS) {
+          if (key.toUpperCase() === upper) return key;
+        }
+        return "contemplative";
+      }
+
       // State
       let paintingsData = {};
       let currentLightboxId = null;
+      let previewState = { sessionId: null, prompt: "", moodBlend: null };
 
       // WebSocket auto-reconnecting wrapper
       function createReconnectingWebSocket(url, handlers) {
@@ -2928,9 +3198,13 @@
             }
             break;
           case "generation_complete":
-            stopProgressPreviewStudio();
+            finishStudioCreationOverlay();
             addLog("LUMIRA", "Generation complete");
             fetchState(true);
+            break;
+          case "generation_error":
+            finishStudioCreationOverlay();
+            addLog("ERROR", data.error || data.message || "Generation failed");
             break;
           case "error":
             stopProgressPreviewStudio();
@@ -2943,6 +3217,30 @@
             break;
           case "memory_insight":
             addLog("INSIGHT", data.insight);
+            break;
+          case "inner_dialogue":
+            addDialogueTurn(data.voice || "VOICE", data.content || data.message || "");
+            addLog("DIALOGUE", (data.voice || "voice") + ": " + (data.content || data.message || ""));
+            break;
+          case "preview_ready":
+            if (data.image_base64) {
+              showPreviewPanel(
+                data.image_base64,
+                data.prompt || "",
+                data.session_id || previewState.sessionId,
+                data.generation_time,
+              );
+            }
+            addLog("PREVIEW", "Preview ready" + (data.prompt ? ": " + data.prompt : ""));
+            break;
+          case "concept_evolved":
+            addLog("CONCEPT", data.summary || data.message || "Concept evolved");
+            if (data.voice && (data.content || data.message)) {
+              addDialogueTurn(data.voice, data.content || data.message);
+            }
+            break;
+          case "gallery_update":
+            fetchState(true);
             break;
         }
       }
@@ -2972,7 +3270,7 @@
       }
 
       function updateMoodDisplay(data) {
-        var mood = data.mood || "contemplative";
+        var mood = normalizeMood(data.mood);
         var color = MOOD_COLORS[mood] || "#bb86fc";
 
         document.getElementById("mood-text").textContent = mood;
@@ -3203,7 +3501,7 @@
             subject: (img.prompt && img.prompt.split(",")[0]) || "Artwork",
             prompt: img.prompt || "",
             image_url: img.full_url || img.thumbnail_url,
-            mood: (img.metadata && img.metadata.mood) || "contemplative",
+            mood: normalizeMood(img.metadata && img.metadata.mood),
             style: (img.metadata && img.metadata.style) || "digital art",
             reflection: (img.metadata && img.metadata.reflection) || img.prompt,
           };
@@ -3246,7 +3544,7 @@
           imgSrc = "/" + imgSrc;
         }
 
-        var mood = painting.mood || "contemplative";
+        var mood = normalizeMood(painting.mood);
         var moodColor = MOOD_COLORS[mood] || "#888";
 
         var img = document.createElement("img");
@@ -3313,7 +3611,7 @@
         document.getElementById("lb-reflection").textContent =
           painting.reflection || painting.prompt || "";
 
-        var mood = painting.mood || "contemplative";
+        var mood = normalizeMood(painting.mood);
         var moodColor = MOOD_COLORS[mood] || "#888";
 
         var tagsEl = document.getElementById("lb-tags");
@@ -3409,7 +3707,7 @@
 
         fetch("/api/lumira/create", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: lumiraApiHeaders(),
         })
           .then(function (res) {
             clearInterval(progressInterval);
@@ -3421,6 +3719,9 @@
             return res.json();
           })
           .then(function (data) {
+            if (data.success === false) {
+              throw new Error(data.error || "Creation failed");
+            }
             if (data.thinking) {
               addLog("THINKING", data.thinking);
             }
@@ -3432,19 +3733,18 @@
               });
             }
 
-            addLog("LUMIRA", data.reflection || "Creation complete");
-
-            // Refresh gallery
-            fetchState(true);
+            addLog(
+              "LUMIRA",
+              data.reflection || "Concept ready — painting in progress...",
+            );
+            _pendingStudioGeneration = true;
+            var loaderStatus = document.getElementById("loader-status");
+            if (loaderStatus) loaderStatus.textContent = "Rendering artwork...";
           })
           .catch(function (err) {
             clearInterval(progressInterval);
             addLog("ERROR", err.message);
-          })
-          .finally(function () {
-            stopProgressPreviewStudio();
-            overlay.classList.remove("active");
-            btn.disabled = false;
+            finishStudioCreationOverlay();
           });
       }
 
@@ -4277,7 +4577,7 @@
         var painting = paintingsData[currentLightboxId];
         var shareUrl =
           window.location.origin +
-          "/gallery/" +
+          "/share/" +
           (painting.share_id || painting.id);
 
         if (navigator.share) {
@@ -4519,6 +4819,203 @@
           );
           openLightbox(currentGalleryIndex);
         }
+      }
+
+      // === LUMIRA 2.0: PREVIEW, EXPLORE, DIALOGUE ===
+      function addDialogueTurn(voice, content) {
+        var panel = document.getElementById("dialogue-panel");
+        if (!panel || !content) return;
+        var turn = document.createElement("div");
+        turn.className = "dialogue-turn";
+        var voiceEl = document.createElement("div");
+        voiceEl.className = "dialogue-voice";
+        voiceEl.textContent = String(voice || "VOICE").toUpperCase();
+        var contentEl = document.createElement("div");
+        contentEl.className = "dialogue-content";
+        contentEl.textContent = content;
+        turn.appendChild(voiceEl);
+        turn.appendChild(contentEl);
+        panel.insertBefore(turn, panel.firstChild);
+        while (panel.children.length > 20) {
+          panel.removeChild(panel.lastChild);
+        }
+      }
+
+      function loadDialogueHistory() {
+        fetch("/api/lumira/dialogue")
+          .then(function (res) {
+            return res.json();
+          })
+          .then(function (data) {
+            if (!data.turns || !data.turns.length) return;
+            var panel = document.getElementById("dialogue-panel");
+            if (panel) panel.textContent = "";
+            data.turns.slice(-10).reverse().forEach(function (turn) {
+              addDialogueTurn(turn.voice, turn.content);
+            });
+          })
+          .catch(function () {});
+      }
+
+      function showPreviewPanel(imageBase64, prompt, sessionId, generationTime) {
+        var panel = document.getElementById("preview-panel");
+        var img = document.getElementById("preview-image");
+        var meta = document.getElementById("preview-meta");
+        if (!panel || !img) return;
+        previewState.sessionId = sessionId;
+        previewState.prompt = prompt || previewState.prompt;
+        img.src = "data:image/png;base64," + imageBase64;
+        meta.textContent =
+          (generationTime ? generationTime.toFixed(1) + "s preview • " : "") +
+          (prompt || "Preview ready");
+        panel.classList.add("visible");
+      }
+
+      function clearPreview() {
+        var panel = document.getElementById("preview-panel");
+        if (panel) panel.classList.remove("visible");
+        previewState = { sessionId: null, prompt: "", moodBlend: null };
+      }
+
+      function generatePreview() {
+        var promptEl = document.getElementById("request-prompt");
+        var prompt = promptEl.value.trim();
+        if (!prompt) {
+          promptEl.focus();
+          addLog("SYSTEM", "Enter a prompt before generating a preview");
+          return;
+        }
+        var btn = document.getElementById("request-preview-btn");
+        btn.disabled = true;
+        addLog("PREVIEW", "Generating fast preview…");
+        fetch("/api/lumira/preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: prompt }),
+        })
+          .then(function (res) {
+            return res.json();
+          })
+          .then(function (data) {
+            if (!data.success) {
+              addLog("ERROR", data.error || "Preview failed");
+              return;
+            }
+            previewState.prompt = data.prompt || prompt;
+            previewState.sessionId = data.session_id;
+            if (data.image_base64) {
+              showPreviewPanel(
+                data.image_base64,
+                previewState.prompt,
+                data.session_id,
+                data.generation_time,
+              );
+            }
+            addLog("PREVIEW", "Preview ready in " + (data.generation_time || "?") + "s");
+          })
+          .catch(function (err) {
+            addLog("ERROR", "Preview request failed: " + err);
+          })
+          .finally(function () {
+            btn.disabled = false;
+          });
+      }
+
+      function approvePreview() {
+        if (!previewState.sessionId || !previewState.prompt) {
+          addLog("SYSTEM", "Generate a preview first");
+          return;
+        }
+        var btn = document.getElementById("preview-approve-btn");
+        btn.disabled = true;
+        addLog("PREVIEW", "Approving full render…");
+        fetch("/api/lumira/preview/approve", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            session_id: previewState.sessionId,
+            prompt: previewState.prompt,
+            mood_blend: previewState.moodBlend,
+          }),
+        })
+          .then(function (res) {
+            return res.json();
+          })
+          .then(function (data) {
+            if (!data.success) {
+              addLog("ERROR", data.error || "Full render failed");
+              return;
+            }
+            addLog("LUMIRA", "Full render complete");
+            clearPreview();
+            fetchState(true);
+          })
+          .catch(function (err) {
+            addLog("ERROR", "Approve failed: " + err);
+          })
+          .finally(function () {
+            btn.disabled = false;
+          });
+      }
+
+      function openExploreModal() {
+        var modal = document.getElementById("explore-modal");
+        var prompt = document.getElementById("request-prompt");
+        var a = document.getElementById("explore-concept-a");
+        var b = document.getElementById("explore-concept-b");
+        if (a && prompt && prompt.value.trim()) a.value = prompt.value.trim();
+        if (b && prompt && prompt.value.trim()) {
+          b.value = prompt.value.trim() + ", transformed";
+        }
+        if (modal) modal.classList.add("open");
+      }
+
+      function closeExploreModal(event) {
+        if (event && event.target && event.currentTarget !== event.target) return;
+        var modal = document.getElementById("explore-modal");
+        if (modal) modal.classList.remove("open");
+      }
+
+      function runExplore() {
+        var conceptA = document.getElementById("explore-concept-a").value.trim();
+        var conceptB = document.getElementById("explore-concept-b").value.trim();
+        var grid = document.getElementById("explore-grid");
+        if (!conceptA || !conceptB) {
+          addLog("SYSTEM", "Enter both concepts for exploration");
+          return;
+        }
+        grid.textContent = "Exploring…";
+        fetch("/api/lumira/explore", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            concept_a: conceptA,
+            concept_b: conceptB,
+            steps: 5,
+            use_slerp: true,
+          }),
+        })
+          .then(function (res) {
+            return res.json();
+          })
+          .then(function (data) {
+            grid.textContent = "";
+            if (!data.success || !data.images_base64 || !data.images_base64.length) {
+              grid.textContent = data.error || "No exploration results";
+              return;
+            }
+            data.images_base64.forEach(function (b64, idx) {
+              var img = document.createElement("img");
+              img.src = "data:image/png;base64," + b64;
+              img.alt = (data.prompts && data.prompts[idx]) || "Exploration step";
+              img.title = (data.prompts && data.prompts[idx]) || "";
+              grid.appendChild(img);
+            });
+            addLog("EXPLORE", "Generated " + data.images_base64.length + " interpolation steps");
+          })
+          .catch(function (err) {
+            grid.textContent = "Explore failed: " + err;
+          });
       }
 
       // === USER CREATION REQUEST ===
@@ -4774,7 +5271,18 @@
         }
         initTheme();
         initLoraPreference();
+        fetch("/api/auth-mode")
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            _authRequired = !!data.auth_required;
+            if (_authRequired && !sessionStorage.getItem("lumira_api_key")) {
+              var key = window.prompt("Enter API key for generation:");
+              if (key) sessionStorage.setItem("lumira_api_key", key);
+            }
+          })
+          .catch(function () {});
         fetchState(true);
+        loadDialogueHistory();
         // wsConnection is initialized above, no manual connect needed
         setInterval(function () {
           fetchState(false);
@@ -4830,5 +5338,12 @@
         })();
       });
     </script>
+    <footer
+      role="contentinfo"
+      aria-label="AI transparency notice"
+      style="text-align:center;padding:0.75rem 1rem;color:var(--text-muted);font-size:0.7rem;border-top:1px solid var(--border);letter-spacing:0.04em"
+    >
+      Lumira is an autonomous AI artist — images here are AI-generated.
+    </footer>
   </body>
 </html>

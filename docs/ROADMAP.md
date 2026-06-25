@@ -209,22 +209,19 @@ Build an autonomous AI artist that creates unique artwork with style consistency
 
 ## Next Immediate Steps
 
-1. **Add Web Gallery Tests** (1-2 days)
-   - Test API endpoints
-   - Test WebSocket connections
-   - Test image serving
-   - Increase coverage from 39% to 50%+
+1. **Validate Lumira 2.0 in production-like environment**
+   - Start FalkorDB: `docker-compose up falkordb -d`
+   - Load FLUX Schnell for previews (optional, ~12GB)
+   - Test preview → approve flow via studio UI
 
-2. **Fix Remaining TODOs in Code** (1 day)
-   - Implement LAION aesthetic predictor in curator.py
-   - Add blur detection to curator.py
-   - Add artifact detection
+2. **Operational monitoring**
+   - Use `/monitoring` dashboard for health, queue, and metrics
+   - Wire Prometheus/Grafana to `/metrics` in production
 
-3. **Start Phase 6: Deployment** (Week 6)
-   - Create Dockerfile
-   - Set up docker-compose
-   - Create deployment documentation
-   - Choose cloud platform (Railway/Render/DO)
+3. **Deferred creative mediums** (future phases)
+   - Video generation (Kling/Runway)
+   - Audio pairing (Suno)
+   - 3D generation (TripoSR)
 
 ---
 

@@ -161,6 +161,8 @@ def _as_dict(value: Any) -> dict[str, Any] | None:
 
 def image_to_response(image: GeneratedImage) -> GalleryImageResponse:
     """Convert database model to response."""
+    from ai_artist.utils.metadata_helpers import enrich_generation_metadata
+
     image_obj = cast(Any, image)
     return GalleryImageResponse(
         id=int(image_obj.id),
@@ -180,7 +182,10 @@ def image_to_response(image: GeneratedImage) -> GalleryImageResponse:
             if image_obj.aesthetic_score is not None
             else None
         ),
-        metadata=_as_dict(image_obj.generation_params),
+        metadata=enrich_generation_metadata(
+            _as_dict(image_obj.generation_params),
+            status=str(image_obj.status) if image_obj.status else None,
+        ),
     )
 
 

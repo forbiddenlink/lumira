@@ -165,8 +165,8 @@ DATABASE_URL=sqlite:///./data/lumira.db
 
 The 10-mood system influences model selection, prompt generation, and artistic decisions:
 
-- Contemplative, Playful, Melancholic, Euphoric, Serene
-- Anxious, Nostalgic, Curious, Rebellious, Transcendent
+- Contemplative, Chaotic, Melancholic, Energized, Rebellious
+- Serene, Restless, Playful, Introspective, Bold
 
 Memory is 3-layered:
 

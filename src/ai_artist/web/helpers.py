@@ -75,13 +75,15 @@ def load_image_metadata(
         metadata = json.loads(metadata_path.read_text())
         relative_path = img_path.relative_to(gallery_path)
 
+        from ..utils.metadata_helpers import enrich_sidecar_metadata
+
         return {
             "path": str(relative_path),
             "filename": img_path.name,
             "prompt": metadata.get("prompt", ""),
             "created_at": metadata.get("created_at", ""),
             "featured": metadata.get("featured", False),
-            "metadata": metadata.get("metadata", {}),
+            "metadata": enrich_sidecar_metadata(metadata),
             "thumbnail_url": f"/api/images/file/{relative_path}",
             "full_url": f"/api/images/file/{relative_path}",
         }

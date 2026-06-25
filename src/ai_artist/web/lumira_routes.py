@@ -28,6 +28,7 @@ from ..personality.profile import ArtisticProfile
 from ..utils.config import load_config
 from ..utils.logging import get_logger
 from ..utils.negative_prompts import get_negative_prompt_library
+from .dependencies import GenerationAuthDep
 from .rate_limit import RateLimits
 
 logger = get_logger(__name__)
@@ -446,6 +447,8 @@ async def _load_portfolio_from_gallery() -> list[dict]:
     Results are cached for _PORTFOLIO_CACHE_TTL seconds to avoid rescanning
     the gallery tree on every /state request.
     """
+    from ..utils.metadata_helpers import enrich_sidecar_metadata, extract_mood_from_sidecar
+
     global _portfolio_cache, _portfolio_cache_ts
     now_ts = time.monotonic()
     if (
@@ -475,28 +478,25 @@ async def _load_portfolio_from_gallery() -> list[dict]:
                 image_path = json_file.with_suffix(".jpg")
 
             if image_path.exists():
-                # Handle nested metadata structure (mood/style inside "metadata" key)
-                inner_meta = metadata.get("metadata", {})
+                enriched = enrich_sidecar_metadata(metadata)
                 portfolio.append(
                     {
                         "number": len(portfolio),
-                        "subject": inner_meta.get(
-                            "subject", metadata.get("prompt", "").split(",")[0][:50]
+                        "subject": enriched.get(
+                            "subject",
+                            metadata.get("prompt", "").split(",")[0][:50],
                         ),
                         "prompt": metadata.get("prompt", ""),
                         "image_url": f"/api/images/file/{image_path.relative_to(gallery_path)}",
-                        "mood": inner_meta.get(
-                            "mood", metadata.get("mood", "contemplative")
-                        ),
-                        "style": inner_meta.get(
-                            "style", metadata.get("style", "digital art")
-                        ),
+                        "mood": extract_mood_from_sidecar(metadata) or "contemplative",
+                        "style": enriched.get("style", "digital art"),
                         "reflection": metadata.get(
                             "reflection", metadata.get("prompt", "")
                         ),
                         "created_at": metadata.get("created_at", ""),
-                        "thinking": metadata.get("thinking"),
-                        "critique_history": metadata.get("critique_history"),
+                        "thinking": metadata.get("thinking") or enriched.get("thinking"),
+                        "critique_history": metadata.get("critique_history")
+                        or enriched.get("critique_history"),
                     }
                 )
         except Exception as e:
@@ -578,7 +578,11 @@ MOOD_TEMPLATES = {
 
 @router.post("/suggest-prompt", response_model=PromptSuggestionResponse)
 @limiter.limit("30/minute")
-async def suggest_prompt(request: Request, body: PromptSuggestionRequest):
+async def suggest_prompt(
+    request: Request,
+    body: PromptSuggestionRequest,
+    _auth: GenerationAuthDep,
+):
     """Generate a mood-influenced prompt suggestion.
 
     Uses the Anthropic LLM (via CreativeMind) to reinterpret the user's prompt
@@ -632,7 +636,11 @@ async def suggest_prompt(request: Request, body: PromptSuggestionRequest):
 
 @router.post("/create", response_model=LumiraCreateResponse)
 @limiter.limit("5/minute")
-async def create_artwork(request: Request, db: Session = Depends(get_db)):
+async def create_artwork(
+    request: Request,
+    _auth: GenerationAuthDep,
+    db: Session = Depends(get_db),
+):
     """Trigger Lumira to create a new artwork with actual image generation.
 
     Uses CreativeMind (LLM-powered when available) to decide what to create
@@ -919,6 +927,7 @@ async def create_artwork(request: Request, db: Session = Depends(get_db)):
                                         "guidance_scale": guidance,
                                         "subject": subject,
                                         "style": style,
+                                        "mood": mood.value,
                                         "reasoning": intent.reasoning,
                                     },
                                     final_score=_score_image(images[0], prompt),
@@ -1211,6 +1220,7 @@ async def evolve_state(request: Request):
 @limiter.limit(RateLimits.REQUEST)
 async def user_request_creation(
     request: Request,
+    _auth: GenerationAuthDep,
     body: UserCreationRequest,
     db: Session = Depends(get_db),
 ):
@@ -2208,6 +2218,7 @@ class QueueStatsResponse(BaseModel):
 async def generate_async(
     request: Request,
     generation_request: AsyncGenerationRequest,
+    _auth: GenerationAuthDep,
 ):
     """Start an async image generation job.
 
@@ -2422,6 +2433,7 @@ async def get_queue_stats(request: Request):
 @limiter.limit("10/minute")
 async def upload_reference_image(
     request: Request,
+    _auth: GenerationAuthDep,
     file: UploadFile = File(...),
 ):
     """Upload a reference image for IP-Adapter style transfer.
@@ -2609,6 +2621,7 @@ async def delete_reference_image(request: Request, reference_id: str):
 @limiter.limit("5/minute")
 async def create_with_reference(
     request: Request,
+    _auth: GenerationAuthDep,
     body: CreateWithReferenceRequest,
     db: Session = Depends(get_db),
 ):
@@ -2913,6 +2926,7 @@ async def create_with_reference(
 @limiter.limit(RateLimits.IMG2IMG)
 async def img2img_generation(
     request: Request,
+    _auth: GenerationAuthDep,
     img2img_request: Img2ImgRequest,
     db: Session = Depends(get_db),
 ) -> LumiraCreateResponse:
@@ -3086,6 +3100,7 @@ async def img2img_generation(
 @limiter.limit(RateLimits.VARIATIONS)
 async def generate_variations(
     request: Request,
+    _auth: GenerationAuthDep,
     var_request: VariationsRequest,
     db: Session = Depends(get_db),
 ) -> VariationsResponse:
@@ -3277,6 +3292,7 @@ async def generate_variations(
 async def batch_create(
     request: Request,
     batch_request: BatchCreateRequest,
+    _auth: GenerationAuthDep,
 ) -> BatchCreateResponse:
     """Queue multiple artworks for creation.
 
@@ -3535,7 +3551,11 @@ async def get_social_platforms(request: Request):
 
 @router.post("/social/post", response_model=SocialPostResponse)
 @limiter.limit("10/minute")
-async def post_to_social(request: Request, post_request: SocialPostRequest):
+async def post_to_social(
+    request: Request,
+    post_request: SocialPostRequest,
+    _auth: GenerationAuthDep,
+):
     """Post artwork to social media platforms.
 
     Posts an artwork to configured social media platforms.
@@ -3713,7 +3733,11 @@ class DialogueHistoryResponse(BaseModel):
 
 @router.post("/preview", response_model=PreviewResponse)
 @limiter.limit(RateLimits.PREVIEW)
-async def generate_preview(request: Request, body: PreviewRequest):
+async def generate_preview(
+    request: Request,
+    body: PreviewRequest,
+    _auth: GenerationAuthDep,
+):
     """Generate a fast preview using FLUX.1 Schnell (~2 seconds).
 
     Returns a low-step preview image for concept validation before
@@ -3721,6 +3745,8 @@ async def generate_preview(request: Request, body: PreviewRequest):
     """
     from ..core.mood_blender import MoodBlender
     from ..core.preview_generator import PreviewGenerator
+
+    from ..web.websocket import manager as ws_manager
 
     session_id = str(uuid.uuid4())
 
@@ -3751,6 +3777,15 @@ async def generate_preview(request: Request, body: PreviewRequest):
         # Encode image
         image_base64 = result.get_image_base64()
 
+        await ws_manager.broadcast_preview_ready(
+            session_id=session_id,
+            image_base64=image_base64,
+            score=0.0,
+            approved=False,
+            prompt=result.prompt,
+            generation_time=result.generation_time,
+        )
+
         logger.info(
             "preview_generated",
             session_id=session_id,
@@ -3777,7 +3812,11 @@ async def generate_preview(request: Request, body: PreviewRequest):
 
 @router.post("/preview/approve", response_model=PreviewApproveResponse)
 @limiter.limit("5/minute")
-async def approve_preview(request: Request, body: PreviewApproveRequest):
+async def approve_preview(
+    request: Request,
+    body: PreviewApproveRequest,
+    _auth: GenerationAuthDep,
+):
     """Approve a preview and generate full quality image.
 
     Call this after reviewing a preview to commit to full generation.
@@ -3826,6 +3865,13 @@ async def approve_preview(request: Request, body: PreviewApproveRequest):
                     "session_id": body.session_id,
                     "style_weights": body.style_weights,
                     "mood_blend": body.mood_blend,
+                    "metadata": {
+                        "mood": (
+                            max(body.mood_blend, key=body.mood_blend.get)
+                            if body.mood_blend
+                            else "contemplative"
+                        ),
+                    },
                 },
             )
 
@@ -3860,7 +3906,11 @@ async def approve_preview(request: Request, body: PreviewApproveRequest):
 
 @router.post("/explore", response_model=ExploreResponse)
 @limiter.limit(RateLimits.EXPLORE)
-async def explore_latent_space(request: Request, body: ExploreRequest):
+async def explore_latent_space(
+    request: Request,
+    body: ExploreRequest,
+    _auth: GenerationAuthDep,
+):
     """Explore the latent space between two concepts.
 
     Generates interpolated images along the path from concept_a to concept_b
@@ -4011,6 +4061,7 @@ class VideoExportResponse(BaseModel):
 @limiter.limit("5/minute")
 async def export_video(
     request: Request,
+    _auth: GenerationAuthDep,
     body: VideoExportRequest,
     db: Session = Depends(get_db),
 ):

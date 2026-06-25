@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Browse and explore a curated collection of AI-generated artwork. Discover unique digital art created with cutting-edge AI models and machine learning."
+      content="Browse Lumira's gallery of AI-generated artwork — mood-driven pieces from an autonomous digital artist."
     />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="{{ request.url }}" />
@@ -15,7 +15,7 @@
     <meta property="og:title" content="Lumira Gallery" />
     <meta
       property="og:description"
-      content="Browse and explore a curated collection of AI-generated artwork. Discover unique digital art created with cutting-edge AI models."
+      content="Browse Lumira's gallery of AI-generated artwork — mood-driven pieces from an autonomous digital artist."
     />
     <meta property="og:url" content="{{ request.url }}" />
     <meta
@@ -2691,15 +2691,15 @@
 
       /* Mood ambient overrides */
       body[data-mood="contemplative"] { --mood-glow: rgba(106,76,147,0.15); --mood-accent: #6a4c93; }
+      body[data-mood="chaotic"] { --mood-glow: rgba(255,107,107,0.15); --mood-accent: #ff6b6b; }
       body[data-mood="playful"] { --mood-glow: rgba(248,165,194,0.15); --mood-accent: #f8a5c2; }
       body[data-mood="melancholic"] { --mood-glow: rgba(127,143,166,0.15); --mood-accent: #7f8fa6; }
-      body[data-mood="euphoric"] { --mood-glow: rgba(245,175,25,0.15); --mood-accent: #ffeaa7; }
+      body[data-mood="energized"] { --mood-glow: rgba(245,175,25,0.15); --mood-accent: #ffeaa7; }
       body[data-mood="serene"] { --mood-glow: rgba(129,236,236,0.15); --mood-accent: #81ecec; }
-      body[data-mood="anxious"] { --mood-glow: rgba(225,112,85,0.15); --mood-accent: #e17055; }
-      body[data-mood="nostalgic"] { --mood-glow: rgba(223,230,233,0.10); --mood-accent: #dfe6e9; }
-      body[data-mood="curious"] { --mood-glow: rgba(116,185,255,0.15); --mood-accent: #74b9ff; }
-      body[data-mood="rebellious"] { --mood-glow: rgba(255,107,107,0.15); --mood-accent: #ff6b6b; }
-      body[data-mood="transcendent"] { --mood-glow: rgba(212,165,255,0.15); --mood-accent: #d4a5ff; }
+      body[data-mood="restless"] { --mood-glow: rgba(223,230,233,0.10); --mood-accent: #dfe6e9; }
+      body[data-mood="introspective"] { --mood-glow: rgba(116,185,255,0.15); --mood-accent: #74b9ff; }
+      body[data-mood="rebellious"] { --mood-glow: rgba(225,112,85,0.15); --mood-accent: #e17055; }
+      body[data-mood="bold"] { --mood-glow: rgba(212,165,255,0.15); --mood-accent: #d4a5ff; }
 
       body::before {
         content: '';
@@ -3058,15 +3058,15 @@
       <div class="mood-pills" id="mood-pills" style="display:none" role="group" aria-label="Filter by mood">
         <button class="mood-pill active" data-mood-filter="" onclick="filterByMood('')">All</button>
         <button class="mood-pill" data-mood-filter="contemplative" onclick="filterByMood('contemplative')" style="--pill-color:#6a4c93">Contemplative</button>
-        <button class="mood-pill" data-mood-filter="playful" onclick="filterByMood('playful')" style="--pill-color:#f8a5c2">Playful</button>
+        <button class="mood-pill" data-mood-filter="chaotic" onclick="filterByMood('chaotic')" style="--pill-color:#ff6b6b">Chaotic</button>
         <button class="mood-pill" data-mood-filter="melancholic" onclick="filterByMood('melancholic')" style="--pill-color:#7f8fa6">Melancholic</button>
-        <button class="mood-pill" data-mood-filter="euphoric" onclick="filterByMood('euphoric')" style="--pill-color:#f5af19">Euphoric</button>
+        <button class="mood-pill" data-mood-filter="energized" onclick="filterByMood('energized')" style="--pill-color:#f5af19">Energized</button>
+        <button class="mood-pill" data-mood-filter="rebellious" onclick="filterByMood('rebellious')" style="--pill-color:#e17055">Rebellious</button>
         <button class="mood-pill" data-mood-filter="serene" onclick="filterByMood('serene')" style="--pill-color:#81ecec">Serene</button>
-        <button class="mood-pill" data-mood-filter="anxious" onclick="filterByMood('anxious')" style="--pill-color:#e17055">Anxious</button>
-        <button class="mood-pill" data-mood-filter="nostalgic" onclick="filterByMood('nostalgic')" style="--pill-color:#dfe6e9">Nostalgic</button>
-        <button class="mood-pill" data-mood-filter="curious" onclick="filterByMood('curious')" style="--pill-color:#74b9ff">Curious</button>
-        <button class="mood-pill" data-mood-filter="rebellious" onclick="filterByMood('rebellious')" style="--pill-color:#ff6b6b">Rebellious</button>
-        <button class="mood-pill" data-mood-filter="transcendent" onclick="filterByMood('transcendent')" style="--pill-color:#d4a5ff">Transcendent</button>
+        <button class="mood-pill" data-mood-filter="restless" onclick="filterByMood('restless')" style="--pill-color:#dfe6e9">Restless</button>
+        <button class="mood-pill" data-mood-filter="playful" onclick="filterByMood('playful')" style="--pill-color:#f8a5c2">Playful</button>
+        <button class="mood-pill" data-mood-filter="introspective" onclick="filterByMood('introspective')" style="--pill-color:#74b9ff">Introspective</button>
+        <button class="mood-pill" data-mood-filter="bold" onclick="filterByMood('bold')" style="--pill-color:#d4a5ff">Bold</button>
       </div>
 
       <!-- Evolution Timeline (shown only in "Evolution" view) -->
@@ -3802,15 +3802,15 @@
       // ===== Shared mood color mapping (used by hero, modal, empty states) =====
       const MOOD_COLORS = {
         contemplative: { bg: 'linear-gradient(135deg, rgba(106,76,147,0.12), rgba(22,33,62,0.12))', accent: '#6a4c93', badge: '#6a4c93' },
-        playful: { bg: 'linear-gradient(135deg, rgba(248,165,194,0.12), rgba(17,153,142,0.12))', accent: '#f8a5c2', badge: '#f8a5c2' },
+        chaotic: { bg: 'linear-gradient(135deg, rgba(255,107,107,0.12), rgba(61,0,0,0.12))', accent: '#ff6b6b', badge: '#ff6b6b' },
         melancholic: { bg: 'linear-gradient(135deg, rgba(127,143,166,0.12), rgba(48,43,99,0.12))', accent: '#7f8fa6', badge: '#7f8fa6' },
-        euphoric: { bg: 'linear-gradient(135deg, rgba(241,39,17,0.08), rgba(245,175,25,0.08))', accent: '#ffeaa7', badge: '#f5af19' },
+        energized: { bg: 'linear-gradient(135deg, rgba(241,39,17,0.08), rgba(245,175,25,0.08))', accent: '#ffeaa7', badge: '#f5af19' },
+        rebellious: { bg: 'linear-gradient(135deg, rgba(225,112,85,0.10), rgba(74,25,66,0.10))', accent: '#e17055', badge: '#e17055' },
         serene: { bg: 'linear-gradient(135deg, rgba(129,236,236,0.10), rgba(44,83,100,0.10))', accent: '#81ecec', badge: '#81ecec' },
-        anxious: { bg: 'linear-gradient(135deg, rgba(225,112,85,0.10), rgba(74,25,66,0.10))', accent: '#e17055', badge: '#e17055' },
-        nostalgic: { bg: 'linear-gradient(135deg, rgba(223,230,233,0.08), rgba(74,55,40,0.08))', accent: '#dfe6e9', badge: '#dfe6e9' },
-        curious: { bg: 'linear-gradient(135deg, rgba(116,185,255,0.10), rgba(26,58,92,0.10))', accent: '#74b9ff', badge: '#74b9ff' },
-        rebellious: { bg: 'linear-gradient(135deg, rgba(255,107,107,0.10), rgba(61,0,0,0.10))', accent: '#ff6b6b', badge: '#ff6b6b' },
-        transcendent: { bg: 'linear-gradient(135deg, rgba(212,165,255,0.10), rgba(21,0,80,0.10))', accent: '#d4a5ff', badge: '#d4a5ff' }
+        restless: { bg: 'linear-gradient(135deg, rgba(223,230,233,0.08), rgba(74,55,40,0.08))', accent: '#dfe6e9', badge: '#dfe6e9' },
+        playful: { bg: 'linear-gradient(135deg, rgba(248,165,194,0.12), rgba(17,153,142,0.12))', accent: '#f8a5c2', badge: '#f8a5c2' },
+        introspective: { bg: 'linear-gradient(135deg, rgba(116,185,255,0.10), rgba(26,58,92,0.10))', accent: '#74b9ff', badge: '#74b9ff' },
+        bold: { bg: 'linear-gradient(135deg, rgba(212,165,255,0.10), rgba(21,0,80,0.10))', accent: '#d4a5ff', badge: '#d4a5ff' }
       };
 
       // Global mood cache for empty states and other features
@@ -4949,9 +4949,10 @@
       // Evolution Timeline
       const MOOD_HEX = {
         contemplative: '#6a4c93', playful: '#f8a5c2', melancholic: '#7f8fa6',
-        euphoric: '#f5af19', serene: '#81ecec', anxious: '#e17055',
-        nostalgic: '#dfe6e9', curious: '#74b9ff', rebellious: '#ff6b6b',
-        transcendent: '#d4a5ff'
+        contemplative: '#6a4c93', chaotic: '#ff6b6b', melancholic: '#7f8fa6',
+        energized: '#f5af19', serene: '#81ecec', restless: '#dfe6e9',
+        playful: '#f8a5c2', introspective: '#74b9ff', rebellious: '#e17055',
+        bold: '#d4a5ff'
       };
 
       async function loadEvolutionTimeline() {
@@ -6115,10 +6116,11 @@
         var mood = window._lumiraMood || 'contemplative';
         var map = {
           contemplative: [106, 76, 147], playful: [248, 165, 194],
-          melancholic: [127, 143, 166], euphoric: [245, 175, 25],
-          serene: [129, 236, 236], anxious: [225, 112, 85],
-          nostalgic: [223, 230, 233], curious: [116, 185, 255],
-          rebellious: [255, 107, 107], transcendent: [212, 165, 255]
+          contemplative: [106, 76, 147], chaotic: [255, 107, 107],
+          melancholic: [127, 143, 166], energized: [245, 175, 25],
+          serene: [129, 236, 236], restless: [223, 230, 233],
+          playful: [248, 165, 194], introspective: [116, 185, 255],
+          rebellious: [225, 112, 85], bold: [212, 165, 255]
         };
         return map[mood] || map.contemplative;
       }
@@ -6355,5 +6357,13 @@
         });
       })();
     </script>
+    <footer
+      class="ai-disclosure"
+      role="contentinfo"
+      aria-label="AI transparency notice"
+      style="text-align:center;padding:1.25rem 1rem;color:var(--text-muted, #888);font-size:0.75rem;border-top:1px solid var(--border, rgba(255,255,255,0.08));margin-top:2rem"
+    >
+      Artwork on this gallery is created by Lumira, an autonomous AI artist.
+    </footer>
   </body>
 </html>

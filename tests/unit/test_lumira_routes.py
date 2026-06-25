@@ -38,6 +38,11 @@ def client(tmp_path):
     ):
         app.state.limiter._storage.storage.clear()
 
+    from ai_artist.utils.config import WebConfig
+    from ai_artist.web.dependencies import set_web_config
+
+    set_web_config(WebConfig())
+
     yield TestClient(app)
 
     # Cleanup - reset session factory
@@ -454,9 +459,11 @@ class TestLumiraBatchCreate:
         )
 
     @staticmethod
-    def _call_batch_create(request: Request, body: BatchCreateRequest):
+    def _call_batch_create(
+        request: Request, body: BatchCreateRequest, auth: str = "dev-mode"
+    ):
         handler = getattr(batch_create, "__wrapped__", batch_create)
-        return asyncio.run(handler(request, body))
+        return asyncio.run(handler(request, body, auth))
 
     def test_batch_create_accepts_count(self, client):
         """Batch create should accept count parameter."""

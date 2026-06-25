@@ -673,6 +673,16 @@ jobs:
 
 ### Prometheus Integration
 
+Lumira exposes Prometheus metrics at `GET /metrics` and a human-readable dashboard at `/monitoring`.
+
+```bash
+# Scrape metrics locally
+curl http://localhost:8000/metrics
+
+# Open the monitoring dashboard
+open http://localhost:8000/monitoring
+```
+
 #### Expose Metrics
 
 ```python

@@ -62,6 +62,17 @@ def require_api_key(
     return api_key
 
 
+def require_generation_auth(
+    api_key: str | None = Depends(api_key_header),
+) -> str:
+    """Require API key for generation endpoints when keys are configured.
+
+    Mirrors admin auth: dev mode when ``api_keys`` is empty; otherwise
+    ``X-API-Key`` is required to prevent runaway GPU/cloud spend.
+    """
+    return require_api_key(api_key)
+
+
 def set_gallery_manager(manager: GalleryManager, path: str) -> None:
     """Set global gallery manager instance (called during app startup)."""
     global _gallery_manager, _gallery_path
@@ -86,3 +97,4 @@ def get_gallery_path() -> str:
 # Type annotations for cleaner dependency injection
 GalleryManagerDep = Annotated[GalleryManager, Depends(get_gallery_manager)]
 GalleryPathDep = Annotated[str, Depends(get_gallery_path)]
+GenerationAuthDep = Annotated[str, Depends(require_generation_auth)]

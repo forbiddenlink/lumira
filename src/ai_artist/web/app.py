@@ -520,6 +520,16 @@ async def lumira_page(request: Request):
     )
 
 
+@app.get("/monitoring", response_class=HTMLResponse, tags=["pages"])
+async def monitoring_page(request: Request):
+    """Operational monitoring dashboard for Lumira."""
+    return templates.TemplateResponse(
+        request,
+        "monitoring.html",
+        {"title": "Lumira Monitoring"},
+    )
+
+
 @app.get("/robots.txt", response_class=PlainTextResponse, tags=["pages"])
 async def robots_txt(request: Request):
     """Serve robots.txt for search engine crawlers."""
@@ -683,6 +693,12 @@ async def list_images(
                     except ValueError:
                         rel = row_path
                     gen_params = row.generation_params or {}
+                    from ..utils.metadata_helpers import enrich_generation_metadata
+
+                    enriched = enrich_generation_metadata(
+                        gen_params,
+                        status=str(row.status) if row.status else None,
+                    )
                     results.append(
                         ImageMetadata(
                             path=str(rel),
@@ -693,10 +709,9 @@ async def list_images(
                             ),
                             featured=is_featured,
                             metadata={
-                                "mood": row.status or "",
+                                **enriched,
                                 "model": row.model_id or "",
                                 "final_score": row.final_score,
-                                **gen_params,
                             },
                             thumbnail_url=f"/api/images/file/{rel}",
                             full_url=f"/api/images/file/{rel}",

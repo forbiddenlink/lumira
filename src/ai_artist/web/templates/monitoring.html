@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ title }}</title>
+    <style>
+      :root {
+        --bg: #0a0a0f;
+        --panel: #12121a;
+        --border: rgba(255, 255, 255, 0.08);
+        --text: #e8e8ef;
+        --muted: #888;
+        --accent: #bb86fc;
+        --ok: #4ade80;
+        --warn: #fbbf24;
+        --err: #f87171;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Space Mono", ui-monospace, monospace;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.25rem 2rem;
+        border-bottom: 1px solid var(--border);
+      }
+      h1 { margin: 0; font-size: 1.1rem; letter-spacing: 0.08em; }
+      nav a {
+        color: var(--muted);
+        text-decoration: none;
+        margin-left: 1rem;
+        font-size: 0.85rem;
+      }
+      nav a:hover { color: var(--accent); }
+      main { padding: 2rem; max-width: 1200px; margin: 0 auto; }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+      }
+      .card h2 {
+        margin: 0 0 0.75rem;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--muted);
+      }
+      .metric {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--accent);
+      }
+      .status-ok { color: var(--ok); }
+      .status-warn { color: var(--warn); }
+      .status-err { color: var(--err); }
+      pre {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1rem;
+        overflow: auto;
+        font-size: 0.75rem;
+        line-height: 1.5;
+        max-height: 420px;
+      }
+      .toolbar {
+        display: flex;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+      }
+      button {
+        background: rgba(187, 134, 252, 0.15);
+        border: 1px solid var(--accent);
+        color: var(--text);
+        border-radius: 8px;
+        padding: 0.5rem 0.9rem;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 0.8rem;
+      }
+      button:hover { background: rgba(187, 134, 252, 0.3); }
+      .updated { color: var(--muted); font-size: 0.75rem; margin-top: 0.5rem; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>LUMIRA MONITORING</h1>
+      <nav>
+        <a href="/lumira">Studio</a>
+        <a href="/">Gallery</a>
+        <a href="/docs">API Docs</a>
+      </nav>
+    </header>
+    <main>
+      <div class="toolbar">
+        <button type="button" onclick="refreshAll()">Refresh</button>
+        <button type="button" onclick="toggleAutoRefresh()">
+          Auto-refresh: <span id="auto-label">ON</span>
+        </button>
+      </div>
+
+      <div class="grid" aria-live="polite" aria-atomic="false">
+        <div class="card">
+          <h2>Health</h2>
+          <div id="health-status" class="metric status-ok" role="status" aria-live="polite">—</div>
+          <div id="health-detail" class="updated">Checking…</div>
+        </div>
+        <div class="card">
+          <h2>WebSocket Clients</h2>
+          <div id="ws-count" class="metric">—</div>
+        </div>
+        <div class="card">
+          <h2>Generation Queue</h2>
+          <div id="queue-active" class="metric">—</div>
+          <div id="queue-detail" class="updated"></div>
+        </div>
+        <div class="card">
+          <h2>Gallery</h2>
+          <div id="gallery-status" class="metric">—</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: 1rem">
+        <h2>Prometheus Metrics (sample)</h2>
+        <pre id="metrics-sample">Loading…</pre>
+      </div>
+
+      <div class="card">
+        <h2>Runtime Details</h2>
+        <pre id="details-json">Loading…</pre>
+      </div>
+      <p class="updated" id="last-updated"></p>
+    </main>
+
+    <script>
+      var autoRefresh = true;
+      var refreshTimer = null;
+
+      function setText(id, value) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = value;
+      }
+
+      async function fetchJson(url) {
+        var res = await fetch(url);
+        if (!res.ok) throw new Error(url + " returned " + res.status);
+        return res.json();
+      }
+
+      async function refreshHealth() {
+        try {
+          var live = await fetch("/health/live");
+          var ready = await fetch("/health/ready");
+          var ok = live.ok && ready.ok;
+          var el = document.getElementById("health-status");
+          el.textContent = ok ? "HEALTHY" : "DEGRADED";
+          el.className = "metric " + (ok ? "status-ok" : "status-warn");
+          setText("health-detail", "live=" + live.status + " ready=" + ready.status);
+        } catch (e) {
+          var errEl = document.getElementById("health-status");
+          errEl.textContent = "DOWN";
+          errEl.className = "metric status-err";
+          setText("health-detail", String(e));
+        }
+      }
+
+      async function refreshDetails() {
+        try {
+          var data = await fetchJson("/health/details");
+          setText("ws-count", String(data.websocket_connections || 0));
+          setText(
+            "gallery-status",
+            data.gallery_initialized ? "READY" : "NOT INIT",
+          );
+          var queue = data.generation_queue || {};
+          setText("queue-active", String(queue.active || 0));
+          setText(
+            "queue-detail",
+            "max=" +
+              (queue.max_concurrent || 1) +
+              " timeout=" +
+              (queue.timeout_seconds || "?") +
+              "s",
+          );
+          document.getElementById("details-json").textContent = JSON.stringify(
+            data,
+            null,
+            2,
+          );
+        } catch (e) {
+          document.getElementById("details-json").textContent = String(e);
+        }
+      }
+
+      async function refreshMetrics() {
+        try {
+          var res = await fetch("/metrics");
+          var text = await res.text();
+          var lines = text.split("\n").filter(function (line) {
+            return line && !line.startsWith("#");
+          });
+          document.getElementById("metrics-sample").textContent =
+            lines.slice(0, 40).join("\n") || text.slice(0, 2000);
+        } catch (e) {
+          document.getElementById("metrics-sample").textContent = String(e);
+        }
+      }
+
+      async function refreshAll() {
+        await Promise.all([
+          refreshHealth(),
+          refreshDetails(),
+          refreshMetrics(),
+        ]);
+        setText("last-updated", "Updated " + new Date().toLocaleTimeString());
+      }
+
+      function toggleAutoRefresh() {
+        autoRefresh = !autoRefresh;
+        setText("auto-label", autoRefresh ? "ON" : "OFF");
+        if (autoRefresh) {
+          refreshTimer = setInterval(refreshAll, 15000);
+        } else if (refreshTimer) {
+          clearInterval(refreshTimer);
+          refreshTimer = null;
+        }
+      }
+
+      refreshAll();
+      refreshTimer = setInterval(refreshAll, 15000);
+    </script>
+  </body>
+</html>
