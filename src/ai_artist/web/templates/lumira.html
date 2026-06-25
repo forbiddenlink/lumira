@@ -5040,7 +5040,7 @@
         grid.textContent = "Exploring…";
         fetch("/api/lumira/explore", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: lumiraApiHeaders(),
           body: JSON.stringify({
             concept_a: conceptA,
             concept_b: conceptB,
@@ -5049,6 +5049,11 @@
           }),
         })
           .then(function (res) {
+            if (!res.ok) {
+              return res.json().then(function (err) {
+                throw new Error(err.detail || "Explore failed");
+              });
+            }
             return res.json();
           })
           .then(function (data) {

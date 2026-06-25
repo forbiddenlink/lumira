@@ -12,6 +12,29 @@ from ..utils.logging import get_logger
 logger = get_logger(__name__)
 
 
+def resolve_gallery_file_path(filename: str, gallery_path: str | Path) -> str:
+    """Convert a stored filename to a gallery-relative API path."""
+    gallery_base = Path(gallery_path).resolve()
+    stored = Path(filename)
+
+    if stored.is_absolute():
+        try:
+            return str(stored.resolve().relative_to(gallery_base)).replace("\\", "/")
+        except ValueError:
+            pass
+
+    rel = str(filename).replace("\\", "/").lstrip("/")
+    if (gallery_base / rel).is_file():
+        return rel
+
+    if stored.name:
+        for candidate in gallery_base.rglob(stored.name):
+            if candidate.is_file():
+                return str(candidate.relative_to(gallery_base)).replace("\\", "/")
+
+    return rel
+
+
 def is_valid_image(img_path: Path, gallery_path: Path) -> tuple[bool, str | None]:
     """
     Check if an image is valid and should be included in results.

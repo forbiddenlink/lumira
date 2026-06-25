@@ -70,7 +70,8 @@ from .middleware import (
 )
 from .prompt_routes import router as prompt_router
 from .rate_limit import rate_limit_exceeded_handler
-from .websocket import ALLOWED_CLIENT_MESSAGE_TYPES, manager as ws_manager
+from .websocket import ALLOWED_CLIENT_MESSAGE_TYPES
+from .websocket import manager as ws_manager
 
 # Error message constants
 ERROR_INVALID_FILE_TYPE = "Invalid file type"
@@ -453,7 +454,7 @@ async def root(request: Request):
 
 
 @app.get("/share/{share_id}", response_class=HTMLResponse, tags=["pages"])
-async def share_page(request: Request, share_id: str):
+async def share_page(request: Request, share_id: str, gallery_path: GalleryPathDep):
     """Serve shared image page.
 
     Looks up the shared image and renders an OG-friendly share page.
@@ -463,6 +464,8 @@ async def share_page(request: Request, share_id: str):
 
     from ..db.models import GeneratedImage
     from ..db.session import get_db
+
+    from .helpers import resolve_gallery_file_path
 
     db_gen = get_db()
     db: Session = next(db_gen)
@@ -483,7 +486,8 @@ async def share_page(request: Request, share_id: str):
 
     if image:
         base_url = str(request.base_url).rstrip("/")
-        image_url = f"{base_url}/api/images/file/{image.filename}"
+        rel_path = resolve_gallery_file_path(image.filename, gallery_path)
+        image_url = f"{base_url}/api/images/file/{rel_path}"
         share_url = f"{base_url}/share/{share_id}"
         return templates.TemplateResponse(
             request,

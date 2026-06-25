@@ -27,6 +27,15 @@ def resolve_allowed_origins(cors_origins: list[str] | None = None) -> list[str]:
     if cors_origins:
         return cors_origins
 
+    try:
+        from .dependencies import get_web_config
+
+        config_origins = get_web_config().cors_origins
+        if config_origins:
+            return config_origins
+    except Exception:
+        pass
+
     allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
     if allowed_origins_env:
         return [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
