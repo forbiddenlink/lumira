@@ -107,6 +107,10 @@ class ImageMetadata(BaseModel):
     metadata: dict
     thumbnail_url: str
     full_url: str
+    id: int | None = None
+    share_id: str | None = None
+    is_public: bool = False
+    share_url: str | None = None
 
 
 class GalleryStats(BaseModel):
@@ -680,6 +684,7 @@ async def list_images(
 
             if db_rows:
                 gallery_base = Path(gallery_path)
+                base_url = str(request.base_url).rstrip("/")
                 results: list[ImageMetadata] = []
                 for row in db_rows:
                     row_path = Path(row.filename)
@@ -699,6 +704,8 @@ async def list_images(
                         gen_params,
                         status=str(row.status) if row.status else None,
                     )
+                    share_id = str(row.share_id) if row.share_id else None
+                    is_public = bool(row.is_public)
                     results.append(
                         ImageMetadata(
                             path=str(rel),
@@ -715,6 +722,14 @@ async def list_images(
                             },
                             thumbnail_url=f"/api/images/file/{rel}",
                             full_url=f"/api/images/file/{rel}",
+                            id=int(row.id),
+                            share_id=share_id,
+                            is_public=is_public,
+                            share_url=(
+                                f"{base_url}/share/{share_id}"
+                                if share_id and is_public
+                                else None
+                            ),
                         )
                     )
                 if mood:

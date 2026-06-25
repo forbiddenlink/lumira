@@ -489,15 +489,17 @@ async def _load_portfolio_from_gallery() -> list[dict]:
 
             if image_path.exists():
                 enriched = enrich_sidecar_metadata(metadata)
+                rel_path = image_path.relative_to(gallery_path)
                 portfolio.append(
                     {
                         "number": len(portfolio),
+                        "path": str(rel_path),
                         "subject": enriched.get(
                             "subject",
                             metadata.get("prompt", "").split(",")[0][:50],
                         ),
                         "prompt": metadata.get("prompt", ""),
-                        "image_url": f"/api/images/file/{image_path.relative_to(gallery_path)}",
+                        "image_url": f"/api/images/file/{rel_path}",
                         "mood": extract_mood_from_sidecar(metadata) or "contemplative",
                         "style": enriched.get("style", "digital art"),
                         "reflection": metadata.get(

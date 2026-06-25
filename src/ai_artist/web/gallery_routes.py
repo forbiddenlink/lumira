@@ -1,11 +1,13 @@
 """Community Gallery API routes - public sharing, likes, comments."""
 
+import json
 import secrets
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Annotated, Any, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy import String, and_, func, or_
@@ -21,6 +23,7 @@ from ..db.models import (
 )
 from ..db.session import get_db
 from ..utils.logging import get_logger
+from .dependencies import GalleryPathDep
 
 logger = get_logger(__name__)
 
@@ -116,7 +119,14 @@ class ShareResponse(BaseModel):
 class PublishRequest(BaseModel):
     """Request to publish an image to gallery."""
 
-    image_id: int
+    image_id: int | None = None
+    path: str | None = None
+
+    @model_validator(mode="after")
+    def require_identifier(self) -> "PublishRequest":
+        if self.image_id is None and not self.path:
+            raise ValueError("Either image_id or path is required")
+        return self
 
 
 class PublishResponse(BaseModel):
@@ -143,6 +153,78 @@ def get_session_id(request: Request) -> str:
 def generate_share_id() -> str:
     """Generate a short unique share ID."""
     return secrets.token_urlsafe(8)[:12]
+
+
+def _resolve_image_for_publish(
+    db: Session,
+    gallery_path: str,
+    image_id: int | None,
+    path: str | None,
+) -> GeneratedImage:
+    """Find or create a GeneratedImage row for publishing."""
+    if image_id is not None:
+        image = db.query(GeneratedImage).filter(GeneratedImage.id == image_id).first()
+        if not image:
+            raise HTTPException(status_code=404, detail="Image not found")
+        return image
+
+    if not path:
+        raise HTTPException(status_code=400, detail="Either image_id or path is required")
+
+    rel = path.lstrip("/").replace("\\", "/")
+    gallery_base = Path(gallery_path).resolve()
+    full_path = (gallery_base / rel).resolve()
+
+    try:
+        full_path.relative_to(gallery_base)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="Invalid image path") from exc
+
+    if not full_path.is_file():
+        raise HTTPException(status_code=404, detail="Image file not found")
+
+    candidates = {
+        str(full_path),
+        rel,
+        str(gallery_base / rel),
+        full_path.name,
+    }
+    image = (
+        db.query(GeneratedImage)
+        .filter(GeneratedImage.filename.in_(list(candidates)))
+        .first()
+    )
+    if not image:
+        image = (
+            db.query(GeneratedImage)
+            .filter(GeneratedImage.filename.like(f"%{full_path.name}"))
+            .first()
+        )
+
+    if not image:
+        meta_path = full_path.with_suffix(".json")
+        meta: dict[str, Any] = {}
+        if meta_path.exists():
+            try:
+                meta = json.loads(meta_path.read_text())
+            except json.JSONDecodeError:
+                meta = {}
+
+        inner_meta = meta.get("metadata", meta)
+        if not isinstance(inner_meta, dict):
+            inner_meta = meta if isinstance(meta, dict) else {}
+
+        model_id = inner_meta.get("model", meta.get("model", "unknown"))
+        image = GeneratedImage(
+            filename=str(full_path),
+            prompt=str(meta.get("prompt", "")),
+            model_id=str(model_id) if model_id else "unknown",
+            generation_params=inner_meta,
+        )
+        db.add(image)
+        db.flush()
+
+    return image
 
 
 def _as_str_list(value: Any) -> list[str]:
@@ -520,34 +602,34 @@ async def publish_to_gallery(
     request: Request,
     publish_req: PublishRequest,
     db: DbSession,
+    gallery_path: GalleryPathDep,
 ):
-    """Publish a private image to the public gallery."""
-    image = (
-        db.query(GeneratedImage)
-        .filter(GeneratedImage.id == publish_req.image_id)
-        .first()
+    """Publish an image to the public share gallery."""
+    image = _resolve_image_for_publish(
+        db,
+        gallery_path,
+        publish_req.image_id,
+        publish_req.path,
     )
-
-    if not image:
-        raise HTTPException(status_code=404, detail="Image not found")
-
     image_obj = cast(Any, image)
+    base_url = str(request.base_url).rstrip("/")
 
-    if image_obj.is_public:
-        raise HTTPException(status_code=400, detail="Image is already public")
+    if image_obj.is_public and image_obj.share_id:
+        return PublishResponse(
+            success=True,
+            share_id=str(image_obj.share_id),
+            share_url=f"{base_url}/share/{image_obj.share_id}",
+        )
 
-    # Generate share ID and make public
-    image_obj.share_id = generate_share_id()
+    if not image_obj.share_id:
+        image_obj.share_id = generate_share_id()
     image_obj.is_public = True
     db.commit()
-
-    base_url = str(request.base_url).rstrip("/")
-    share_url = f"{base_url}/share/{image_obj.share_id}"
 
     return PublishResponse(
         success=True,
         share_id=str(image_obj.share_id),
-        share_url=share_url,
+        share_url=f"{base_url}/share/{image_obj.share_id}",
     )
 
 

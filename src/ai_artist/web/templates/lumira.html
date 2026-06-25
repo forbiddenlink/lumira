@@ -2403,6 +2403,13 @@
         </button>
         <button
           class="btn-outline"
+          onclick="showMoodGraph()"
+          aria-label="View mood evolution graph"
+        >
+          MOODS
+        </button>
+        <button
+          class="btn-outline"
           onclick="showMemory()"
           aria-label="View memory dashboard"
         >
@@ -3498,6 +3505,10 @@
         images.forEach(function (img, i) {
           var painting = {
             number: i,
+            id: img.id,
+            path: img.path,
+            share_id: img.share_id,
+            is_public: img.is_public,
             subject: (img.prompt && img.prompt.split(",")[0]) || "Artwork",
             prompt: img.prompt || "",
             image_url: img.full_url || img.thumbnail_url,
@@ -4469,7 +4480,7 @@
 
         fetch("/api/lumira/variations", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: lumiraApiHeaders(),
           body: JSON.stringify({
             image_id: painting.id,
             count: 4,
@@ -4571,29 +4582,61 @@
         }
       }
 
-      function shareArtwork() {
+      async function shareArtwork() {
         if (currentLightboxId === null) return;
 
         var painting = paintingsData[currentLightboxId];
-        var shareUrl =
-          window.location.origin +
-          "/share/" +
-          (painting.share_id || painting.id);
+        try {
+          var shareUrl;
+          if (painting.share_id && painting.is_public) {
+            shareUrl = window.location.origin + "/share/" + painting.share_id;
+          } else {
+            var body = {};
+            if (painting.id) body.image_id = painting.id;
+            else if (painting.path) body.path = painting.path;
+            else {
+              addLog("ERROR", "Cannot share this artwork");
+              return;
+            }
+            var resp = await fetch("/api/gallery/publish", {
+              method: "POST",
+              headers: lumiraApiHeaders(),
+              body: JSON.stringify(body),
+            });
+            if (!resp.ok) {
+              var errBody = await resp.json().catch(function () {
+                return {};
+              });
+              var detail = errBody.detail;
+              throw new Error(
+                typeof detail === "string"
+                  ? detail
+                  : detail
+                    ? JSON.stringify(detail)
+                    : "Publish failed",
+              );
+            }
+            var data = await resp.json();
+            shareUrl = data.share_url;
+            painting.share_id = data.share_id;
+            painting.is_public = true;
+          }
 
-        if (navigator.share) {
-          navigator
-            .share({
+          if (navigator.share) {
+            await navigator.share({
               title: painting.subject || "Lumira Artwork",
               text:
                 painting.reflection ||
                 "Created by Lumira, an autonomous AI artist",
               url: shareUrl,
-            })
-            .catch(function () {});
-        } else {
-          navigator.clipboard.writeText(shareUrl).then(function () {
+            });
+          } else {
+            await navigator.clipboard.writeText(shareUrl);
             addLog("SYSTEM", "Share link copied to clipboard");
-          });
+          }
+        } catch (err) {
+          if (err && err.name === "AbortError") return;
+          addLog("ERROR", err.message || "Share failed");
         }
       }
 
@@ -4890,10 +4933,15 @@
         addLog("PREVIEW", "Generating fast preview…");
         fetch("/api/lumira/preview", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: lumiraApiHeaders(),
           body: JSON.stringify({ prompt: prompt }),
         })
           .then(function (res) {
+            if (!res.ok) {
+              return res.json().then(function (err) {
+                throw new Error(err.detail || "Preview failed");
+              });
+            }
             return res.json();
           })
           .then(function (data) {
@@ -5087,7 +5135,7 @@
 
         fetch("/api/lumira/request", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: lumiraApiHeaders(),
           body: JSON.stringify(body),
         })
           .then(function (res) {
@@ -5211,7 +5259,7 @@
 
         fetch('/api/lumira/suggest-prompt', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: lumiraApiHeaders(),
           body: JSON.stringify({prompt: prompt})
         })
         .then(function(res) {

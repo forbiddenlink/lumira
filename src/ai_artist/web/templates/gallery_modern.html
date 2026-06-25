@@ -5636,39 +5636,75 @@
       async function shareArtwork(e) {
         e?.stopPropagation();
         const image = getModalImage();
-        const shareUrl = window.location.origin + '/api/images/file/' + image.path;
-        const shareData = {
-          title: image.prompt || 'Artwork by Lumira',
-          text: 'Created by Lumira, an autonomous AI artist' + (image.metadata?.mood ? ' feeling ' + image.metadata.mood : ''),
-          url: shareUrl
-        };
-
-        // Try Web Share API first (mobile)
-        if (navigator.share) {
-          try {
-            await navigator.share(shareData);
-            showToast('Shared successfully', 'success');
-            return;
-          } catch(err) {
-            if (err.name === 'AbortError') return; // user cancelled
-          }
-        }
-
-        // Fallback: copy to clipboard
         try {
-          await navigator.clipboard.writeText(shareUrl);
-          showToast('Link copied to clipboard', 'success');
-        } catch(err) {
-          // Final fallback: textarea hack
-          const ta = document.createElement('textarea');
-          ta.value = shareUrl;
-          ta.style.position = 'fixed';
-          ta.style.opacity = '0';
-          document.body.appendChild(ta);
-          ta.select();
-          document.execCommand('copy');
-          document.body.removeChild(ta);
-          showToast('Link copied to clipboard', 'success');
+          let shareUrl;
+          if (image.share_id && image.is_public) {
+            shareUrl = window.location.origin + '/share/' + image.share_id;
+          } else {
+            const body = {};
+            if (image.id) body.image_id = image.id;
+            else if (image.path) body.path = image.path;
+            else {
+              showToast('Cannot share this artwork', 'error');
+              return;
+            }
+            const resp = await fetch('/api/gallery/publish', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            });
+            if (!resp.ok) {
+              const err = await resp.json().catch(() => ({}));
+              const detail = err.detail;
+              throw new Error(
+                typeof detail === 'string'
+                  ? detail
+                  : detail
+                    ? JSON.stringify(detail)
+                    : 'Publish failed',
+              );
+            }
+            const data = await resp.json();
+            shareUrl = data.share_url;
+            image.share_id = data.share_id;
+            image.is_public = true;
+          }
+
+          const shareData = {
+            title: image.prompt || 'Artwork by Lumira',
+            text: 'Created by Lumira, an autonomous AI artist' + (image.metadata?.mood ? ' feeling ' + image.metadata.mood : ''),
+            url: shareUrl
+          };
+
+          // Try Web Share API first (mobile)
+          if (navigator.share) {
+            try {
+              await navigator.share(shareData);
+              showToast('Shared successfully', 'success');
+              return;
+            } catch(err) {
+              if (err.name === 'AbortError') return; // user cancelled
+            }
+          }
+
+          // Fallback: copy to clipboard
+          try {
+            await navigator.clipboard.writeText(shareUrl);
+            showToast('Share link copied to clipboard', 'success');
+          } catch(err) {
+            // Final fallback: textarea hack
+            const ta = document.createElement('textarea');
+            ta.value = shareUrl;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            showToast('Share link copied to clipboard', 'success');
+          }
+        } catch (err) {
+          showToast(err.message || 'Share failed', 'error');
         }
       }
 
