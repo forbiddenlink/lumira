@@ -4927,11 +4927,15 @@
           return;
         }
         var btn = document.getElementById("preview-approve-btn");
+        var overlay = document.getElementById("creating-overlay");
         btn.disabled = true;
+        if (overlay) overlay.classList.add("active");
+        var loaderStatus = document.getElementById("loader-status");
+        if (loaderStatus) loaderStatus.textContent = "Rendering full quality artwork...";
         addLog("PREVIEW", "Approving full render…");
         fetch("/api/lumira/preview/approve", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: lumiraApiHeaders(),
           body: JSON.stringify({
             session_id: previewState.sessionId,
             prompt: previewState.prompt,
@@ -4955,6 +4959,7 @@
           })
           .finally(function () {
             btn.disabled = false;
+            if (overlay) overlay.classList.remove("active");
           });
       }
 
@@ -5296,8 +5301,11 @@
           }, 600);
         });
 
-        // ===== AWWWARDS: Custom cursor =====
+        // ===== AWWWARDS: Custom cursor (pointer devices only) =====
         (function () {
+          if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+            return;
+          }
           var dot = document.getElementById("cursor-dot");
           var ring = document.getElementById("cursor-ring");
           if (!dot || !ring) return;

@@ -70,3 +70,23 @@ def test_monitoring_page_has_a11y_live_region(client):
     assert response.status_code == 200
     assert 'aria-live="polite"' in response.text
     assert 'role="status"' in response.text
+
+
+def test_image_download_sets_content_disposition(client, tmp_path):
+    from ai_artist.web.dependencies import set_gallery_manager
+    from ai_artist.gallery.manager import GalleryManager
+
+    gallery_dir = tmp_path / "gallery"
+    gallery_dir.mkdir()
+    img = gallery_dir / "2026/06/25/test.png"
+    img.parent.mkdir(parents=True)
+    img.write_bytes(b"\x89PNG\r\n")
+
+    set_gallery_manager(GalleryManager(gallery_dir), str(gallery_dir))
+
+    response = client.get(
+        "/api/images/file/2026/06/25/test.png",
+        params={"download": True},
+    )
+    assert response.status_code == 200
+    assert "attachment" in response.headers.get("content-disposition", "").lower()

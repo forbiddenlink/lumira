@@ -791,6 +791,7 @@ async def get_image_file(
     request: Request,
     file_path: str,
     gallery_path: GalleryPathDep,
+    download: bool = False,
 ):
     """Serve image file."""
     gallery_path_obj = Path(gallery_path)
@@ -835,6 +836,10 @@ async def get_image_file(
     file_response = FileResponse(full_path, media_type=media_type)
     file_response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
     file_response.headers["ETag"] = etag
+    if download:
+        file_response.headers["Content-Disposition"] = (
+            f'attachment; filename="{full_path.name}"'
+        )
     return file_response
 
 

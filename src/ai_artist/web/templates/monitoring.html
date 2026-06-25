@@ -204,6 +204,10 @@
             2,
           );
         } catch (e) {
+          setText("ws-count", "—");
+          setText("gallery-status", "—");
+          setText("queue-active", "—");
+          setText("queue-detail", "");
           document.getElementById("details-json").textContent = String(e);
         }
       }
@@ -211,6 +215,7 @@
       async function refreshMetrics() {
         try {
           var res = await fetch("/metrics");
+          if (!res.ok) throw new Error("/metrics returned " + res.status);
           var text = await res.text();
           var lines = text.split("\n").filter(function (line) {
             return line && !line.startsWith("#");
