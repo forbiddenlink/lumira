@@ -5798,20 +5798,35 @@
         try {
           const resp = await fetch("/api/lumira/request", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: lumiraApiHeaders(),
             body: JSON.stringify(body),
           });
+
+          if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.detail || "Creation failed");
+          }
+
           const data = await resp.json();
 
           if (data.success) {
-            showToast(
-              "Lumira created: " + (data.subject || "a new artwork"),
-              "success",
-            );
+            showToast("Generation started — watch the progress panel", "info");
+            if (data.session_id) {
+              currentSessionId = data.session_id;
+              const panel = document.getElementById("progress-panel");
+              const titleText = document.getElementById("progress-title-text");
+              const message = document.getElementById("progress-message");
+              const cancelBtn = document.getElementById("cancel-btn");
+              panel.classList.add("active");
+              if (titleText) titleText.textContent = "Lumira is Creating";
+              if (message) {
+                message.textContent =
+                  data.reflection || "Channeling your request into art...";
+              }
+              if (cancelBtn) cancelBtn.disabled = false;
+            }
             promptInput.value = "";
             toggleCreationPanel();
-            // Refresh gallery
-            await loadImages();
           } else {
             showToast(data.error || "Creation failed", "error");
           }
@@ -6044,6 +6059,27 @@
       }
 
       let currentSessionId = null;
+      var _authRequired = false;
+
+      function lumiraApiHeaders(extra) {
+        var headers = Object.assign({ "Content-Type": "application/json" }, extra || {});
+        if (_authRequired) {
+          var key = sessionStorage.getItem("lumira_api_key");
+          if (key) headers["X-API-Key"] = key;
+        }
+        return headers;
+      }
+
+      fetch("/api/auth-mode")
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          _authRequired = !!data.auth_required;
+          if (_authRequired && !sessionStorage.getItem("lumira_api_key")) {
+            var key = window.prompt("Enter API key to create artwork:");
+            if (key) sessionStorage.setItem("lumira_api_key", key);
+          }
+        })
+        .catch(function () {});
 
       var wsUrl = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws';
       var wsConnection = createReconnectingWebSocket(wsUrl, {
@@ -6284,20 +6320,28 @@
       }
 
       function cancelGeneration() {
-        if (currentSessionId) {
-          // Send cancel request if API supports it
-          fetch(`/api/cancel/${currentSessionId}`, { method: "POST" })
-            .then(() => {
-              showToast("Generation cancelled", "success");
-              hideProgressPanel();
-            })
-            .catch((error) => {
-              console.error("Failed to cancel:", error);
-              showToast("Failed to cancel generation", "error");
-            });
+        if (!currentSessionId) return;
 
-          currentSessionId = null;
-        }
+        const sessionId = currentSessionId;
+        const cancelBtn = document.getElementById("cancel-btn");
+        if (cancelBtn) cancelBtn.disabled = true;
+
+        fetch(`/api/cancel/${sessionId}`, { method: "POST" })
+          .then(function (res) {
+            if (!res.ok) {
+              return res.json().then(function (err) {
+                throw new Error(err.detail || "Cancel failed");
+              });
+            }
+            showToast("Generation cancelled", "success");
+            hideProgressPanel();
+            currentSessionId = null;
+          })
+          .catch(function (error) {
+            console.error("Failed to cancel:", error);
+            showToast("Failed to cancel generation", "error");
+            if (cancelBtn) cancelBtn.disabled = false;
+          });
       }
 
       // Keep connection alive with periodic pings (wsConnection created above)
@@ -6364,6 +6408,7 @@
       style="text-align:center;padding:1.25rem 1rem;color:var(--text-muted, #888);font-size:0.75rem;border-top:1px solid var(--border, rgba(255,255,255,0.08));margin-top:2rem"
     >
       Artwork on this gallery is created by Lumira, an autonomous AI artist.
+      <a href="/privacy" style="color: inherit; margin-left: 0.75rem">Privacy</a>
     </footer>
   </body>
 </html>

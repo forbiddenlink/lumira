@@ -1426,6 +1426,11 @@ async def generate_artwork(
                     ),
                 )
 
+        except asyncio.CancelledError:
+            from .generation_registry import notify_cancelled
+
+            await notify_cancelled(session_id, ws_manager)
+            raise
         except Exception as e:
             logger.error("generation_failed", session_id=session_id, error=str(e))
             await ws_manager.send_generation_error(session_id=session_id, error=str(e))
@@ -1435,8 +1440,10 @@ async def generate_artwork(
                 generator.unload()
 
     # Start background task and keep reference to prevent GC
+    from .generation_registry import register as register_generation_task
+
     task = asyncio.create_task(generate_task())
-    # Store task reference to prevent premature garbage collection
+    register_generation_task(session_id, task)
     _background_tasks.add(task)
     task.add_done_callback(_background_tasks.discard)
 
@@ -1470,6 +1477,31 @@ async def websocket_endpoint(websocket: WebSocket):
     except Exception as e:
         logger.error("websocket_error", error=str(e))
         await ws_manager.disconnect(websocket, client_id)
+
+
+@app.post("/api/cancel/{session_id}", tags=["generation"])
+async def cancel_generation(session_id: str):
+    """Cancel an in-flight image generation by session ID."""
+    from .generation_registry import cancel, is_active
+
+    if not is_active(session_id):
+        raise HTTPException(
+            status_code=404,
+            detail="No active generation found for this session",
+        )
+
+    cancel(session_id)
+    return {"success": True, "message": "Generation cancelled", "session_id": session_id}
+
+
+@app.get("/privacy", response_class=HTMLResponse, tags=["pages"])
+async def privacy_page(request: Request):
+    """Privacy policy for the Lumira web gallery and studio."""
+    return templates.TemplateResponse(
+        request,
+        "privacy.html",
+        {"title": "Privacy Policy | Lumira"},
+    )
 
 
 @app.get("/health/details", tags=["health"])

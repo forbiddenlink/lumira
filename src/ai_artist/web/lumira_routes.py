@@ -29,12 +29,22 @@ from ..utils.config import load_config
 from ..utils.logging import get_logger
 from ..utils.negative_prompts import get_negative_prompt_library
 from .dependencies import GenerationAuthDep
+from .generation_registry import notify_cancelled, register as register_generation_task
 from .rate_limit import RateLimits
 
 logger = get_logger(__name__)
 
 # Set to hold strong references to background tasks (prevent GC)
 _background_tasks: set[asyncio.Task] = set()
+
+
+def _start_generation_task(session_id: str, coro: Any) -> asyncio.Task:
+    """Create, register, and retain a background generation task."""
+    task = asyncio.create_task(coro)
+    register_generation_task(session_id, task)
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+    return task
 
 # Rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -1126,6 +1136,9 @@ async def create_artwork(
                         error=error_msg,
                     )
 
+            except asyncio.CancelledError:
+                await notify_cancelled(session_id, ws_manager)
+                raise
             except Exception as e:
                 import traceback
 
@@ -1147,7 +1160,7 @@ async def create_artwork(
                     generator.clear_vram()
 
         # Start generation in background with exception handling
-        task = asyncio.create_task(generate_task())
+        task = _start_generation_task(session_id, generate_task())
 
         # Add exception handler for the background task
         def handle_task_exception(task):
@@ -1509,6 +1522,9 @@ async def user_request_creation(
                         error="No valid images generated.",
                     )
 
+            except asyncio.CancelledError:
+                await notify_cancelled(session_id, ws_manager)
+                raise
             except Exception as e:
                 import traceback
 
@@ -1526,7 +1542,7 @@ async def user_request_creation(
                 if generator:
                     generator.clear_vram()
 
-        task = asyncio.create_task(generate_task())
+        task = _start_generation_task(session_id, generate_task())
 
         def handle_task_exception(task):
             try:
@@ -2871,6 +2887,9 @@ async def create_with_reference(
                         session_id=session_id, error=error_msg
                     )
 
+            except asyncio.CancelledError:
+                await notify_cancelled(session_id, ws_manager)
+                raise
             except Exception as e:
                 import traceback
 
@@ -2889,7 +2908,7 @@ async def create_with_reference(
                 if generator:
                     generator.clear_vram()
 
-        task = asyncio.create_task(generate_task())
+        task = _start_generation_task(session_id, generate_task())
 
         def handle_task_exception(task):
             try:

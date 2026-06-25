@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ title }}</title>
+    <style>
+      :root {
+        --bg: #0a0a0f;
+        --text: #e8e8ef;
+        --muted: #888;
+        --accent: #bb86fc;
+        --border: rgba(255, 255, 255, 0.08);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.65;
+      }
+      header {
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      header a { color: var(--muted); text-decoration: none; margin-left: 1rem; }
+      header a:hover { color: var(--accent); }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem 4rem;
+      }
+      h1 { font-size: 1.75rem; margin: 0 0 0.5rem; }
+      .updated { color: var(--muted); font-size: 0.85rem; margin-bottom: 2rem; }
+      h2 { font-size: 1.1rem; margin: 2rem 0 0.75rem; color: var(--accent); }
+      p, li { color: #c8c8d4; }
+      ul { padding-left: 1.25rem; }
+      footer {
+        text-align: center;
+        padding: 1.5rem;
+        color: var(--muted);
+        font-size: 0.8rem;
+        border-top: 1px solid var(--border);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong>LUMIRA</strong>
+      <nav>
+        <a href="/">Gallery</a>
+        <a href="/lumira">Studio</a>
+      </nav>
+    </header>
+    <main>
+      <h1>Privacy Policy</h1>
+      <p class="updated">Last updated: June 2026</p>
+
+      <p>
+        Lumira is an autonomous AI artist. This policy describes what data the
+        web gallery and studio collect when you visit or interact with the site.
+      </p>
+
+      <h2>What we collect</h2>
+      <ul>
+        <li>
+          <strong>Gallery interactions</strong> — likes, comments, and shares
+          you submit are stored locally in the site database to power gallery
+          features.
+        </li>
+        <li>
+          <strong>Creation requests</strong> — prompts and style preferences you
+          submit in the studio are processed to generate artwork and may be
+          logged for debugging and quality improvement.
+        </li>
+        <li>
+          <strong>Technical logs</strong> — standard server logs (IP address,
+          browser type, request paths) for security and reliability.
+        </li>
+        <li>
+          <strong>Local storage</strong> — theme, sort, and UI preferences may
+          be saved in your browser via <code>localStorage</code>.
+        </li>
+      </ul>
+
+      <h2>AI-generated content</h2>
+      <p>
+        All artwork displayed here is created by Lumira using machine-learning
+        image models. Outputs are synthetic and do not depict real people unless
+        explicitly described in a prompt.
+      </p>
+
+      <h2>Third-party services</h2>
+      <p>
+        Image generation may use cloud providers (e.g. Replicate) or local GPU
+        inference. API keys for those services are configured by the site
+        operator and are not exposed to visitors.
+      </p>
+
+      <h2>Data retention</h2>
+      <p>
+        Generated images and metadata are kept in the gallery until removed by
+        the operator. You may request deletion of comments or feedback you
+        submitted by contacting the site operator.
+      </p>
+
+      <h2>Your rights</h2>
+      <p>
+        Depending on your location, you may have rights to access, correct, or
+        delete personal data we hold. Lumira does not require user accounts for
+        basic browsing; optional API keys for creation are managed by the
+        operator.
+      </p>
+
+      <h2>Contact</h2>
+      <p>
+        For privacy questions, contact the operator of this Lumira instance.
+      </p>
+    </main>
+    <footer>
+      <a href="/" style="color: var(--muted)">← Back to gallery</a>
+    </footer>
+  </body>
+</html>
