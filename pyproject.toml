@@ -17,7 +17,7 @@ dependencies = [
     "accelerate>=0.27.0",
     "peft>=0.7.0",
     "safetensors>=0.4.0",
-    "pillow>=12.2.0",
+    "pillow>=12.3.0",
     "httpx>=0.27.0",
     "tenacity>=8.2.0",
     "pydantic>=2.10.0,<3.0.0",
@@ -129,7 +129,7 @@ video = [
 override-dependencies = [
     # moviepy caps pillow<12, but pillow>=12.2.0 is required for security; override the cap
     "moviepy>=2.2.0 ; python_version >= '3.11'",
-    "pillow>=12.2.0",
+    "pillow>=12.3.0",
     # GHSA OpenSSL wheel fix; atproto caps <47 but works with 48+ at runtime
     "cryptography>=48.0.1",
 ]

@@ -22,7 +22,7 @@ structlog>=24.4.0,<27.0.0
 tqdm>=4.66.0
 httpx>=0.27.0
 tenacity>=8.2.0
-pillow>=10.0.0
+pillow>=12.3.0
 opencv-python-headless>=4.13.0.90
 
 # ML stack
