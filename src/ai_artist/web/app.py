@@ -31,6 +31,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
@@ -89,7 +90,11 @@ _generation_queue_size = 0  # Track queue depth
 _background_tasks: set = set()
 
 # Rate limiter instance
-limiter = Limiter(key_func=get_remote_address)
+# Generous default backstop so routes without an explicit @limiter.limit are
+# still capped. Set well above any legitimate polling rate; stricter per-route
+# decorators (e.g. 5/minute on generation) bind first, so this only ever
+# throttles otherwise-unlimited endpoints.
+limiter = Limiter(key_func=get_remote_address, default_limits=["600/minute"])
 
 logger = get_logger(__name__)
 
@@ -432,6 +437,8 @@ add_cors_middleware(app)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(ErrorHandlingMiddleware)
+# Enforces limiter.default_limits on routes without an explicit decorator.
+app.add_middleware(SlowAPIMiddleware)
 
 # Include routers
 app.include_router(health_router)

@@ -22,17 +22,24 @@ structlog>=24.4.0,<27.0.0
 tqdm>=4.66.0
 httpx>=0.27.0
 tenacity>=8.2.0
-pillow>=10.0.0
+pillow>=12.2.0
 opencv-python-headless>=4.13.0.90
 
 # ML stack
 torch>=2.12.1
 torchvision>=0.17.0
-diffusers>=0.27.0
+diffusers>=0.38.0
 transformers>=4.57.6,<6.0.0
 accelerate>=0.27.0
 peft>=0.7.0
 safetensors>=0.4.0
+
+# Queue, caching, cloud generation, memory (core in pyproject.toml)
+redis>=5.0.0
+rq>=1.16.0
+replicate>=1.0.0
+anthropic>=0.84.0
+chromadb>=1.5.9
 
 # Optional extras (uncomment as needed)
 # wandb>=0.16.0
@@ -44,5 +51,4 @@ safetensors>=0.4.0
 # sentencepiece>=0.2.0
 # protobuf>=4.25.0
 # controlnet-aux>=0.0.9
-# rq>=1.16.0
 # rq-dashboard>=0.7.0

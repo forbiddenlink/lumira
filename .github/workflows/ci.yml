@@ -81,7 +81,7 @@ jobs:
           --cov=src/ai_artist \
           --cov-report=xml \
           --cov-report=term-missing \
-          --cov-fail-under=40 \
+          --cov-fail-under=55 \
           --junitxml=test-results.xml
 
     - name: Upload test results
