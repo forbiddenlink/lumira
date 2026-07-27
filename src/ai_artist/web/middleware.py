@@ -38,7 +38,11 @@ def resolve_allowed_origins(cors_origins: list[str] | None = None) -> list[str]:
 
     allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
     if allowed_origins_env:
-        return [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
+        return [
+            origin.strip()
+            for origin in allowed_origins_env.split(",")
+            if origin.strip()
+        ]
 
     return DEFAULT_DEV_ORIGINS.copy()
 
@@ -215,6 +219,15 @@ def add_cors_middleware(app, cors_origins: list[str] | None = None):
     Example: ALLOWED_ORIGINS=https://example.com,https://app.example.com
     """
     allowed_origins = resolve_allowed_origins(cors_origins)
+
+    # Guard the credentials+wildcard footgun: with allow_credentials=True,
+    # Starlette reflects the request Origin when "*" is present, granting any
+    # site credentialed cross-origin access. Refuse to start in that config.
+    if "*" in allowed_origins:
+        raise ValueError(
+            "CORS misconfiguration: allow_origins cannot be '*' while "
+            "allow_credentials=True. Set an explicit ALLOWED_ORIGINS allowlist."
+        )
 
     app.add_middleware(
         CORSMiddleware,

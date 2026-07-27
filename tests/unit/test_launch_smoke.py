@@ -6,8 +6,12 @@ import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
-from ai_artist.db.models import Base, GeneratedImage
-from ai_artist.db.session import create_db_engine, create_session_factory, set_session_factory
+from ai_artist.db.models import Base
+from ai_artist.db.session import (
+    create_db_engine,
+    create_session_factory,
+    set_session_factory,
+)
 from ai_artist.gallery.manager import GalleryManager
 from ai_artist.web.app import app
 from ai_artist.web.dependencies import set_gallery_manager
@@ -23,7 +27,9 @@ def smoke_client(tmp_path):
     img_path = image_dir / "smoke.png"
     Image.new("RGB", (32, 32), color="orange").save(img_path)
     img_path.with_suffix(".json").write_text(
-        json.dumps({"prompt": "smoke test artwork", "created_at": "2026-06-25T12:00:00"}),
+        json.dumps(
+            {"prompt": "smoke test artwork", "created_at": "2026-06-25T12:00:00"}
+        ),
         encoding="utf-8",
     )
 

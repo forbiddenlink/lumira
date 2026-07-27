@@ -87,6 +87,7 @@ class GenerationQueue:
         redis_url: str | None = None,
         default_timeout: int = 600,  # 10 minutes
         result_ttl: int = 3600,  # 1 hour
+        max_queue_depth: int | None = None,
     ) -> None:
         """Initialize the generation queue.
 
@@ -109,6 +110,13 @@ class GenerationQueue:
         self.enabled = True
         self.default_timeout = default_timeout
         self.result_ttl = result_ttl
+        # Backpressure: reject new jobs once total pending depth is reached
+        # so a caller cannot grow the Redis queue without bound. 0 disables.
+        self.max_queue_depth = (
+            max_queue_depth
+            if max_queue_depth is not None
+            else int(os.getenv("LUMIRA_MAX_QUEUE_DEPTH", "100"))
+        )
         self.queues = {}
 
         # Get Redis URL from environment or use default
@@ -193,6 +201,21 @@ class GenerationQueue:
         if not queue:
             logger.error("invalid_priority", priority=priority)
             return None
+
+        # Backpressure: reject when total pending depth across all priority
+        # queues is at/over the cap (prevents unbounded queue growth / DoS).
+        if self.max_queue_depth > 0:
+            try:
+                total_depth = sum(q.count for q in self.queues.values())
+            except Exception:
+                total_depth = 0
+            if total_depth >= self.max_queue_depth:
+                logger.warning(
+                    "queue_full",
+                    depth=total_depth,
+                    max_depth=self.max_queue_depth,
+                )
+                return None
 
         try:
             # Prepare job arguments

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import os
 from typing import Any
 
 from ..utils.logging import get_logger
@@ -11,6 +12,16 @@ from ..utils.logging import get_logger
 logger = get_logger(__name__)
 
 _tasks: dict[str, asyncio.Task] = {}
+
+# Process-wide cap on concurrent image generations. Diffusion pipelines are
+# GPU/VRAM bound; without this, every generation route could start work
+# simultaneously and exhaust memory. Shared by ALL generation entry points
+# (app.py /api/generate and lumira_routes /create /request /img2img) so the
+# bound is truly global regardless of which route triggered the work.
+MAX_CONCURRENT_GENERATIONS = max(
+    1, int(os.getenv("LUMIRA_MAX_CONCURRENT_GENERATIONS", "1"))
+)
+generation_semaphore = asyncio.Semaphore(MAX_CONCURRENT_GENERATIONS)
 
 
 def register(session_id: str, task: asyncio.Task) -> None:

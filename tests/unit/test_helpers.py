@@ -1,7 +1,5 @@
 """Tests for web helper utilities."""
 
-from pathlib import Path
-
 from PIL import Image
 
 from ai_artist.web.helpers import resolve_gallery_file_path
@@ -27,7 +25,8 @@ class TestResolveGalleryFilePath:
         Image.new("RGB", (4, 4), color="blue").save(img_path)
 
         assert (
-            resolve_gallery_file_path(str(img_path.resolve()), gallery) == "2026/abs.png"
+            resolve_gallery_file_path(str(img_path.resolve()), gallery)
+            == "2026/abs.png"
         )
 
     def test_basename_fallback_search(self, tmp_path):
@@ -36,4 +35,6 @@ class TestResolveGalleryFilePath:
         nested.mkdir(parents=True)
         Image.new("RGB", (4, 4), color="green").save(nested / "found.png")
 
-        assert resolve_gallery_file_path("found.png", gallery) == "deep/nested/found.png"
+        assert (
+            resolve_gallery_file_path("found.png", gallery) == "deep/nested/found.png"
+        )

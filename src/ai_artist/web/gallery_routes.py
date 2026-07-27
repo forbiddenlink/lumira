@@ -166,10 +166,12 @@ def _resolve_image_for_publish(
         image = db.query(GeneratedImage).filter(GeneratedImage.id == image_id).first()
         if not image:
             raise HTTPException(status_code=404, detail="Image not found")
-        return image
+        return cast(GeneratedImage, image)
 
     if not path:
-        raise HTTPException(status_code=400, detail="Either image_id or path is required")
+        raise HTTPException(
+            status_code=400, detail="Either image_id or path is required"
+        )
 
     rel = path.lstrip("/").replace("\\", "/")
     gallery_base = Path(gallery_path).resolve()
@@ -224,7 +226,7 @@ def _resolve_image_for_publish(
         db.add(image)
         db.flush()
 
-    return image
+    return cast(GeneratedImage, image)
 
 
 def _as_str_list(value: Any) -> list[str]:

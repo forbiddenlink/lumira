@@ -53,11 +53,14 @@ class TestSecurityHeadersMiddleware:
         )
 
     def test_is_websocket_origin_allowed_requires_origin_in_production_mode(self):
-        assert is_websocket_origin_allowed(
-            None,
-            "localhost:8000",
-            require_origin=True,
-        ) is False
+        assert (
+            is_websocket_origin_allowed(
+                None,
+                "localhost:8000",
+                require_origin=True,
+            )
+            is False
+        )
 
     def test_resolve_allowed_origins_env_override(self):
         with patch.dict(

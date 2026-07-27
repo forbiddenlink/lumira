@@ -31,6 +31,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
@@ -79,9 +80,10 @@ ERROR_IMAGE_NOT_FOUND = "Image not found"
 ERROR_ACCESS_DENIED = "Access denied"
 METADATA_FILE_SUFFIX = ".json"
 
-# Concurrency control for image generation
-# Only allow 1 concurrent generation to prevent VRAM exhaustion
-_generation_semaphore = asyncio.Semaphore(1)
+# Concurrency control for image generation. Shared with lumira_routes so the
+# VRAM-exhaustion bound is global across every generation entry point.
+from .generation_registry import generation_semaphore as _generation_semaphore
+
 _generation_timeout_seconds = 300  # 5 minute timeout for generation
 _generation_queue_size = 0  # Track queue depth
 
@@ -89,7 +91,11 @@ _generation_queue_size = 0  # Track queue depth
 _background_tasks: set = set()
 
 # Rate limiter instance
-limiter = Limiter(key_func=get_remote_address)
+# Generous default backstop so routes without an explicit @limiter.limit are
+# still capped. Set well above any legitimate polling rate; stricter per-route
+# decorators (e.g. 5/minute on generation) bind first, so this only ever
+# throttles otherwise-unlimited endpoints.
+limiter = Limiter(key_func=get_remote_address, default_limits=["600/minute"])
 
 logger = get_logger(__name__)
 
@@ -233,6 +239,14 @@ async def lifespan(app: FastAPI):
             # Load from environment variables (e.g., RAILWAY_API_KEY)
             web_config = WebConfig.from_env()
             observability_config = None
+
+        # Env override takes precedence over file config for the dev-mode
+        # toggle: an operator (or the test harness) can enable the
+        # unauthenticated dev bypass via LUMIRA_DEV_MODE without editing YAML.
+        import os as _os
+
+        if _os.getenv("LUMIRA_DEV_MODE", "").lower() in ("1", "true", "yes"):
+            web_config = web_config.model_copy(update={"dev_mode": True})
 
         set_web_config(web_config)
         logger.info(
@@ -424,6 +438,8 @@ add_cors_middleware(app)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(ErrorHandlingMiddleware)
+# Enforces limiter.default_limits on routes without an explicit decorator.
+app.add_middleware(SlowAPIMiddleware)
 
 # Include routers
 app.include_router(health_router)
@@ -464,7 +480,6 @@ async def share_page(request: Request, share_id: str, gallery_path: GalleryPathD
 
     from ..db.models import GeneratedImage
     from ..db.session import get_db
-
     from .helpers import resolve_gallery_file_path
 
     db_gen = get_db()
@@ -1593,7 +1608,11 @@ async def cancel_generation(session_id: str):
         )
 
     cancel(session_id)
-    return {"success": True, "message": "Generation cancelled", "session_id": session_id}
+    return {
+        "success": True,
+        "message": "Generation cancelled",
+        "session_id": session_id,
+    }
 
 
 @app.get("/privacy", response_class=HTMLResponse, tags=["pages"])

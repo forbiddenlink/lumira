@@ -29,7 +29,13 @@ from ..utils.config import load_config
 from ..utils.logging import get_logger
 from ..utils.negative_prompts import get_negative_prompt_library
 from .dependencies import GenerationAuthDep
-from .generation_registry import notify_cancelled, register as register_generation_task
+from .generation_registry import (
+    generation_semaphore,
+    notify_cancelled,
+)
+from .generation_registry import (
+    register as register_generation_task,
+)
 from .rate_limit import RateLimits
 
 logger = get_logger(__name__)
@@ -38,13 +44,25 @@ logger = get_logger(__name__)
 _background_tasks: set[asyncio.Task] = set()
 
 
+async def _guard_generation(coro: Any) -> Any:
+    """Run a generation coroutine under the process-wide concurrency cap."""
+    async with generation_semaphore:
+        return await coro
+
+
 def _start_generation_task(session_id: str, coro: Any) -> asyncio.Task:
-    """Create, register, and retain a background generation task."""
-    task = asyncio.create_task(coro)
+    """Create, register, and retain a background generation task.
+
+    The work is wrapped in the shared generation semaphore so concurrent
+    SDXL/FLUX pipeline calls are bounded regardless of which route started
+    them (prevents GPU/VRAM exhaustion under load).
+    """
+    task = asyncio.create_task(_guard_generation(coro))
     register_generation_task(session_id, task)
     _background_tasks.add(task)
     task.add_done_callback(_background_tasks.discard)
     return task
+
 
 # Rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -457,7 +475,10 @@ async def _load_portfolio_from_gallery() -> list[dict]:
     Results are cached for _PORTFOLIO_CACHE_TTL seconds to avoid rescanning
     the gallery tree on every /state request.
     """
-    from ..utils.metadata_helpers import enrich_sidecar_metadata, extract_mood_from_sidecar
+    from ..utils.metadata_helpers import (
+        enrich_sidecar_metadata,
+        extract_mood_from_sidecar,
+    )
 
     global _portfolio_cache, _portfolio_cache_ts
     now_ts = time.monotonic()
@@ -506,7 +527,8 @@ async def _load_portfolio_from_gallery() -> list[dict]:
                             "reflection", metadata.get("prompt", "")
                         ),
                         "created_at": metadata.get("created_at", ""),
-                        "thinking": metadata.get("thinking") or enriched.get("thinking"),
+                        "thinking": metadata.get("thinking")
+                        or enriched.get("thinking"),
                         "critique_history": metadata.get("critique_history")
                         or enriched.get("critique_history"),
                     }
@@ -3598,8 +3620,17 @@ async def post_to_social(
     # Get image
     image = None
     if post_request.image_path:
-        image_path = Path(post_request.image_path)
-        if not image_path.exists():
+        # Containment: resolve against the gallery root and reject any path
+        # that escapes it (prevents arbitrary-file read via ../ or absolute
+        # paths). Mirrors gallery_routes._resolve_image_for_publish.
+        gallery_base = Path("data/gallery").resolve()
+        rel = post_request.image_path.lstrip("/").replace("\\", "/")
+        image_path = (gallery_base / rel).resolve()
+        try:
+            image_path.relative_to(gallery_base)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="Invalid image path") from exc
+        if not image_path.is_file():
             raise HTTPException(status_code=404, detail="Image file not found")
         image = Image.open(image_path)
     elif post_request.artwork_id:
@@ -3766,7 +3797,6 @@ async def generate_preview(
     """
     from ..core.mood_blender import MoodBlender
     from ..core.preview_generator import PreviewGenerator
-
     from ..web.websocket import manager as ws_manager
 
     session_id = str(uuid.uuid4())
@@ -3877,6 +3907,14 @@ async def approve_preview(
             # Save to gallery
             from ..gallery.manager import GalleryManager
 
+            # Dominant mood = highest-weighted entry in the blend. Narrow inside
+            # an if-block so the key lambda sees a non-optional dict.
+            if body.mood_blend:
+                mb = body.mood_blend
+                dominant_mood = max(mb, key=lambda k: mb[k])
+            else:
+                dominant_mood = "contemplative"
+
             gallery = GalleryManager(Path("gallery"))
             saved_path = gallery.save_image(
                 image=images[0],
@@ -3887,11 +3925,7 @@ async def approve_preview(
                     "style_weights": body.style_weights,
                     "mood_blend": body.mood_blend,
                     "metadata": {
-                        "mood": (
-                            max(body.mood_blend, key=body.mood_blend.get)
-                            if body.mood_blend
-                            else "contemplative"
-                        ),
+                        "mood": dominant_mood,
                     },
                 },
             )
@@ -4211,16 +4245,18 @@ async def download_video(
         path: Path to the video file (returned by /export/video)
     """
     from pathlib import Path as PathLib
-    from tempfile import gettempdir
 
     from fastapi.responses import FileResponse
 
+    from ..utils.video import export_dir
+
     video_path = PathLib(path)
 
-    # Security: only allow files from temp directory
-    temp_dir = PathLib(gettempdir())
+    # Security: only allow files from Lumira's own export subdirectory, not
+    # the shared system temp root (which any process can write to).
+    export_base = export_dir().resolve()
     try:
-        video_path.resolve().relative_to(temp_dir.resolve())
+        video_path.resolve().relative_to(export_base)
     except ValueError as e:
         raise HTTPException(status_code=403, detail="Access denied") from e
 

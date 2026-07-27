@@ -41,7 +41,7 @@ def client(tmp_path):
     from ai_artist.utils.config import WebConfig
     from ai_artist.web.dependencies import set_web_config
 
-    set_web_config(WebConfig())
+    set_web_config(WebConfig(dev_mode=True))
 
     yield TestClient(app)
 
