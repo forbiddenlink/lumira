@@ -454,8 +454,20 @@ app.include_router(admin_router)
 templates_dir = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(templates_dir))
 
-# Static files directory
-static_dir = Path(__file__).parent.parent.parent.parent / "static"
+# Static files directory. Resolve robustly so it works both when run from
+# source (repo-root/static via __file__) AND when the package is pip-installed
+# (where __file__ lives in site-packages and the old 4-parents-up landed in the
+# Python lib dir). CWD/static is correct in the container (WORKDIR /app). Fall
+# back to an empty dir so a missing static/ can't crash startup.
+_static_candidates = [
+    Path("static"),
+    Path(__file__).resolve().parent.parent.parent.parent / "static",
+]
+static_dir = next((c for c in _static_candidates if c.is_dir()), None)
+if static_dir is None:
+    static_dir = Path("static")
+    static_dir.mkdir(parents=True, exist_ok=True)
+    logger.warning("static_dir_not_found_created_empty", path=str(static_dir.resolve()))
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 
