@@ -28,7 +28,12 @@ htmlcov/
 .DS_Store
 
 # Project specific
-models/cache/
+models/
+datasets/
+node_modules/
+data/vector_memory/
+data/*.db
+data/*.db-*
 logs/*.log
 .history/
 .claude/

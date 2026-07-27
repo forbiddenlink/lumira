@@ -1,0 +1,69 @@
+# Lumira - Lightweight gallery + cloud-generation image (Railway/Vercel).
+# No local ML stack: the web app boots torch-free and image generation runs
+# via the cloud Replicate API. Much smaller/faster to build than the full
+# Dockerfile. Deps come from requirements-gallery.txt; the package itself is
+# installed with --no-deps so pyproject's torch stack is NOT pulled in.
+
+# ============================================
+# Stage 1: Builder
+# ============================================
+FROM python:3.11-slim AS builder
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install torch-free dependency set
+COPY requirements-gallery.txt .
+RUN pip install --user --no-cache-dir -r requirements-gallery.txt
+
+# ============================================
+# Stage 2: Runtime
+# ============================================
+FROM python:3.11-slim
+
+RUN groupadd --gid 1000 aiartist \
+    && useradd --uid 1000 --gid aiartist --shell /bin/bash --create-home aiartist
+
+WORKDIR /app
+
+# Runtime libs for opencv-python-headless
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    libgl1 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /root/.local /home/aiartist/.local
+
+COPY --chown=aiartist:aiartist . .
+
+# Run from source (not pip-installed): the app resolves static/ relative to
+# the source layout (src/ai_artist/web -> repo root), which breaks when the
+# package is installed into site-packages. WORKDIR /app + PYTHONPATH=/app/src
+# keeps that resolution correct and avoids pulling pyproject's torch stack.
+RUN mkdir -p gallery logs config data \
+    && chown -R aiartist:aiartist /app
+
+ENV PATH=/home/aiartist/.local/bin:$PATH
+ENV PYTHONPATH=/app/src
+ENV PYTHONUNBUFFERED=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends gosu && rm -rf /var/lib/apt/lists/* \
+    && echo '#!/bin/sh\n\
+mkdir -p /app/gallery/2026 || true\n\
+chown -R aiartist:aiartist /app/gallery 2>/dev/null || true\n\
+exec gosu aiartist "$@"' > /app/entrypoint.sh \
+    && chmod +x /app/entrypoint.sh
+
+EXPOSE 8000
+
+ENTRYPOINT ["/app/entrypoint.sh"]
+
+CMD ["sh", "-c", "uvicorn ai_artist.web.app:app --host 0.0.0.0 --port ${PORT:-8000}"]
