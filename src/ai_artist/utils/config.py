@@ -202,9 +202,15 @@ class DatabaseConfig(BaseModel):
 class WebConfig(BaseModel):
     """Web server configuration."""
 
-    # API key authentication - empty list means no auth required (dev mode)
-    # Can be set via RAILWAY_API_KEY environment variable
+    # API key authentication. When api_keys is empty, access is denied
+    # (fail-closed) UNLESS dev_mode is explicitly enabled. Set keys via
+    # RAILWAY_API_KEY for any real deployment.
     api_keys: list[SecretStr] = []
+
+    # Explicit local-dev bypass. Only when True does an empty api_keys list
+    # allow unauthenticated access. Never enable in production. Set via
+    # LUMIRA_DEV_MODE=1 (or DEBUG=true) in from_env().
+    dev_mode: bool = False
 
     # CORS origins - empty list uses secure localhost defaults
     cors_origins: list[str] = []
@@ -226,8 +232,10 @@ class WebConfig(BaseModel):
             api_keys = [SecretStr(api_key)]
 
         debug = os.getenv("DEBUG", "").lower() in ("1", "true", "yes")
+        # dev_mode must be opted into; DEBUG implies local dev.
+        dev_mode = os.getenv("LUMIRA_DEV_MODE", "").lower() in ("1", "true", "yes") or debug
 
-        return cls(api_keys=api_keys, debug=debug)
+        return cls(api_keys=api_keys, debug=debug, dev_mode=dev_mode)
 
 
 class ObservabilityConfig(BaseModel):

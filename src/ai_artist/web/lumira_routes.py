@@ -29,7 +29,11 @@ from ..utils.config import load_config
 from ..utils.logging import get_logger
 from ..utils.negative_prompts import get_negative_prompt_library
 from .dependencies import GenerationAuthDep
-from .generation_registry import notify_cancelled, register as register_generation_task
+from .generation_registry import (
+    generation_semaphore,
+    notify_cancelled,
+    register as register_generation_task,
+)
 from .rate_limit import RateLimits
 
 logger = get_logger(__name__)
@@ -38,9 +42,20 @@ logger = get_logger(__name__)
 _background_tasks: set[asyncio.Task] = set()
 
 
+async def _guard_generation(coro: Any) -> Any:
+    """Run a generation coroutine under the process-wide concurrency cap."""
+    async with generation_semaphore:
+        return await coro
+
+
 def _start_generation_task(session_id: str, coro: Any) -> asyncio.Task:
-    """Create, register, and retain a background generation task."""
-    task = asyncio.create_task(coro)
+    """Create, register, and retain a background generation task.
+
+    The work is wrapped in the shared generation semaphore so concurrent
+    SDXL/FLUX pipeline calls are bounded regardless of which route started
+    them (prevents GPU/VRAM exhaustion under load).
+    """
+    task = asyncio.create_task(_guard_generation(coro))
     register_generation_task(session_id, task)
     _background_tasks.add(task)
     task.add_done_callback(_background_tasks.discard)
@@ -3598,8 +3613,17 @@ async def post_to_social(
     # Get image
     image = None
     if post_request.image_path:
-        image_path = Path(post_request.image_path)
-        if not image_path.exists():
+        # Containment: resolve against the gallery root and reject any path
+        # that escapes it (prevents arbitrary-file read via ../ or absolute
+        # paths). Mirrors gallery_routes._resolve_image_for_publish.
+        gallery_base = Path("data/gallery").resolve()
+        rel = post_request.image_path.lstrip("/").replace("\\", "/")
+        image_path = (gallery_base / rel).resolve()
+        try:
+            image_path.relative_to(gallery_base)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="Invalid image path") from exc
+        if not image_path.is_file():
             raise HTTPException(status_code=404, detail="Image file not found")
         image = Image.open(image_path)
     elif post_request.artwork_id:
@@ -4211,16 +4235,18 @@ async def download_video(
         path: Path to the video file (returned by /export/video)
     """
     from pathlib import Path as PathLib
-    from tempfile import gettempdir
 
     from fastapi.responses import FileResponse
 
+    from ..utils.video import export_dir
+
     video_path = PathLib(path)
 
-    # Security: only allow files from temp directory
-    temp_dir = PathLib(gettempdir())
+    # Security: only allow files from Lumira's own export subdirectory, not
+    # the shared system temp root (which any process can write to).
+    export_base = export_dir().resolve()
     try:
-        video_path.resolve().relative_to(temp_dir.resolve())
+        video_path.resolve().relative_to(export_base)
     except ValueError as e:
         raise HTTPException(status_code=403, detail="Access denied") from e
 

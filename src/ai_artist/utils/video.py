@@ -9,6 +9,19 @@ from pathlib import Path
 from tempfile import gettempdir
 from uuid import uuid4
 
+
+def export_dir() -> Path:
+    """Return the dedicated temp subdirectory for Lumira video exports.
+
+    Scoping exports to a subdirectory (rather than the shared system temp
+    root) lets the download endpoint contain path access to Lumira's own
+    files instead of any .mp4 dropped in temp by another process.
+    """
+    d = Path(gettempdir()) / "lumira-exports"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
 # Lazy import to avoid requiring moviepy unless video features are used
 _moviepy_available: bool | None = None
 
@@ -103,7 +116,7 @@ def create_slideshow(
 
     # Generate output path if not provided
     if output_path is None:
-        output_path = str(Path(gettempdir()) / f"slideshow_{uuid4()}.mp4")
+        output_path = str(export_dir() / f"slideshow_{uuid4()}.mp4")
 
     # Ensure output directory exists
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
@@ -211,7 +224,7 @@ def create_zoom_video(
 
     # Generate output path if not provided
     if output_path is None:
-        output_path = str(Path(gettempdir()) / f"zoom_{uuid4()}.mp4")
+        output_path = str(export_dir() / f"zoom_{uuid4()}.mp4")
 
     # Ensure output directory exists
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
@@ -285,7 +298,7 @@ def images_to_video(
 
     # Generate output path if not provided
     if output_path is None:
-        output_path = str(Path(gettempdir()) / f"animation_{uuid4()}.mp4")
+        output_path = str(export_dir() / f"animation_{uuid4()}.mp4")
 
     # Ensure output directory exists
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)

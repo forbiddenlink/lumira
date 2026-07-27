@@ -99,3 +99,9 @@ node_modules/
 *.db
 *.sqlite
 *.sqlite3
+.audit-report.md
+
+# Audit / manual-test artifacts (keep out of the repo root)
+codeaudit-*-report.html
+/*-test.png
+/*-results.png

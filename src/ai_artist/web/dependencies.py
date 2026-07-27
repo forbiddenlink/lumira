@@ -39,27 +39,39 @@ def get_web_config() -> WebConfig:
 def require_api_key(
     api_key: str | None = Depends(api_key_header),
 ) -> str:
-    """Require API key for admin endpoints.
+    """Require API key for protected endpoints.
 
-    If no API keys are configured, allow access (dev mode).
+    Fail-closed: if no API keys are configured, access is denied with 503
+    unless ``dev_mode`` is explicitly enabled (LUMIRA_DEV_MODE=1 / DEBUG=true).
+    This prevents deployments that forget RAILWAY_API_KEY from silently
+    exposing generation and admin routes to anonymous callers.
     """
     config = get_web_config()
 
-    if not config.api_keys:
+    if config.api_keys:
+        if api_key is None:
+            raise HTTPException(
+                status_code=401,
+                detail="API key required. Provide X-API-Key header.",
+                headers={"WWW-Authenticate": "API key required"},
+            )
+
+        valid_keys = [k.get_secret_value() for k in config.api_keys]
+        if api_key not in valid_keys:
+            raise HTTPException(status_code=403, detail="Invalid API key")
+
+        return api_key
+
+    if config.dev_mode:
         return "dev-mode"
 
-    if api_key is None:
-        raise HTTPException(
-            status_code=401,
-            detail="API key required. Provide X-API-Key header.",
-            headers={"WWW-Authenticate": "API key required"},
-        )
-
-    valid_keys = [k.get_secret_value() for k in config.api_keys]
-    if api_key not in valid_keys:
-        raise HTTPException(status_code=403, detail="Invalid API key")
-
-    return api_key
+    # No keys configured and not explicit dev mode: refuse rather than
+    # fail open. Operator must set RAILWAY_API_KEY or LUMIRA_DEV_MODE=1.
+    logger.error("auth_not_configured: refusing request (set API keys or LUMIRA_DEV_MODE=1)")
+    raise HTTPException(
+        status_code=503,
+        detail="Server authentication is not configured.",
+    )
 
 
 def require_generation_auth(

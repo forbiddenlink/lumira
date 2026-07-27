@@ -10,6 +10,8 @@ Enhanced with:
 
 import contextlib
 import json
+import os
+import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -91,6 +93,22 @@ class GalleryManager:
         Returns:
             Path to saved image
         """
+        # Disk guard: refuse to write when free space is below the floor so
+        # unbounded generation cannot fill the disk. Configurable; 0 disables.
+        min_free_mb = int(os.getenv("LUMIRA_MIN_FREE_DISK_MB", "500"))
+        if min_free_mb > 0:
+            free_mb: float | None = None
+            with contextlib.suppress(OSError):
+                free_mb = shutil.disk_usage(self.gallery_path).free / (1024 * 1024)
+            if free_mb is not None and free_mb < min_free_mb:
+                logger.error(
+                    "gallery_disk_low", free_mb=int(free_mb), min_free_mb=min_free_mb
+                )
+                raise OSError(
+                    f"Insufficient disk space to save image: "
+                    f"{int(free_mb)}MB free, {min_free_mb}MB required"
+                )
+
         # Create directory structure: year/month/day
         now = datetime.now()
         save_dir = (

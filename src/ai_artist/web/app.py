@@ -79,9 +79,9 @@ ERROR_IMAGE_NOT_FOUND = "Image not found"
 ERROR_ACCESS_DENIED = "Access denied"
 METADATA_FILE_SUFFIX = ".json"
 
-# Concurrency control for image generation
-# Only allow 1 concurrent generation to prevent VRAM exhaustion
-_generation_semaphore = asyncio.Semaphore(1)
+# Concurrency control for image generation. Shared with lumira_routes so the
+# VRAM-exhaustion bound is global across every generation entry point.
+from .generation_registry import generation_semaphore as _generation_semaphore
 _generation_timeout_seconds = 300  # 5 minute timeout for generation
 _generation_queue_size = 0  # Track queue depth
 
@@ -233,6 +233,14 @@ async def lifespan(app: FastAPI):
             # Load from environment variables (e.g., RAILWAY_API_KEY)
             web_config = WebConfig.from_env()
             observability_config = None
+
+        # Env override takes precedence over file config for the dev-mode
+        # toggle: an operator (or the test harness) can enable the
+        # unauthenticated dev bypass via LUMIRA_DEV_MODE without editing YAML.
+        import os as _os
+
+        if _os.getenv("LUMIRA_DEV_MODE", "").lower() in ("1", "true", "yes"):
+            web_config = web_config.model_copy(update={"dev_mode": True})
 
         set_web_config(web_config)
         logger.info(

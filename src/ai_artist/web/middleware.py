@@ -216,6 +216,15 @@ def add_cors_middleware(app, cors_origins: list[str] | None = None):
     """
     allowed_origins = resolve_allowed_origins(cors_origins)
 
+    # Guard the credentials+wildcard footgun: with allow_credentials=True,
+    # Starlette reflects the request Origin when "*" is present, granting any
+    # site credentialed cross-origin access. Refuse to start in that config.
+    if "*" in allowed_origins:
+        raise ValueError(
+            "CORS misconfiguration: allow_origins cannot be '*' while "
+            "allow_credentials=True. Set an explicit ALLOWED_ORIGINS allowlist."
+        )
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allowed_origins,

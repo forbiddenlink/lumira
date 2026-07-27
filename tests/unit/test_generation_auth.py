@@ -46,13 +46,25 @@ def test_preview_allows_valid_api_key(client, auth_enabled):
     assert response.status_code != 403
 
 
-def test_preview_open_in_dev_mode(client):
-    set_web_config(WebConfig())
+def test_preview_open_in_explicit_dev_mode(client):
+    # dev_mode must be explicitly enabled for the unauthenticated bypass.
+    set_web_config(WebConfig(dev_mode=True))
     response = client.post(
         "/api/lumira/preview",
         json={"prompt": "a quiet forest"},
     )
     assert response.status_code != 401
+    assert response.status_code != 503
+
+
+def test_preview_refused_when_unconfigured(client):
+    # Fail-closed: no keys AND no explicit dev_mode -> refuse, don't fail open.
+    set_web_config(WebConfig())
+    response = client.post(
+        "/api/lumira/preview",
+        json={"prompt": "a quiet forest"},
+    )
+    assert response.status_code == 503
 
 
 def test_health_details_returns_runtime_fields(client):
