@@ -4,6 +4,8 @@ import os
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 
@@ -15,8 +17,6 @@ if str(SRC) not in sys.path:
 # stays fail-closed; the fail-closed contract is asserted with explicit config in
 # tests/unit/test_generation_auth.py.
 os.environ.setdefault("LUMIRA_DEV_MODE", "1")
-
-import pytest
 
 
 @pytest.fixture(autouse=True)

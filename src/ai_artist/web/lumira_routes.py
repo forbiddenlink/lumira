@@ -32,6 +32,8 @@ from .dependencies import GenerationAuthDep
 from .generation_registry import (
     generation_semaphore,
     notify_cancelled,
+)
+from .generation_registry import (
     register as register_generation_task,
 )
 from .rate_limit import RateLimits
@@ -60,6 +62,7 @@ def _start_generation_task(session_id: str, coro: Any) -> asyncio.Task:
     _background_tasks.add(task)
     task.add_done_callback(_background_tasks.discard)
     return task
+
 
 # Rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -472,7 +475,10 @@ async def _load_portfolio_from_gallery() -> list[dict]:
     Results are cached for _PORTFOLIO_CACHE_TTL seconds to avoid rescanning
     the gallery tree on every /state request.
     """
-    from ..utils.metadata_helpers import enrich_sidecar_metadata, extract_mood_from_sidecar
+    from ..utils.metadata_helpers import (
+        enrich_sidecar_metadata,
+        extract_mood_from_sidecar,
+    )
 
     global _portfolio_cache, _portfolio_cache_ts
     now_ts = time.monotonic()
@@ -521,7 +527,8 @@ async def _load_portfolio_from_gallery() -> list[dict]:
                             "reflection", metadata.get("prompt", "")
                         ),
                         "created_at": metadata.get("created_at", ""),
-                        "thinking": metadata.get("thinking") or enriched.get("thinking"),
+                        "thinking": metadata.get("thinking")
+                        or enriched.get("thinking"),
                         "critique_history": metadata.get("critique_history")
                         or enriched.get("critique_history"),
                     }
@@ -3790,7 +3797,6 @@ async def generate_preview(
     """
     from ..core.mood_blender import MoodBlender
     from ..core.preview_generator import PreviewGenerator
-
     from ..web.websocket import manager as ws_manager
 
     session_id = str(uuid.uuid4())
@@ -3901,6 +3907,14 @@ async def approve_preview(
             # Save to gallery
             from ..gallery.manager import GalleryManager
 
+            # Dominant mood = highest-weighted entry in the blend. Narrow inside
+            # an if-block so the key lambda sees a non-optional dict.
+            if body.mood_blend:
+                mb = body.mood_blend
+                dominant_mood = max(mb, key=lambda k: mb[k])
+            else:
+                dominant_mood = "contemplative"
+
             gallery = GalleryManager(Path("gallery"))
             saved_path = gallery.save_image(
                 image=images[0],
@@ -3911,11 +3925,7 @@ async def approve_preview(
                     "style_weights": body.style_weights,
                     "mood_blend": body.mood_blend,
                     "metadata": {
-                        "mood": (
-                            max(body.mood_blend, key=body.mood_blend.get)
-                            if body.mood_blend
-                            else "contemplative"
-                        ),
+                        "mood": dominant_mood,
                     },
                 },
             )

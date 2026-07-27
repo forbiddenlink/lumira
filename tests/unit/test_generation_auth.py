@@ -85,8 +85,8 @@ def test_monitoring_page_has_a11y_live_region(client):
 
 
 def test_image_download_sets_content_disposition(client, tmp_path):
-    from ai_artist.web.dependencies import set_gallery_manager
     from ai_artist.gallery.manager import GalleryManager
+    from ai_artist.web.dependencies import set_gallery_manager
 
     gallery_dir = tmp_path / "gallery"
     gallery_dir.mkdir()

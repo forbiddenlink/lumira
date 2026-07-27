@@ -83,6 +83,7 @@ METADATA_FILE_SUFFIX = ".json"
 # Concurrency control for image generation. Shared with lumira_routes so the
 # VRAM-exhaustion bound is global across every generation entry point.
 from .generation_registry import generation_semaphore as _generation_semaphore
+
 _generation_timeout_seconds = 300  # 5 minute timeout for generation
 _generation_queue_size = 0  # Track queue depth
 
@@ -479,7 +480,6 @@ async def share_page(request: Request, share_id: str, gallery_path: GalleryPathD
 
     from ..db.models import GeneratedImage
     from ..db.session import get_db
-
     from .helpers import resolve_gallery_file_path
 
     db_gen = get_db()
@@ -1608,7 +1608,11 @@ async def cancel_generation(session_id: str):
         )
 
     cancel(session_id)
-    return {"success": True, "message": "Generation cancelled", "session_id": session_id}
+    return {
+        "success": True,
+        "message": "Generation cancelled",
+        "session_id": session_id,
+    }
 
 
 @app.get("/privacy", response_class=HTMLResponse, tags=["pages"])

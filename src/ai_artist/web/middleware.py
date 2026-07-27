@@ -38,7 +38,11 @@ def resolve_allowed_origins(cors_origins: list[str] | None = None) -> list[str]:
 
     allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "")
     if allowed_origins_env:
-        return [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
+        return [
+            origin.strip()
+            for origin in allowed_origins_env.split(",")
+            if origin.strip()
+        ]
 
     return DEFAULT_DEV_ORIGINS.copy()
 

@@ -18,7 +18,9 @@ _tasks: dict[str, asyncio.Task] = {}
 # simultaneously and exhaust memory. Shared by ALL generation entry points
 # (app.py /api/generate and lumira_routes /create /request /img2img) so the
 # bound is truly global regardless of which route triggered the work.
-MAX_CONCURRENT_GENERATIONS = max(1, int(os.getenv("LUMIRA_MAX_CONCURRENT_GENERATIONS", "1")))
+MAX_CONCURRENT_GENERATIONS = max(
+    1, int(os.getenv("LUMIRA_MAX_CONCURRENT_GENERATIONS", "1"))
+)
 generation_semaphore = asyncio.Semaphore(MAX_CONCURRENT_GENERATIONS)
 
 

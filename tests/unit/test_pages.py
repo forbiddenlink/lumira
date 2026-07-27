@@ -78,8 +78,8 @@ class TestPages:
         )
 
     def test_share_page_resolves_absolute_filename(self, tmp_path):
-        from ai_artist.web.dependencies import set_gallery_manager
         from ai_artist.gallery.manager import GalleryManager
+        from ai_artist.web.dependencies import set_gallery_manager
 
         gallery = tmp_path / "gallery"
         image_dir = gallery / "2026"

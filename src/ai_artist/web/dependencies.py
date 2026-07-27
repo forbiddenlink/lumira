@@ -67,7 +67,9 @@ def require_api_key(
 
     # No keys configured and not explicit dev mode: refuse rather than
     # fail open. Operator must set RAILWAY_API_KEY or LUMIRA_DEV_MODE=1.
-    logger.error("auth_not_configured: refusing request (set API keys or LUMIRA_DEV_MODE=1)")
+    logger.error(
+        "auth_not_configured: refusing request (set API keys or LUMIRA_DEV_MODE=1)"
+    )
     raise HTTPException(
         status_code=503,
         detail="Server authentication is not configured.",

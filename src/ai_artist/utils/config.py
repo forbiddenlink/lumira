@@ -233,7 +233,9 @@ class WebConfig(BaseModel):
 
         debug = os.getenv("DEBUG", "").lower() in ("1", "true", "yes")
         # dev_mode must be opted into; DEBUG implies local dev.
-        dev_mode = os.getenv("LUMIRA_DEV_MODE", "").lower() in ("1", "true", "yes") or debug
+        dev_mode = (
+            os.getenv("LUMIRA_DEV_MODE", "").lower() in ("1", "true", "yes") or debug
+        )
 
         return cls(api_keys=api_keys, debug=debug, dev_mode=dev_mode)
 
