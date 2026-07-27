@@ -1,9 +1,12 @@
 # Railway Configuration for Lumira
-# Full deployment with image generation and web gallery
+# Lightweight gallery + cloud-generation deployment (no local ML / no GPU).
+# Uses Dockerfile.gallery: the web app boots torch-free and image generation
+# runs via the cloud Replicate API. The full-ML Dockerfile is not viable on
+# Railway (no GPU, multi-GB image).
 
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "Dockerfile.gallery"
 
 [deploy]
 # Don't use startCommand when using Dockerfile - let the Dockerfile CMD handle it
@@ -12,12 +15,12 @@ healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
 
-# Environment variables (set in Railway dashboard)
+# Environment variables (set in Railway dashboard / `railway variables`):
 # Required:
-# - UNSPLASH_ACCESS_KEY
-# - UNSPLASH_SECRET_KEY
-#
+# - RAILWAY_API_KEY   -> enables fail-closed auth on generation/admin routes
+#                        (gallery browsing stays public). Without it those
+#                        routes return 503.
 # Optional:
-# - MODEL_DEVICE=cpu (use cpu for Railway, cuda for GPU providers)
-# - HF_HOME=/app/models/cache
-# - PYTHONUNBUFFERED=1
+# - REPLICATE_API_TOKEN -> enables cloud image generation
+# - ALLOWED_ORIGINS=https://<your-domain>  -> CORS/WebSocket allowlist
+# - UNSPLASH_ACCESS_KEY / UNSPLASH_SECRET_KEY -> stock-image features

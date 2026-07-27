@@ -1,10 +1,12 @@
 """Configuration management using Pydantic."""
 
 from pathlib import Path
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
-import torch
 import yaml  # type: ignore[import-untyped]
+
+if TYPE_CHECKING:
+    import torch
 from pydantic import BaseModel, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -313,6 +315,13 @@ def load_config(config_path: Path | None = None) -> Config:
     return config
 
 
-def get_torch_dtype(dtype_str: str) -> torch.dtype:
-    """Convert dtype string to torch dtype."""
+def get_torch_dtype(dtype_str: str) -> "torch.dtype":
+    """Convert dtype string to torch dtype.
+
+    torch is imported lazily so the web/gallery app can boot in a
+    torch-free (ML-less) deployment; this helper is only called on the
+    local-generation path.
+    """
+    import torch
+
     return torch.float16 if dtype_str == "float16" else torch.float32
