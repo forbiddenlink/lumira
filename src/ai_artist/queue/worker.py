@@ -78,7 +78,7 @@ def generate_image(prompt: str, params: dict[str, Any]) -> dict[str, Any]:
         # Import here to avoid loading torch until needed
         import torch
 
-        from ..core.generator import ImageGenerator
+        from ..core.generator_factory import get_image_generator
         from ..curation.curator import is_black_or_blank
         from ..utils.config import load_config
 
@@ -98,6 +98,7 @@ def generate_image(prompt: str, params: dict[str, Any]) -> dict[str, Any]:
             model_id = params.get("model_id", config.model.base_model)
             device = config.model.device
             dtype = torch.float32 if config.model.dtype == "float32" else torch.float16
+            backend = params.get("backend", config.model.backend)
         else:
             # Use defaults
             model_id = params.get(
@@ -109,11 +110,13 @@ def generate_image(prompt: str, params: dict[str, Any]) -> dict[str, Any]:
                 else "mps" if torch.backends.mps.is_available() else "cpu"
             )
             dtype = torch.float16 if device == "cuda" else torch.float32
+            backend = params.get("backend", "local")
 
         update_progress(5, 100, "Loading model...")
 
-        # Create and load generator
-        generator = ImageGenerator(
+        # Create and load generator (backend selected via config.model.backend)
+        generator = get_image_generator(
+            backend,
             model_id=model_id,
             device=device,
             dtype=dtype,
