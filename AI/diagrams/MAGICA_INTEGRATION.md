@@ -87,13 +87,10 @@ the async queue path, not the GPU loop.
       `resolution`+`aspect_ratio`, FLUX 2 uses `image_size`; verified via `get_model_schema`.
 - [x] Per-mood model diversity: `MAGICA_MOOD_MODELS` + `model_for_mood()` (nano/flux/gpt/grok).
 - [x] `sub_model_id` plumbing (top-level in the run request) for multi-mode nodes.
-- [ ] **Get a real `MAGICA_API_KEY`** — the one remaining blocker. Steps:
-      1. magica.com dashboard → Organisation → API Keys → create key.
-      2. `echo 'export MAGICA_API_KEY=...' >> ~/.secrets` (never commit it).
-      3. Add `MAGICA_API_KEY=` line to `.env` for local runs.
-      4. `config.model.backend = "magica"` (or pass `backend` in the RQ job params).
-      5. One live gen to validate the REST shapes end-to-end (the only untested path;
-         request/response shapes already match the official docs curl).
+- [x] **Live REST validation** (2026-07-28) — `MAGICA_API_KEY` set in `~/.secrets` + `.env`;
+      a real `backend=magica` gen returned a 1024×1024 image. Caught + fixed a real bug: run
+      status returns URLs at `output.result`, not top-level `assets[]` (see `_extract_urls`).
+      To use: `config.model.backend = "magica"` (or pass `backend` in the RQ job params).
 - [ ] Optional: add `MAGICA_API_KEY` to `APIKeysConfig` as `SecretStr` (currently read from
       env like `ReplicateGenerator`, deliberately consistent).
 - [ ] Consider a live routing-test matrix before enabling in prod (per agent-intent-tests rule).
