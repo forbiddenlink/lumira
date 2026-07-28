@@ -281,6 +281,6 @@ class MagicaGenerator:
     def __enter__(self) -> MagicaGenerator:
         return self
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> bool:
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Literal[False]:
         self.unload()
         return False

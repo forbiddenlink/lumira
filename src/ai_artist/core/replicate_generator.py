@@ -403,6 +403,10 @@ class ReplicateGenerator:
         """Clean up resources. No-op for Replicate."""
         pass
 
+    def unload(self) -> None:
+        """Release resources. Alias of cleanup for backend-interface parity."""
+        self.cleanup()
+
     def clear_vram(self) -> None:
         """Clear VRAM. No-op for Replicate (runs on cloud)."""
         pass

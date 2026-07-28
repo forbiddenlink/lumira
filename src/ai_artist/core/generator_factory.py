@@ -18,7 +18,7 @@ call site.
 
 from __future__ import annotations
 
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Literal, Protocol, cast, runtime_checkable
 
 from ..utils.logging import get_logger
 
@@ -29,6 +29,8 @@ BACKEND_REPLICATE = "replicate"
 BACKEND_MAGICA = "magica"
 KNOWN_BACKENDS = (BACKEND_LOCAL, BACKEND_REPLICATE, BACKEND_MAGICA)
 
+_Device = Literal["cuda", "mps", "cpu"]
+
 
 @runtime_checkable
 class ImageBackend(Protocol):
@@ -37,6 +39,8 @@ class ImageBackend(Protocol):
     def load_model(self, *args: Any, **kwargs: Any) -> None: ...
 
     def generate(self, prompt: str, *args: Any, **kwargs: Any) -> list: ...
+
+    def unload(self) -> None: ...
 
 
 def get_image_generator(
@@ -66,13 +70,17 @@ def get_image_generator(
         from .replicate_generator import ReplicateGenerator
 
         logger.info("image_backend_selected", backend=backend, model_id=model_id)
-        return ReplicateGenerator(model_id=model_id, device=device, dtype=dtype)
+        return ReplicateGenerator(
+            model_id=model_id, device=cast(_Device, device), dtype=dtype
+        )
 
     if backend == BACKEND_MAGICA:
         from .magica_generator import MagicaGenerator
 
         logger.info("image_backend_selected", backend=backend, model_id=model_id)
-        return MagicaGenerator(model_id=model_id, device=device, dtype=dtype)
+        return MagicaGenerator(
+            model_id=model_id, device=cast(_Device, device), dtype=dtype
+        )
 
     if backend != BACKEND_LOCAL:
         logger.warning("unknown_image_backend", backend=backend, fallback=BACKEND_LOCAL)
