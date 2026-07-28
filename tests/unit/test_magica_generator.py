@@ -79,8 +79,8 @@ def test_generate_happy_path(monkeypatch):
 
     poll_resp = MagicMock()
     poll_resp.json.return_value = {
-        "status": "complete",
-        "assets": [{"url": "https://cdn.example/out.png"}],
+        "status": "COMPLETED",
+        "output": {"result": ["https://cdn.example/out.png"]},
     }
     poll_resp.raise_for_status.return_value = None
 
@@ -119,9 +119,10 @@ def _mock_ok_run(monkeypatch):
     post_resp.raise_for_status.return_value = None
 
     poll_resp = MagicMock()
+    # REST run-status shape: URLs live at output.result (verified live 2026-07-28).
     poll_resp.json.return_value = {
-        "status": "complete",
-        "assets": [{"url": "https://cdn.example/out.png"}],
+        "status": "COMPLETED",
+        "output": {"result": ["https://cdn.example/out.png"]},
     }
     poll_resp.raise_for_status.return_value = None
 
@@ -170,6 +171,17 @@ def test_sub_model_id_sent_top_level(monkeypatch):
     sent = post.call_args.kwargs["json"]
     assert sent["subModelId"] == "flux-2-max-text"
     assert "subModelId" not in sent["input"]
+
+
+def test_extract_urls_rest_and_fallback_shapes():
+    # REST shape: output.result (verified live 2026-07-28).
+    rest = {"output": {"result": ["https://cdn.example/a.png"]}}
+    assert MagicaGenerator._extract_urls(rest) == ["https://cdn.example/a.png"]
+    # Fallback shape: top-level assets[].url.
+    legacy = {"assets": [{"url": "https://cdn.example/b.png"}, {"nope": 1}]}
+    assert MagicaGenerator._extract_urls(legacy) == ["https://cdn.example/b.png"]
+    # Nothing usable -> empty.
+    assert MagicaGenerator._extract_urls({"output": {}}) == []
 
 
 def test_model_for_mood():

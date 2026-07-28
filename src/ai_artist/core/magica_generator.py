@@ -16,9 +16,9 @@ Gated behind ``MAGICA_API_KEY``: with no key, ``generate()`` raises (same as
 Magica's schema endpoint (or the MCP ``get_model_schema``) to confirm fields for a
 specific nodeType. This client sends the common, widely-supported fields.
 
-NOTE: end-to-end runtime execution is untested until a ``MAGICA_API_KEY`` is set;
-the request/response shapes follow the documented contract and the MCP-verified node
-schemas (e.g. ``nano_banana_pro``).
+Validated end-to-end against the live REST API on 2026-07-28 (nano_banana_pro): auth,
+``POST .../run``, poll ``GET .../runs/{runId}``, and asset download all confirmed. Run
+status returns URLs at ``output.result`` (see ``_extract_urls``).
 """
 
 from __future__ import annotations
@@ -242,6 +242,26 @@ class MagicaGenerator:
             raise RuntimeError(f"Magica run response missing runId: {data}")
         return str(run_id)
 
+    @staticmethod
+    def _extract_urls(data: dict[str, Any]) -> list[str]:
+        """Extract asset URLs from a run-status response.
+
+        The REST API returns them at ``output.result`` (a list of URL strings),
+        verified against a live run 2026-07-28. Older/MCP-style responses used a
+        top-level ``assets[].url``; both are supported.
+        """
+        output = data.get("output") or {}
+        result = output.get("result") if isinstance(output, dict) else None
+        urls = [u for u in (result or []) if isinstance(u, str)]
+        if not urls:
+            assets = data.get("assets") or []
+            urls = [
+                a["url"]
+                for a in assets
+                if isinstance(a, dict) and isinstance(a.get("url"), str)
+            ]
+        return urls
+
     def _poll_run(self, run_id: str, timeout_s: float = 300.0) -> list[str]:
         """Poll a run to completion; return generated asset URLs."""
         import time
@@ -254,10 +274,7 @@ class MagicaGenerator:
             data = resp.json()
             status = str(data.get("status", "")).upper()
             if status in _TERMINAL_OK:
-                assets = data.get("assets", []) or []
-                urls = [
-                    a["url"] for a in assets if isinstance(a, dict) and a.get("url")
-                ]
+                urls = self._extract_urls(data)
                 if not urls:
                     raise RuntimeError(f"Magica run {run_id} completed with no assets")
                 return urls
