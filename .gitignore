@@ -27,6 +27,13 @@ models/lora/*.safetensors
 /gallery/
 data/*.db
 data/*.db-*
+# Lumira accumulated runtime state (loaders self-heal on missing; not versioned)
+data/lumira_memory.json
+data/lumira_enhanced_memory.json
+data/lumira_mood_history.json
+data/adaptive_learning.json
+data/thematic_series.json
+data/vector_memory/
 logs/
 *.log
 
