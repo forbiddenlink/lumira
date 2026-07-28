@@ -29,10 +29,25 @@ from typing import Any, Literal
 
 import httpx
 from PIL import Image
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from ..utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=8))
+def _download_bytes(url: str) -> bytes:
+    """Download an asset with bounded retry.
+
+    The run has already executed and been billed by the time we download, so a
+    transient network error here must not throw the result away. GET is idempotent,
+    so retrying is safe (unlike the run POST, which is deliberately not retried).
+    """
+    resp = httpx.get(url, timeout=60.0)
+    resp.raise_for_status()
+    return bytes(resp.content)
+
 
 # Base REST URL (override via env for testing / self-host proxies).
 MAGICA_BASE_URL = os.getenv("MAGICA_BASE_URL", "https://api.magica.com/api")
@@ -86,18 +101,32 @@ _spend_day: str | None = None
 _spend_count = 0
 
 
-def _check_magica_budget(num_images: int) -> None:
-    """Enforce the per-day Magica image budget; raise if exceeded."""
+def _budget_cap() -> int:
+    """Daily image cap from env (0 disables)."""
+    return int(os.getenv("LUMIRA_MAGICA_DAILY_MAX_IMAGES", "200"))
+
+
+def _roll_budget_day() -> None:
+    """Reset the counter when the UTC day changes."""
     global _spend_day, _spend_count
-    cap = int(os.getenv("LUMIRA_MAGICA_DAILY_MAX_IMAGES", "200"))
-    if cap <= 0:
-        return
     from datetime import UTC, datetime
 
     today = datetime.now(UTC).strftime("%Y-%m-%d")
     if today != _spend_day:
         _spend_day = today
         _spend_count = 0
+
+
+def _check_magica_budget(num_images: int) -> None:
+    """Raise if generating this many images would exceed the daily cap.
+
+    Does NOT record spend -- call :func:`_record_magica_spend` only after a run
+    succeeds, so failed/unbilled runs don't burn the cap.
+    """
+    cap = _budget_cap()
+    if cap <= 0:
+        return
+    _roll_budget_day()
     if _spend_count + num_images > cap:
         logger.error(
             "magica_budget_exceeded",
@@ -109,6 +138,14 @@ def _check_magica_budget(num_images: int) -> None:
             f"Magica daily image budget exceeded ({_spend_count}/{cap}). "
             "Raise LUMIRA_MAGICA_DAILY_MAX_IMAGES or wait for the daily reset."
         )
+
+
+def _record_magica_spend(num_images: int) -> None:
+    """Record successful image spend against the daily cap."""
+    global _spend_count
+    if _budget_cap() <= 0:
+        return
+    _roll_budget_day()
     _spend_count += num_images
 
 
@@ -139,6 +176,28 @@ def _resolution_tier(width: int, height: int) -> str:
     return "1K"
 
 
+def _clamp_dims(
+    width: int, height: int, lo: int = 256, hi: int = 2048
+) -> dict[str, int]:
+    """Clamp dimensions into [lo, hi] preserving aspect ratio.
+
+    Scales by the longest side (down) then the shortest (up), so a 3000x1000
+    request becomes ~2048x683 rather than the aspect-breaking 2048x1000 a naive
+    per-axis clamp would give. A hard clamp on both axes covers extreme ratios
+    (> hi:lo) that cannot satisfy both bounds.
+    """
+    w, h = max(width, 1), max(height, 1)
+    longest = max(w, h)
+    if longest > hi:
+        scale = hi / longest
+        w, h = round(w * scale), round(h * scale)
+    shortest = min(w, h)
+    if shortest < lo:
+        scale = lo / shortest
+        w, h = round(w * scale), round(h * scale)
+    return {"width": min(max(w, lo), hi), "height": min(max(h, lo), hi)}
+
+
 def _build_model_input(
     node_type: str,
     prompt: str,
@@ -165,11 +224,9 @@ def _build_model_input(
         if system_prompt:
             inp["system_prompt"] = system_prompt
     elif node_type in _FLUX_FAMILY:
-        # FLUX 2 uses image_size as an explicit {width, height} object (256-2048 px).
-        inp["image_size"] = {
-            "width": min(max(width, 256), 2048),
-            "height": min(max(height, 256), 2048),
-        }
+        # FLUX 2 uses image_size as an explicit {width, height} object (256-2048 px),
+        # clamped proportionally so the aspect ratio is preserved.
+        inp["image_size"] = _clamp_dims(width, height)
         inp["output_format"] = output_format
     if seed is not None:
         inp["seed"] = seed
@@ -297,14 +354,17 @@ class MagicaGenerator:
         num_images: int = 1,
         seed: int | None = None,
         on_progress: Any = None,  # Not supported by REST poll
+        use_refiner: bool = False,  # Ignored: local-only concept, must not leak to payload
         system_prompt: str = "",
         **kwargs: Any,
     ) -> list[Image.Image]:
         """Generate images via the Magica REST API.
 
-        Sends the widely-supported common fields. Model-specific fields (per
-        get_model_schema) can be added via ``kwargs``, which are merged into the
-        request input.
+        Common fields are built per model family. Genuine model-specific fields
+        (per get_model_schema, e.g. ``enable_web_search``) can be added via
+        ``kwargs``, which are merged into the request input. Local-only params such
+        as ``use_refiner`` / ``num_inference_steps`` / ``guidance_scale`` are named
+        here so they are ignored rather than leaked into the REST payload.
 
         Returns:
             List of PIL Image objects.
@@ -341,10 +401,10 @@ class MagicaGenerator:
 
             images: list[Image.Image] = []
             for asset_url in urls:
-                dl = httpx.get(asset_url, timeout=60.0)
-                dl.raise_for_status()
-                images.append(Image.open(io.BytesIO(dl.content)))
+                images.append(Image.open(io.BytesIO(_download_bytes(asset_url))))
 
+            # Only count spend once the run has succeeded and assets are in hand.
+            _record_magica_spend(num_images)
             logger.info("magica_generation_complete", num_images=len(images))
             return images
         except httpx.HTTPStatusError as e:
