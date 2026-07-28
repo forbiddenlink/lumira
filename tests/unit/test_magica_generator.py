@@ -109,6 +109,76 @@ def test_generate_happy_path(monkeypatch):
     assert poll_url.endswith("/v1/nodes/runs/run-123")
 
 
+def _mock_ok_run(monkeypatch):
+    """Patch httpx so a run POSTs, polls to complete, and downloads one PNG.
+
+    Returns (post_mock, get_mock) after the caller enters the context.
+    """
+    post_resp = MagicMock()
+    post_resp.json.return_value = {"runId": "run-1"}
+    post_resp.raise_for_status.return_value = None
+
+    poll_resp = MagicMock()
+    poll_resp.json.return_value = {
+        "status": "complete",
+        "assets": [{"url": "https://cdn.example/out.png"}],
+    }
+    poll_resp.raise_for_status.return_value = None
+
+    dl_resp = MagicMock()
+    dl_resp.content = _png_bytes()
+    dl_resp.raise_for_status.return_value = None
+    return post_resp, poll_resp, dl_resp
+
+
+def test_flux_input_uses_image_size(monkeypatch):
+    monkeypatch.setenv("MAGICA_API_KEY", "k")
+    gen = MagicaGenerator(model_id="flux2-max")  # -> flux_2_max
+    post_resp, poll_resp, dl_resp = _mock_ok_run(monkeypatch)
+    with (
+        patch.object(mg.httpx, "post", return_value=post_resp) as post,
+        patch.object(mg.httpx, "get", side_effect=[poll_resp, dl_resp]),
+    ):
+        gen.generate("bold abstract", width=1600, height=900)
+    body = post.call_args.kwargs["json"]["input"]
+    assert body["image_size"] == {"width": 1600, "height": 900}
+    assert "resolution" not in body and "aspect_ratio" not in body
+
+
+def test_unknown_model_minimal_input(monkeypatch):
+    monkeypatch.setenv("MAGICA_API_KEY", "k")
+    gen = MagicaGenerator(model_id="some_other_node")
+    post_resp, poll_resp, dl_resp = _mock_ok_run(monkeypatch)
+    with (
+        patch.object(mg.httpx, "post", return_value=post_resp) as post,
+        patch.object(mg.httpx, "get", side_effect=[poll_resp, dl_resp]),
+    ):
+        gen.generate("anything", seed=3)
+    body = post.call_args.kwargs["json"]["input"]
+    assert body == {"prompt": "anything", "num_images": 1, "seed": 3}
+
+
+def test_sub_model_id_sent_top_level(monkeypatch):
+    monkeypatch.setenv("MAGICA_API_KEY", "k")
+    gen = MagicaGenerator(model_id="flux2-max", sub_model_id="flux-2-max-text")
+    post_resp, poll_resp, dl_resp = _mock_ok_run(monkeypatch)
+    with (
+        patch.object(mg.httpx, "post", return_value=post_resp) as post,
+        patch.object(mg.httpx, "get", side_effect=[poll_resp, dl_resp]),
+    ):
+        gen.generate("bold abstract")
+    sent = post.call_args.kwargs["json"]
+    assert sent["subModelId"] == "flux-2-max-text"
+    assert "subModelId" not in sent["input"]
+
+
+def test_model_for_mood():
+    assert mg.model_for_mood("melancholic") == "nano_banana_pro"
+    assert mg.model_for_mood("BOLD") == "flux_2_max"
+    assert mg.model_for_mood("chaotic") == "grok_imagine_image"
+    assert mg.model_for_mood("no_such_mood") == mg.DEFAULT_MODEL
+
+
 def test_generate_failed_run_raises(monkeypatch):
     monkeypatch.setenv("MAGICA_API_KEY", "k")
     gen = MagicaGenerator(model_id="nano_banana_pro")

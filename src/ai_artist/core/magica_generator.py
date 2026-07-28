@@ -51,6 +51,32 @@ MAGICA_MODELS = {
 # Default model: Nano Banana Pro (schema verified, text-to-image, 1K/2K/4K).
 DEFAULT_MODEL = "nano_banana_pro"
 
+# Model families for input-schema adaptation (verified via Magica get_model_schema):
+# the Nano Banana family takes resolution + aspect_ratio; FLUX 2 takes image_size.
+_NANO_FAMILY = frozenset({"nano_banana_pro", "nano_banana_2"})
+_FLUX_FAMILY = frozenset({"flux_2_max"})
+
+# Mood -> Magica nodeType. Gives Lumira per-mood model diversity (its core idea:
+# many distinct models vs one local SDXL). Unknown moods fall back to DEFAULT_MODEL.
+MAGICA_MOOD_MODELS = {
+    "contemplative": "nano_banana_pro",
+    "introspective": "nano_banana_pro",
+    "melancholic": "nano_banana_pro",
+    "serene": "nano_banana_pro",
+    "bold": "flux_2_max",
+    "energized": "flux_2_max",
+    "rebellious": "flux_2_max",
+    "playful": "gpt_image_2",
+    "chaotic": "grok_imagine_image",
+    "restless": "grok_imagine_image",
+}
+
+
+def model_for_mood(mood: str) -> str:
+    """Return the Magica nodeType mapped to a Lumira mood (DEFAULT_MODEL if unknown)."""
+    return MAGICA_MOOD_MODELS.get(mood.lower(), DEFAULT_MODEL)
+
+
 # Terminal run states (compared case-insensitively).
 _TERMINAL_OK = {"COMPLETE", "COMPLETED", "SUCCEEDED", "SUCCESS"}
 _TERMINAL_FAIL = {"FAILED", "FAILURE", "CANCELED", "CANCELLED", "ERROR"}
@@ -113,6 +139,43 @@ def _resolution_tier(width: int, height: int) -> str:
     return "1K"
 
 
+def _build_model_input(
+    node_type: str,
+    prompt: str,
+    width: int,
+    height: int,
+    num_images: int,
+    seed: int | None,
+    output_format: str,
+    system_prompt: str,
+) -> dict[str, Any]:
+    """Build the per-model input payload.
+
+    Magica models do NOT share one input schema (verified via get_model_schema):
+    the Nano Banana family takes ``resolution`` + ``aspect_ratio``; FLUX 2 takes
+    ``image_size``. Unknown models get the minimal universal fields (``prompt`` +
+    ``num_images`` + ``seed``); callers can always add or override model-specific
+    fields via ``generate(**kwargs)``.
+    """
+    inp: dict[str, Any] = {"prompt": prompt, "num_images": num_images}
+    if node_type in _NANO_FAMILY:
+        inp["resolution"] = _resolution_tier(width, height)
+        inp["aspect_ratio"] = _aspect_ratio(width, height)
+        inp["output_format"] = output_format
+        if system_prompt:
+            inp["system_prompt"] = system_prompt
+    elif node_type in _FLUX_FAMILY:
+        # FLUX 2 uses image_size as an explicit {width, height} object (256-2048 px).
+        inp["image_size"] = {
+            "width": min(max(width, 256), 2048),
+            "height": min(max(height, 256), 2048),
+        }
+        inp["output_format"] = output_format
+    if seed is not None:
+        inp["seed"] = seed
+    return inp
+
+
 class MagicaGenerator:
     """Hosted image generator backed by the Magica REST API.
 
@@ -127,6 +190,7 @@ class MagicaGenerator:
         model_id: str = DEFAULT_MODEL,
         device: Literal["cuda", "mps", "cpu"] = "cpu",  # Ignored (cloud GPUs)
         dtype: Any = None,  # Ignored, for signature compatibility
+        sub_model_id: str | None = None,
     ) -> None:
         """Initialize the Magica generator.
 
@@ -134,12 +198,15 @@ class MagicaGenerator:
             model_id: A key from MAGICA_MODELS or a raw Magica nodeType.
             device: Ignored (Magica runs on cloud GPUs).
             dtype: Ignored (for compatibility with ImageGenerator).
+            sub_model_id: Optional Magica subModelId for multi-mode nodes; sent at
+                the top level of the run request. Leave None for single-mode models.
         """
         # Friendly name -> nodeType; otherwise treat model_id as a raw nodeType
         # (falling back to the default when empty).
         self.node_type = MAGICA_MODELS.get(model_id, model_id or DEFAULT_MODEL)
 
         self.model_name = model_id
+        self.sub_model_id = sub_model_id
         self.api_key = os.environ.get("MAGICA_API_KEY")
         if not self.api_key:
             logger.warning(
@@ -164,9 +231,10 @@ class MagicaGenerator:
         ambiguous POST failure could enqueue (and bill) duplicate runs.
         """
         url = f"{MAGICA_BASE_URL}/v1/nodes/{self.node_type}/run"
-        resp = httpx.post(
-            url, headers=self._headers(), json={"input": input_params}, timeout=60.0
-        )
+        body: dict[str, Any] = {"input": input_params}
+        if self.sub_model_id:
+            body["subModelId"] = self.sub_model_id
+        resp = httpx.post(url, headers=self._headers(), json=body, timeout=60.0)
         resp.raise_for_status()
         data = resp.json()
         run_id = data.get("runId") or data.get("id")
@@ -237,17 +305,16 @@ class MagicaGenerator:
             prompt=prompt[:50] + "..." if len(prompt) > 50 else prompt,
         )
 
-        input_params: dict[str, Any] = {
-            "prompt": prompt,
-            "num_images": num_images,
-            "aspect_ratio": _aspect_ratio(width, height),
-            "resolution": _resolution_tier(width, height),
-            "output_format": "PNG",
-        }
-        if seed is not None:
-            input_params["seed"] = seed
-        if system_prompt:
-            input_params["system_prompt"] = system_prompt
+        input_params = _build_model_input(
+            self.node_type,
+            prompt,
+            width,
+            height,
+            num_images,
+            seed,
+            output_format="PNG",
+            system_prompt=system_prompt,
+        )
         # Allow caller to override / add model-specific fields.
         input_params.update(kwargs)
 
