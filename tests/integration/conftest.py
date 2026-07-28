@@ -14,7 +14,8 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _isolate_cwd(tmp_path, monkeypatch):
-    for sub in ("data", "logs", "gallery"):
-        (tmp_path / sub).mkdir(exist_ok=True)
+    # Only chdir: the app's persisters self-create their parent dirs
+    # (mkdir parents=True, exist_ok=True), and some tests create their own
+    # gallery/config dirs, so pre-creating here would collide.
     monkeypatch.chdir(tmp_path)
     yield
