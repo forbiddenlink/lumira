@@ -184,6 +184,73 @@ def test_extract_urls_rest_and_fallback_shapes():
     assert MagicaGenerator._extract_urls({"output": {}}) == []
 
 
+def test_use_refiner_not_leaked_to_payload(monkeypatch):
+    # worker passes use_refiner to every backend; it must NOT reach the REST input.
+    monkeypatch.setenv("MAGICA_API_KEY", "k")
+    gen = MagicaGenerator(model_id="nano_banana_pro")
+    post_resp, poll_resp, dl_resp = _mock_ok_run(monkeypatch)
+    with (
+        patch.object(mg.httpx, "post", return_value=post_resp) as post,
+        patch.object(mg.httpx, "get", side_effect=[poll_resp, dl_resp]),
+    ):
+        gen.generate("x", use_refiner=True, num_inference_steps=99)
+    body = post.call_args.kwargs["json"]["input"]
+    assert "use_refiner" not in body
+    assert "num_inference_steps" not in body
+
+
+def test_budget_not_consumed_on_failed_run(monkeypatch):
+    monkeypatch.setenv("MAGICA_API_KEY", "k")
+    monkeypatch.setenv("LUMIRA_MAGICA_DAILY_MAX_IMAGES", "5")
+    gen = MagicaGenerator(model_id="nano_banana_pro")
+    with (
+        patch.object(mg.httpx, "post", side_effect=mg.httpx.HTTPError("boom")),
+        pytest.raises(RuntimeError),
+    ):
+        gen.generate("x", num_images=2)
+    assert mg._spend_count == 0  # failed run must not burn the cap
+
+
+def test_budget_recorded_on_success(monkeypatch):
+    monkeypatch.setenv("MAGICA_API_KEY", "k")
+    monkeypatch.setenv("LUMIRA_MAGICA_DAILY_MAX_IMAGES", "5")
+    gen = MagicaGenerator(model_id="nano_banana_pro")
+    post_resp, poll_resp, dl_resp = _mock_ok_run(monkeypatch)
+    with (
+        patch.object(mg.httpx, "post", return_value=post_resp),
+        patch.object(mg.httpx, "get", side_effect=[poll_resp, dl_resp]),
+    ):
+        gen.generate("x", num_images=1)
+    assert mg._spend_count == 1
+
+
+def test_clamp_dims_preserves_aspect():
+    d = mg._clamp_dims(3000, 1000)
+    assert d["width"] == 2048
+    assert d["height"] == round(1000 * 2048 / 3000)  # ~683, ratio preserved
+    assert 256 <= d["height"] <= 2048
+    # small dims scale up preserving 2:1 ratio (128x64 -> 512x256)
+    up = mg._clamp_dims(128, 64)
+    assert up["width"] == 512 and up["height"] == 256
+
+
+def test_download_retries_then_succeeds(monkeypatch):
+    monkeypatch.setenv("MAGICA_API_KEY", "k")
+    gen = MagicaGenerator(model_id="nano_banana_pro")
+    post_resp, poll_resp, _ = _mock_ok_run(monkeypatch)
+    good = MagicMock()
+    good.content = _png_bytes()
+    good.raise_for_status.return_value = None
+    # poll -> then download fails once, succeeds on retry.
+    seq = [poll_resp, mg.httpx.HTTPError("transient"), good]
+    with (
+        patch.object(mg.httpx, "post", return_value=post_resp),
+        patch.object(mg.httpx, "get", side_effect=seq),
+    ):
+        images = gen.generate("x")
+    assert len(images) == 1
+
+
 def test_model_for_mood():
     assert mg.model_for_mood("melancholic") == "nano_banana_pro"
     assert mg.model_for_mood("BOLD") == "flux_2_max"

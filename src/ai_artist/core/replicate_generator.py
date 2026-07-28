@@ -6,7 +6,7 @@ Supports SDXL, FLUX, and other models available on Replicate.
 
 import io
 import os
-from typing import Literal
+from typing import Any, Literal
 
 import httpx
 import replicate
@@ -152,6 +152,7 @@ class ReplicateGenerator:
         on_progress=None,  # Not supported by Replicate API
         lora_url: str | None = None,
         lora_scale: float = 1.0,
+        **kwargs: Any,  # Tolerate backend-agnostic caller params (e.g. use_refiner)
     ) -> list[Image.Image]:
         """Generate images using Replicate API.
 
