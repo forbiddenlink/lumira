@@ -16,6 +16,8 @@ from PIL import Image
 from ai_artist.core import magica_generator as mg
 from ai_artist.core.magica_generator import MagicaGenerator
 
+pytestmark = pytest.mark.unit
+
 
 def _png_bytes(color=(10, 20, 30)) -> bytes:
     buf = io.BytesIO()
@@ -86,9 +88,10 @@ def test_generate_happy_path(monkeypatch):
     dl_resp.content = _png_bytes()
     dl_resp.raise_for_status.return_value = None
 
-    with patch.object(mg.httpx, "post", return_value=post_resp) as post, patch.object(
-        mg.httpx, "get", side_effect=[poll_resp, dl_resp]
-    ) as get:
+    with (
+        patch.object(mg.httpx, "post", return_value=post_resp) as post,
+        patch.object(mg.httpx, "get", side_effect=[poll_resp, dl_resp]) as get,
+    ):
         images = gen.generate("misty forest", width=2400, height=1792, seed=7)
 
     assert len(images) == 1
@@ -118,8 +121,9 @@ def test_generate_failed_run_raises(monkeypatch):
     poll_resp.json.return_value = {"status": "FAILED", "error": "boom"}
     poll_resp.raise_for_status.return_value = None
 
-    with patch.object(mg.httpx, "post", return_value=post_resp), patch.object(
-        mg.httpx, "get", return_value=poll_resp
+    with (
+        patch.object(mg.httpx, "post", return_value=post_resp),
+        patch.object(mg.httpx, "get", return_value=poll_resp),
+        pytest.raises(RuntimeError, match="failed"),
     ):
-        with pytest.raises(RuntimeError, match="failed"):
-            gen.generate("a prompt")
+        gen.generate("a prompt")

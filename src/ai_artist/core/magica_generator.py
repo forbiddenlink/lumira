@@ -29,7 +29,6 @@ from typing import Any, Literal
 
 import httpx
 from PIL import Image
-from tenacity import retry, stop_after_attempt, wait_exponential
 
 from ..utils.logging import get_logger
 
@@ -128,7 +127,7 @@ class MagicaGenerator:
         model_id: str = DEFAULT_MODEL,
         device: Literal["cuda", "mps", "cpu"] = "cpu",  # Ignored (cloud GPUs)
         dtype: Any = None,  # Ignored, for signature compatibility
-    ):
+    ) -> None:
         """Initialize the Magica generator.
 
         Args:
@@ -136,12 +135,9 @@ class MagicaGenerator:
             device: Ignored (Magica runs on cloud GPUs).
             dtype: Ignored (for compatibility with ImageGenerator).
         """
-        # Resolve to a Magica nodeType.
-        if model_id in MAGICA_MODELS:
-            self.node_type = MAGICA_MODELS[model_id]
-        else:
-            # Assume the caller passed a raw nodeType; fall back to default if empty.
-            self.node_type = model_id or DEFAULT_MODEL
+        # Friendly name -> nodeType; otherwise treat model_id as a raw nodeType
+        # (falling back to the default when empty).
+        self.node_type = MAGICA_MODELS.get(model_id, model_id or DEFAULT_MODEL)
 
         self.model_name = model_id
         self.api_key = os.environ.get("MAGICA_API_KEY")
@@ -161,9 +157,12 @@ class MagicaGenerator:
             "Content-Type": "application/json",
         }
 
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=10))
     def _start_run(self, input_params: dict[str, Any]) -> str:
-        """POST a model run; return its runId."""
+        """POST a model run; return its runId.
+
+        Deliberately NOT retried: a model run is non-idempotent, so retrying an
+        ambiguous POST failure could enqueue (and bill) duplicate runs.
+        """
         url = f"{MAGICA_BASE_URL}/v1/nodes/{self.node_type}/run"
         resp = httpx.post(
             url, headers=self._headers(), json={"input": input_params}, timeout=60.0
@@ -188,7 +187,9 @@ class MagicaGenerator:
             status = str(data.get("status", "")).upper()
             if status in _TERMINAL_OK:
                 assets = data.get("assets", []) or []
-                urls = [a["url"] for a in assets if isinstance(a, dict) and a.get("url")]
+                urls = [
+                    a["url"] for a in assets if isinstance(a, dict) and a.get("url")
+                ]
                 if not urls:
                     raise RuntimeError(f"Magica run {run_id} completed with no assets")
                 return urls
@@ -225,6 +226,8 @@ class MagicaGenerator:
         """
         if not self.api_key:
             raise ValueError("MAGICA_API_KEY not set")
+        if num_images < 1:
+            raise ValueError("num_images must be >= 1")
 
         _check_magica_budget(num_images)
 
@@ -261,7 +264,9 @@ class MagicaGenerator:
             logger.info("magica_generation_complete", num_images=len(images))
             return images
         except httpx.HTTPStatusError as e:
-            logger.error("magica_api_error", status=e.response.status_code, error=str(e))
+            logger.error(
+                "magica_api_error", status=e.response.status_code, error=str(e)
+            )
             raise RuntimeError(f"Magica API error: {e}") from e
         except httpx.HTTPError as e:
             logger.error("magica_request_error", error=str(e))

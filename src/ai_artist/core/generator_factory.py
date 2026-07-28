@@ -8,14 +8,12 @@ Backends:
     - ``"local"``     : :class:`ImageGenerator` (diffusers SDXL/FLUX, local GPU)
     - ``"replicate"`` : :class:`ReplicateGenerator` (hosted Replicate API)
 
-A hosted multi-model backend (Magica: image/video/audio) is planned as a third
-backend once a Magica REST API + key are available; see ``AI/diagrams/MAGICA_INTEGRATION.md``.
-Magica is currently reachable only as a Claude-side MCP tool, not from this runtime,
-so no ``MagicaGenerator`` is wired here yet.
+    - ``"magica"``    : :class:`MagicaGenerator` (Magica/Galaxy AI hosted REST API,
+      multi-model image; gated on ``MAGICA_API_KEY``). See ``AI/diagrams/MAGICA_INTEGRATION.md``.
 
-Both current backends share a construction signature ``(model_id, device, dtype)`` where
-the remote backend ignores ``device``/``dtype`` — so callers can swap backends without
-changing their call site.
+All backends share a construction signature ``(model_id, device, dtype)`` where the remote
+backends ignore ``device``/``dtype`` — so callers can swap backends without changing their
+call site.
 """
 
 from __future__ import annotations
@@ -77,9 +75,7 @@ def get_image_generator(
         return MagicaGenerator(model_id=model_id, device=device, dtype=dtype)
 
     if backend != BACKEND_LOCAL:
-        logger.warning(
-            "unknown_image_backend", backend=backend, fallback=BACKEND_LOCAL
-        )
+        logger.warning("unknown_image_backend", backend=backend, fallback=BACKEND_LOCAL)
 
     from .generator import ImageGenerator
 

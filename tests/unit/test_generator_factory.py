@@ -9,11 +9,15 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
+import pytest
+
 from ai_artist.core.generator_factory import (
     BACKEND_LOCAL,
     BACKEND_REPLICATE,
     get_image_generator,
 )
+
+pytestmark = pytest.mark.unit
 
 
 def test_default_backend_is_local():
@@ -35,9 +39,7 @@ def test_replicate_backend_routes_to_replicate():
 def test_magica_backend_routes_to_magica():
     with patch("ai_artist.core.magica_generator.MagicaGenerator") as Mag:
         gen = get_image_generator("magica", model_id="nano_banana_pro")
-    Mag.assert_called_once_with(
-        model_id="nano_banana_pro", device="cuda", dtype=None
-    )
+    Mag.assert_called_once_with(model_id="nano_banana_pro", device="cuda", dtype=None)
     assert gen is Mag.return_value
 
 

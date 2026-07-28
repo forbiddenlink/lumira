@@ -30,7 +30,7 @@ flowchart TD
 
 ## Backend interface (duck-typed — no ABC yet)
 
-| Method | local `ImageGenerator` | `ReplicateGenerator` | `MagicaGenerator` (planned) |
+| Method | local `ImageGenerator` | `ReplicateGenerator` | `MagicaGenerator` |
 |--------|------------------------|----------------------|-----------------------------|
 | `generate(prompt, ...) -> list[Image]` | ✅ `generator.py:471` | ✅ `replicate_generator.py:142` | ✅ `magica_generator.py` |
 | `load_model()` | ✅ | ✅ | ✅ no-op (remote) |
