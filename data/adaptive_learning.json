@@ -2,19 +2,19 @@
   "model_scores": {
     "Lykon/dreamshaper-8": {
       "param_combo_hash": "Lykon/dreamshaper-8",
-      "total_score": 265.29999999999814,
-      "num_samples": 379,
-      "avg_score": 0.6999999999999951,
-      "last_updated": "2026-03-26 13:38:26.214189+00:00"
+      "total_score": 281.3999999999979,
+      "num_samples": 402,
+      "avg_score": 0.6999999999999947,
+      "last_updated": "2026-07-27 02:00:25.207695+00:00"
     }
   },
   "param_scores": {
     "[('guidance_scale', 7.5), ('height', 768), ('num_inference_steps', 40), ('width', 768)]": {
       "param_combo_hash": "[('guidance_scale', 7.5), ('height', 768), ('num_inference_steps', 40), ('width', 768)]",
-      "total_score": 265.29999999999814,
-      "num_samples": 379,
-      "avg_score": 0.6999999999999951,
-      "last_updated": "2026-03-26 13:38:26.214198+00:00"
+      "total_score": 281.3999999999979,
+      "num_samples": 402,
+      "avg_score": 0.6999999999999947,
+      "last_updated": "2026-07-27 02:00:25.207706+00:00"
     }
   },
   "mood_preferences": {
@@ -268,9 +268,10 @@
     "mountain": 0.7,
     "dancing": 0.7,
     "mystical": 0.7,
-    "train": 0.7
+    "train": 0.7,
+    "test": 0.7
   },
-  "last_updated": "2026-03-26T13:38:26.214217+00:00",
+  "last_updated": "2026-07-27T02:00:25.207726+00:00",
   "alignment_history": [
     {
       "artwork_id": "art1",

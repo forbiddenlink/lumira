@@ -1,234 +1,6 @@
 {
   "history": [
     {
-      "mood": "playful",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:43:53.786254",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "bold",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:55:48.492829",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "bold",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:56:01.714030",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "bold",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:56:11.881150",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "bold",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:56:21.184643",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "bold",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:56:31.731588",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "bold",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:56:31.739220",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "bold",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:56:31.958621",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "rebellious",
-      "intensity": 0.751,
-      "timestamp": "2026-03-26T08:56:31.961089",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "rebellious",
-      "intensity": 0.751,
-      "timestamp": "2026-03-26T08:56:31.963299",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "rebellious",
-      "intensity": 0.751,
-      "timestamp": "2026-03-26T08:56:31.965579",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "rebellious",
-      "intensity": 0.751,
-      "timestamp": "2026-03-26T08:56:31.967741",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "energized",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:56:32.473322",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "playful",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:56:32.486461",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "energized",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:56:32.500748",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "playful",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:56:32.512710",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "bold",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:56:32.527747",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "energized",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:56:33.277894",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "bold",
-      "intensity": 0.85,
-      "timestamp": "2026-03-26T08:56:33.323168",
-      "trigger": "external_factors"
-    },
-    {
-      "mood": "energized",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:56:33.335772",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "energized",
-      "intensity": 0.85,
-      "timestamp": "2026-03-26T08:56:33.381322",
-      "trigger": "external_factors"
-    },
-    {
-      "mood": "bold",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:56:33.394156",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "bold",
-      "intensity": 0.85,
-      "timestamp": "2026-03-26T08:56:33.439541",
-      "trigger": "external_factors"
-    },
-    {
-      "mood": "bold",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:56:33.451894",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "bold",
-      "intensity": 0.85,
-      "timestamp": "2026-03-26T08:56:33.497457",
-      "trigger": "external_factors"
-    },
-    {
-      "mood": "bold",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:56:33.509844",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "bold",
-      "intensity": 0.85,
-      "timestamp": "2026-03-26T08:56:33.555349",
-      "trigger": "external_factors"
-    },
-    {
-      "mood": "energized",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:56:33.567229",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "energized",
-      "intensity": 0.85,
-      "timestamp": "2026-03-26T08:56:33.612882",
-      "trigger": "external_factors"
-    },
-    {
-      "mood": "energized",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:56:33.626080",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "energized",
-      "intensity": 0.85,
-      "timestamp": "2026-03-26T08:56:33.671068",
-      "trigger": "external_factors"
-    },
-    {
-      "mood": "energized",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:56:33.684307",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "energized",
-      "intensity": 0.85,
-      "timestamp": "2026-03-26T08:56:33.729889",
-      "trigger": "external_factors"
-    },
-    {
-      "mood": "energized",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:56:33.743430",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "bold",
-      "intensity": 0.85,
-      "timestamp": "2026-03-26T08:56:33.789019",
-      "trigger": "external_factors"
-    },
-    {
-      "mood": "bold",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:56:33.803251",
-      "trigger": "natural_drift"
-    },
-    {
-      "mood": "bold",
-      "intensity": 0.85,
-      "timestamp": "2026-03-26T08:56:33.849145",
-      "trigger": "external_factors"
-    },
-    {
-      "mood": "bold",
-      "intensity": 0.7,
-      "timestamp": "2026-03-26T08:56:33.862540",
-      "trigger": "natural_drift"
-    },
-    {
       "mood": "bold",
       "intensity": 0.85,
       "timestamp": "2026-03-26T08:56:33.909913",
@@ -2998,6 +2770,234 @@
       "mood": "playful",
       "intensity": 0.657,
       "timestamp": "2026-03-26T09:38:26.466896",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "contemplative",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:55:00.782277",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "contemplative",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:55:00.837181",
+      "trigger": "external_factors"
+    },
+    {
+      "mood": "contemplative",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:55:00.890351",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "serene",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:55:10.806573",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "serene",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:55:20.600929",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "serene",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:55:33.140628",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "serene",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:55:41.811603",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "serene",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:55:51.810652",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "serene",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:56:19.065953",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "serene",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:56:19.121787",
+      "trigger": "external_factors"
+    },
+    {
+      "mood": "serene",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:56:19.180020",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "melancholic",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:56:29.751566",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "melancholic",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:56:39.881000",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "melancholic",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:56:47.454671",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "melancholic",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:56:58.428469",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "melancholic",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:57:21.953725",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "melancholic",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:57:22.008034",
+      "trigger": "external_factors"
+    },
+    {
+      "mood": "serene",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:57:22.060898",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "melancholic",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:57:31.526825",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "melancholic",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:57:39.362508",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "melancholic",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:57:48.263318",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "melancholic",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:57:57.463746",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "melancholic",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:58:05.712206",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "melancholic",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:58:31.890001",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "melancholic",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:58:31.944642",
+      "trigger": "external_factors"
+    },
+    {
+      "mood": "serene",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:58:32.001306",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "serene",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:58:45.776712",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "serene",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:58:54.441863",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "serene",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:59:03.839748",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "serene",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:59:12.204588",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "melancholic",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:59:41.545945",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "melancholic",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:59:41.602331",
+      "trigger": "external_factors"
+    },
+    {
+      "mood": "serene",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:59:41.658842",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "serene",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:59:50.645240",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "serene",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T21:59:59.203067",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "serene",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T22:00:07.549624",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "serene",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T22:00:16.591852",
+      "trigger": "natural_drift"
+    },
+    {
+      "mood": "serene",
+      "intensity": 0.7,
+      "timestamp": "2026-07-26T22:00:25.208117",
       "trigger": "natural_drift"
     }
   ]

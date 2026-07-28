@@ -45,6 +45,7 @@ class ModelConfig(BaseModel):
     """Model configuration."""
 
     base_model: str = MODEL_SDXL
+    backend: Literal["local", "replicate", "magica"] = "local"
     device: Literal["cuda", "mps", "cpu"] = "cuda"
     dtype: Literal["float16", "float32"] = "float16"
     enable_attention_slicing: bool = True
