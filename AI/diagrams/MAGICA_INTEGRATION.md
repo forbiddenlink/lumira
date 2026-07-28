@@ -83,19 +83,34 @@ the async queue path, not the GPU loop.
 - [x] `core/magica_generator.py` (REST client, MAGICA_MODELS, budget guard, key gate).
 - [x] `"magica"` in `ModelConfig.backend` Literal + factory routing branch.
 - [x] Unit tests: routing + key-refusal + budget-refusal (the intent-test half).
-- [ ] **Get a real `MAGICA_API_KEY`** (dashboard → Organisation → API Keys) → add to `.env` +
-      `~/.secrets`. Then one live end-to-end run to validate the REST shapes (the untested part).
-- [ ] Extend `MoodModelConfig.mood_models` to Magica node ids for per-mood model diversity
-      (Lumira's core payoff — many distinct models vs one SDXL). Optional: also add
-      `MAGICA_API_KEY` to `APIKeysConfig` as `SecretStr` (currently read from env like Replicate).
+- [x] Per-model input adapter (`_build_model_input`): Nano Banana uses
+      `resolution`+`aspect_ratio`, FLUX 2 uses `image_size`; verified via `get_model_schema`.
+- [x] Per-mood model diversity: `MAGICA_MOOD_MODELS` + `model_for_mood()` (nano/flux/gpt/grok).
+- [x] `sub_model_id` plumbing (top-level in the run request) for multi-mode nodes.
+- [ ] **Get a real `MAGICA_API_KEY`** — the one remaining blocker. Steps:
+      1. magica.com dashboard → Organisation → API Keys → create key.
+      2. `echo 'export MAGICA_API_KEY=...' >> ~/.secrets` (never commit it).
+      3. Add `MAGICA_API_KEY=` line to `.env` for local runs.
+      4. `config.model.backend = "magica"` (or pass `backend` in the RQ job params).
+      5. One live gen to validate the REST shapes end-to-end (the only untested path;
+         request/response shapes already match the official docs curl).
+- [ ] Optional: add `MAGICA_API_KEY` to `APIKeysConfig` as `SecretStr` (currently read from
+      env like `ReplicateGenerator`, deliberately consistent).
 - [ ] Consider a live routing-test matrix before enabling in prod (per agent-intent-tests rule).
 
-## New modalities (video / audio) — separate workstream
+## New modalities (video / audio)
 
-Lumira is image-only today; video exists only as moviepy slideshow assembly
-(`utils/video.py`), no audio generation anywhere. Mood-driven **video** (`sora_2`/`veo_3_1`)
-and **generative music/sfx** (`lyria3`/`elevenlabs`) via Magica is the biggest
-differentiator but a distinct effort from the image backend — scope on its own.
+Lumira is image-only in-runtime; video exists only as moviepy slideshow assembly
+(`utils/video.py`), no audio generation anywhere. Magica adds both:
+**video** (`sora_2`/`veo_3_1`/`kling_v3_pro`) and **music/sfx** (`elevenlabs_music`/`lyria3_pro`).
+
+- **Proven via Pattern A (Claude-driven MCP):** generated a mood-matched melancholic
+  instrumental (`elevenlabs_music`, 30s) to accompany the demo painting — see
+  `gallery/magica_demo/`. Note: `lyria3_pro` (Google Vertex) 400'd on a policy block for the
+  same prompt; `elevenlabs_music` is the more permissive default.
+- **Runtime wire is a separate workstream:** `MagicaGenerator` returns `list[PIL.Image]`, so
+  audio/video need a sibling class (e.g. `MagicaAudioGenerator` returning file bytes/paths)
+  and a non-image call path — not the image factory. Scope on its own.
 
 ## Repo hygiene (flagged, NOT changed — your call)
 
