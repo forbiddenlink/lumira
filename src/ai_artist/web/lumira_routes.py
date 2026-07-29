@@ -595,11 +595,12 @@ def _record_studio_creation(
 ) -> dict[str, Any] | None:
     """Grow from studio work via record_creation (XP, semantic learn, save)."""
     try:
-        return memory.record_creation(
+        result = memory.record_creation(
             artwork_details=artwork_details,
             emotional_state=emotional_state,
             outcome=outcome or {"score": artwork_details.get("score", 0.0)},
         )
+        return result if isinstance(result, dict) else None
     except Exception as mem_err:
         logger.debug("memory_record_creation_failed", error=str(mem_err))
         return None

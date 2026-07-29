@@ -147,4 +147,7 @@ class MagicaClient:
             time.sleep(poll_interval_s)
 
     def download_bytes(self, url: str) -> bytes:
-        return download_bytes(url)
+        data = download_bytes(url)
+        if not isinstance(data, (bytes, bytearray)):
+            raise TypeError(f"Expected bytes from Magica download, got {type(data)}")
+        return bytes(data)
