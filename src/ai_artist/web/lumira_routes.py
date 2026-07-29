@@ -76,48 +76,18 @@ def _maybe_pair_soundtrack(
     metadata: dict[str, Any],
     enabled: bool,
 ) -> Path | None:
-    """Optionally generate a Magica soundtrack next to a new artwork.
+    """Web wrapper around shared Magica soundtrack pairing."""
+    from ..personality.continuity import maybe_pair_soundtrack
 
-    Opt-in via request flag or ``LUMIRA_AUTO_SOUNDTRACK=1``. Failures are logged
-    and swallowed so image creation still succeeds.
-    """
-    import os
-
-    if not enabled and os.getenv("LUMIRA_AUTO_SOUNDTRACK", "").strip() not in {
-        "1",
-        "true",
-        "yes",
-    }:
-        return None
-    if not os.environ.get("MAGICA_API_KEY"):
-        return None
-    try:
-        from ..core.magica_media import MagicaAudioGenerator
-
-        audio_prompt = (
-            f"Instrumental soundtrack for an artwork: {prompt[:200]}. "
-            f"Mood: {mood or 'contemplative'}."
-        )
-        path = MagicaAudioGenerator().generate_audio(
-            audio_prompt,
-            duration_seconds=30,
-            mood=mood,
-            gallery_root="gallery",
-        )
-        meta = metadata.setdefault("metadata", {})
-        meta["soundtrack"] = str(path)
-        try:
-            rel = path.relative_to(Path("gallery"))
-            meta["soundtrack_url"] = f"/api/images/file/{rel.as_posix()}"
-        except ValueError:
-            meta["soundtrack_url"] = str(path)
-        sidecar = image_path.with_suffix(".json")
-        sidecar.write_text(json.dumps(metadata, indent=2))
-        logger.info("soundtrack_paired", image=str(image_path), audio=str(path))
-        return path
-    except Exception as e:
-        logger.warning("soundtrack_pairing_failed", error=str(e))
-        return None
+    # Preserve nested metadata.metadata shape used by studio sidecars.
+    metadata.setdefault("metadata", {})
+    return maybe_pair_soundtrack(
+        prompt=prompt,
+        mood=mood,
+        image_path=image_path,
+        metadata=metadata,
+        enabled=enabled,
+    )
 
 
 async def _guard_generation(coro: Any) -> Any:

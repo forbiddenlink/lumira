@@ -194,3 +194,114 @@ def test_seed_subject_honored_in_fallback(monkeypatch):
     )
     assert intent.subject == "moonlit pier"
     assert intent.style == "ink wash"
+
+
+@pytest.mark.asyncio
+async def test_cli_presence_before_seeds_when_deliberate(monkeypatch):
+    from unittest.mock import AsyncMock, MagicMock
+
+    from ai_artist.personality import continuity as cont
+    from ai_artist.personality.inner_voices import Concept
+
+    monkeypatch.setattr(cont, "should_deep_deliberate", lambda **_: True)
+    dialogue = MagicMock()
+    dialogue.deliberate = AsyncMock(
+        return_value=Concept(
+            subject="harbor fog",
+            prompt="harbor fog, oil",
+            style_blend={"oil": 0.8, "ink": 0.2},
+            confidence=0.9,
+        )
+    )
+    ctx = await cont.apply_cli_presence_before_creation(
+        mood_system=MagicMock(current_mood=MagicMock(value="melancholic")),
+        inner_dialogue=dialogue,
+        theme=None,
+    )
+    assert ctx["seed_subject"] == "harbor fog"
+    assert ctx["seed_style"] == "oil"
+    dialogue.deliberate.assert_awaited()
+
+
+@pytest.mark.asyncio
+async def test_cli_presence_before_skips_when_theme_given(monkeypatch):
+    from unittest.mock import AsyncMock, MagicMock
+
+    from ai_artist.personality import continuity as cont
+
+    dialogue = MagicMock()
+    dialogue.deliberate = AsyncMock()
+    ctx = await cont.apply_cli_presence_before_creation(
+        mood_system=MagicMock(),
+        inner_dialogue=dialogue,
+        theme="explicit theme",
+    )
+    assert ctx == {"theme": "explicit theme"}
+    dialogue.deliberate.assert_not_called()
+
+
+def test_cli_presence_after_pairs_soundtrack(tmp_path, monkeypatch):
+    from unittest.mock import MagicMock
+
+    from ai_artist.personality import continuity as cont
+
+    image = tmp_path / "piece.png"
+    image.write_bytes(b"fake")
+    sidecar = image.with_suffix(".json")
+    sidecar.write_text('{"prompt": "fog"}')
+
+    monkeypatch.setattr(cont, "should_pair_soundtrack", lambda **_: True)
+    monkeypatch.setenv("MAGICA_API_KEY", "test-key")
+
+    audio_path = tmp_path / "score.mp3"
+    audio_path.write_bytes(b"audio")
+
+    class FakeAudio:
+        def generate_audio(self, *args, **kwargs):
+            return audio_path
+
+    monkeypatch.setattr(
+        "ai_artist.core.magica_media.MagicaAudioGenerator",
+        FakeAudio,
+    )
+    # Avoid desire engine side effects writing real data paths
+    monkeypatch.setattr(
+        cont,
+        "note_creation_for_statement",
+        lambda *_a, **_k: None,
+    )
+
+    mood = MagicMock()
+    mood.current_mood = MagicMock(value="serene")
+    # Not a real MoodSystem — skip mood persist isinstance branch
+
+    cont.apply_cli_presence_after_creation(
+        mood_system=mood,
+        subject="fog",
+        style="oil",
+        score=0.8,
+        prompt="soft fog over water",
+        image_path=image,
+    )
+    updated = sidecar.read_text()
+    assert "soundtrack" in updated
+    assert str(audio_path) in updated
+
+
+def test_maybe_pair_soundtrack_disabled_without_key(monkeypatch, tmp_path):
+    from ai_artist.personality.continuity import maybe_pair_soundtrack
+
+    monkeypatch.delenv("MAGICA_API_KEY", raising=False)
+    monkeypatch.delenv("LUMIRA_AUTO_SOUNDTRACK", raising=False)
+    image = tmp_path / "x.png"
+    image.write_bytes(b"x")
+    assert (
+        maybe_pair_soundtrack(
+            prompt="x",
+            mood="serene",
+            image_path=image,
+            metadata={},
+            enabled=True,
+        )
+        is None
+    )
