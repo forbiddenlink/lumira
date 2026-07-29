@@ -1498,8 +1498,6 @@ async def create_artwork(
 
                         evolved = note_creation_for_statement(creation_record)
                         if evolved and evolved.get("full_statement"):
-                            from ..web.websocket import manager as ws_manager
-
                             await ws_manager.broadcast_memory_insight(
                                 "My artist statement shifted with this work.",
                                 "statement",

@@ -83,12 +83,12 @@ def should_pair_soundtrack(
     intensity = float(emotion.get("intensity") or 0)
     if mood_l in emotional_moods and intensity >= 0.45:
         return True
-    if intensity >= 0.7 and random.random() < 0.55:
-        return True
-    return False
+    return bool(intensity >= 0.7 and random.random() < 0.55)
 
 
-def note_creation_for_statement(creation_record: dict[str, Any]) -> dict[str, Any] | None:
+def note_creation_for_statement(
+    creation_record: dict[str, Any],
+) -> dict[str, Any] | None:
     """Feed hierarchical reflection; evolve statement after a short streak."""
     try:
         from .hierarchical_reflection import get_hierarchical_reflection

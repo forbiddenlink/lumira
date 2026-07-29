@@ -655,20 +655,17 @@ class TestArtistPresence:
     def test_auth_mode_reports_generation_available(self, lumira_page: Page):
         """Studio must know whether she can create (not silent 503)."""
         page = lumira_page
-        mode = page.evaluate(
-            """async () => {
+        mode = page.evaluate("""async () => {
               const r = await fetch('/api/auth-mode');
               return await r.json();
-            }"""
-        )
+            }""")
         assert mode.get("generation_available") is True
         assert mode.get("dev_mode") is True
 
     def test_create_fills_inner_dialogue(self, lumira_page: Page):
         """After she decides what to make, her four voices should speak."""
         page = lumira_page
-        result = page.evaluate(
-            """async () => {
+        result = page.evaluate("""async () => {
               const before = await (await fetch('/api/lumira/dialogue')).json();
               const create = await (await fetch('/api/lumira/create', {
                 method: 'POST',
@@ -683,8 +680,7 @@ class TestArtistPresence:
                 after: (after.turns || []).length,
                 voices: (after.turns || []).map(t => (t.voice || '').toLowerCase()),
               };
-            }"""
-        )
+            }""")
         assert result["success"], "create should succeed under LUMIRA_DEV_MODE"
         assert result["subject"], "she should have chosen a subject"
         assert result["after"] >= result["before"] + 4
@@ -692,25 +688,23 @@ class TestArtistPresence:
             assert voice in result["voices"]
 
         # UI panel should reflect the living mind after reload of history
-        page.evaluate("typeof loadDialogueHistory === 'function' && loadDialogueHistory()")
+        page.evaluate(
+            "typeof loadDialogueHistory === 'function' && loadDialogueHistory()"
+        )
         page.wait_for_timeout(800)
         voices_ui = page.locator("#dialogue-panel .dialogue-voice")
         expect(voices_ui.first).to_be_visible()
         text = page.locator("#dialogue-panel").inner_text().lower()
         assert "awaiting deliberation" not in text or result["after"] > 0
-        assert any(
-            v in text for v in ("rememberer", "dreamer", "curator", "critic")
-        )
+        assert any(v in text for v in ("rememberer", "dreamer", "curator", "critic"))
 
     def test_autonomy_drives_are_alive(self, lumira_page: Page):
         """Desire intensities should not be a flatline of zeros."""
         page = lumira_page
-        status = page.evaluate(
-            """async () => {
+        status = page.evaluate("""async () => {
               const r = await fetch('/api/lumira/autonomy-status');
               return await r.json();
-            }"""
-        )
+            }""")
         drives = status.get("drives") or status.get("drive_status") or {}
         assert drives, "autonomy-status should expose drives"
         assert any(
@@ -720,8 +714,7 @@ class TestArtistPresence:
     def test_create_dialogue_uses_critic_metadata(self, lumira_page: Page):
         """Rememberer/critic wiring should mark turns as memory- and critic-backed."""
         page = lumira_page
-        result = page.evaluate(
-            """async () => {
+        result = page.evaluate("""async () => {
               await fetch('/api/lumira/create', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -735,8 +728,7 @@ class TestArtistPresence:
                 anyMemory: meta.some(m => m.from_memory === true),
                 anyCritic: meta.some(m => m.from_critic === true),
               };
-            }"""
-        )
+            }""")
         assert result["count"] >= 4
         assert result["anyMemory"] or result["anyCritic"]
 
@@ -759,27 +751,27 @@ class TestArtistPresence:
         expect(panel).to_be_visible()
         text = panel.inner_text().strip()
         assert text
-        assert "Listening for who she is becoming" not in text or "Lumira" in text or len(text) > 20
+        assert (
+            "Listening for who she is becoming" not in text
+            or "Lumira" in text
+            or len(text) > 20
+        )
 
     def test_mood_persists_across_influence(self, lumira_page: Page):
         """Mood influence should keep continuity within the live process."""
         page = lumira_page
-        result = page.evaluate(
-            """async () => {
+        result = page.evaluate("""async () => {
               const r = await fetch('/api/lumira/mood/influence', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ influence: 'calm', intensity: 1.0 }),
               });
               return await r.json();
-            }"""
-        )
+            }""")
         assert result.get("new_mood")
-        state = page.evaluate(
-            """async () => {
+        state = page.evaluate("""async () => {
               const r = await fetch('/api/lumira/state');
               return await r.json();
-            }"""
-        )
+            }""")
         assert state.get("mood")
         assert state.get("feeling")

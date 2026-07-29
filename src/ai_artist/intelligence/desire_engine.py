@@ -20,6 +20,7 @@ to create next. Think of these like creative urges:
 
 from __future__ import annotations
 
+import contextlib
 import math
 import random
 from datetime import UTC, datetime, timedelta
@@ -167,9 +168,7 @@ class DesireEngine:
         logger.info(
             "desire_engine_initialized",
             drives=list(self.drives.keys()),
-            intensities={
-                n: round(d.intensity, 3) for n, d in self.drives.items()
-            },
+            intensities={n: round(d.intensity, 3) for n, d in self.drives.items()},
         )
 
     # ------------------------------------------------------------------
@@ -227,15 +226,11 @@ class DesireEngine:
                 drive.satisfaction_count = int(info.get("satisfaction_count", 0))
                 ls = info.get("last_satisfied")
                 if ls:
-                    try:
+                    with contextlib.suppress(TypeError, ValueError):
                         drive.last_satisfied = datetime.fromisoformat(ls)
-                    except (TypeError, ValueError):
-                        pass
             if data.get("last_update"):
-                try:
+                with contextlib.suppress(TypeError, ValueError):
                     self._last_update = datetime.fromisoformat(data["last_update"])
-                except (TypeError, ValueError):
-                    pass
             for key, store in (
                 ("subject_usage", self.subject_usage),
                 ("style_usage", self.style_usage),
@@ -244,10 +239,8 @@ class DesireEngine:
                 for name, stamps in raw.items():
                     parsed: list[datetime] = []
                     for ts in stamps or []:
-                        try:
+                        with contextlib.suppress(TypeError, ValueError):
                             parsed.append(datetime.fromisoformat(ts))
-                        except (TypeError, ValueError):
-                            continue
                     if parsed:
                         store[name] = parsed
             logger.info("desire_state_loaded", source=str(path or DESIRES_FILE))

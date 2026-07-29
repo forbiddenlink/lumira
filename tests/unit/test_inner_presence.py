@@ -37,9 +37,7 @@ async def test_reflect_on_intent_uses_rememberer_and_critic():
         }
     )
 
-    dialogue = InnerDialogue(
-        rememberer=rememberer, critic=critic, history_path=None
-    )
+    dialogue = InnerDialogue(rememberer=rememberer, critic=critic, history_path=None)
     await dialogue.reflect_on_intent(
         subject="harbor lights",
         style="oil",
@@ -100,8 +98,8 @@ def test_desire_engine_wakes_with_alive_drives():
 
 
 def test_mood_system_roundtrip_persistence(tmp_path, monkeypatch):
-    from ai_artist.personality.moods import Mood, MoodSystem
     import ai_artist.web.lumira_routes as routes
+    from ai_artist.personality.moods import Mood, MoodSystem
 
     mood_file = tmp_path / "lumira_mood_state.json"
     monkeypatch.setattr(routes, "_MOOD_STATE_FILE", mood_file)
