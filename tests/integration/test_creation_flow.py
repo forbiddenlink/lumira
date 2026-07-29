@@ -270,8 +270,8 @@ class TestCriticIterationFlow:
 
                 await app.create_artwork(theme="test")
 
-                # Should have called critique only once since approved
-                assert mock_critique.call_count == 1
+                # Critique loop (1) + reflect_on_intent presence path (1)
+                assert mock_critique.call_count == 2
 
     @pytest.mark.asyncio
     async def test_critic_retries_on_rejection(
