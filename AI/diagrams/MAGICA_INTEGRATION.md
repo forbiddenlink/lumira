@@ -91,23 +91,28 @@ the async queue path, not the GPU loop.
       a real `backend=magica` gen returned a 1024×1024 image. Caught + fixed a real bug: run
       status returns URLs at `output.result`, not top-level `assets[]` (see `_extract_urls`).
       To use: `config.model.backend = "magica"` (or pass `backend` in the RQ job params).
+- [x] **Studio create path wired** (2026-07-29) — `lumira_routes` uses
+      `build_web_image_generator()` / factory (no more Replicate hardcodes). Magica-first
+      when keys exist and backend is still `local`; set `LUMIRA_FORCE_LOCAL_WEB=1` to keep
+      on-device studio generation.
+- [x] Multimodal runtime: `core/magica_media.py` + `POST /api/lumira/soundtrack` +
+      `POST /api/lumira/video`; optional `with_soundtrack` / `LUMIRA_AUTO_SOUNDTRACK=1`.
 - [ ] Optional: add `MAGICA_API_KEY` to `APIKeysConfig` as `SecretStr` (currently read from
       env like `ReplicateGenerator`, deliberately consistent).
 - [ ] Consider a live routing-test matrix before enabling in prod (per agent-intent-tests rule).
 
 ## New modalities (video / audio)
 
-Lumira is image-only in-runtime; video exists only as moviepy slideshow assembly
-(`utils/video.py`), no audio generation anywhere. Magica adds both:
-**video** (`sora_2`/`veo_3_1`/`kling_v3_pro`) and **music/sfx** (`elevenlabs_music`/`lyria3_pro`).
+Runtime wire is live (2026-07-29):
+- `MagicaAudioGenerator` / `MagicaVideoGenerator` in `core/magica_media.py`
+- Studio APIs: `POST /api/lumira/soundtrack`, `POST /api/lumira/video`
+- Opt-in pairing after image create via `UserCreationRequest.with_soundtrack` or
+  `LUMIRA_AUTO_SOUNDTRACK=1`
 
-- **Proven via Pattern A (Claude-driven MCP):** generated a mood-matched melancholic
-  instrumental (`elevenlabs_music`, 30s) to accompany the demo painting — see
-  `gallery/magica_demo/`. Note: `lyria3_pro` (Google Vertex) 400'd on a policy block for the
-  same prompt; `elevenlabs_music` is the more permissive default.
-- **Runtime wire is a separate workstream:** `MagicaGenerator` returns `list[PIL.Image]`, so
-  audio/video need a sibling class (e.g. `MagicaAudioGenerator` returning file bytes/paths)
-  and a non-image call path — not the image factory. Scope on its own.
+Still separate from the *image* factory (returns file paths, not `list[PIL.Image]`).
+
+Proven via Pattern A (Claude-driven MCP): melancholic instrumental (`elevenlabs_music`,
+30s) in `gallery/magica_demo/`. Prefer `elevenlabs_music` over `lyria3_pro` (policy 400s).
 
 ## Repo hygiene (flagged, NOT changed — your call)
 

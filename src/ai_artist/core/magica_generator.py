@@ -29,28 +29,17 @@ from typing import Any, Literal
 
 import httpx
 from PIL import Image
-from tenacity import retry, stop_after_attempt, wait_exponential
 
 from ..utils.logging import get_logger
+from .magica_client import TERMINAL_FAIL, TERMINAL_OK, MagicaClient
+from .magica_client import download_bytes as _download_bytes
+from .magica_client import extract_urls as _client_extract_urls
 
 logger = get_logger(__name__)
 
-
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=8))
-def _download_bytes(url: str) -> bytes:
-    """Download an asset with bounded retry.
-
-    The run has already executed and been billed by the time we download, so a
-    transient network error here must not throw the result away. GET is idempotent,
-    so retrying is safe (unlike the run POST, which is deliberately not retried).
-    """
-    resp = httpx.get(url, timeout=60.0)
-    resp.raise_for_status()
-    return bytes(resp.content)
-
-
-# Base REST URL (override via env for testing / self-host proxies).
-MAGICA_BASE_URL = os.getenv("MAGICA_BASE_URL", "https://api.magica.com/api")
+# Re-exported for backwards compatibility (some tooling/docs referenced these
+# names on this module before the REST plumbing moved to magica_client.py).
+__all__ = ["MagicaGenerator", "MAGICA_MODELS", "MAGICA_MOOD_MODELS", "model_for_mood"]
 
 # Friendly-name -> Magica nodeType. Values are real node ids (verified via the
 # Magica MCP catalog); extend as new image models ship. Callers may also pass a
@@ -92,9 +81,11 @@ def model_for_mood(mood: str) -> str:
     return MAGICA_MOOD_MODELS.get(mood.lower(), DEFAULT_MODEL)
 
 
-# Terminal run states (compared case-insensitively).
-_TERMINAL_OK = {"COMPLETE", "COMPLETED", "SUCCEEDED", "SUCCESS"}
-_TERMINAL_FAIL = {"FAILED", "FAILURE", "CANCELED", "CANCELLED", "ERROR"}
+# Terminal run states (compared case-insensitively). Kept as module-level
+# aliases for backwards compatibility; canonical definitions live in
+# magica_client.py.
+_TERMINAL_OK = TERMINAL_OK
+_TERMINAL_FAIL = TERMINAL_FAIL
 
 # Daily image budget backstop (mirrors ReplicateGenerator). 0 disables.
 _spend_day: str | None = None
@@ -275,11 +266,14 @@ class MagicaGenerator:
         """No-op: Magica models load server-side. Present for interface parity."""
         logger.info("magica_model_ready", node_type=self.node_type)
 
+    @property
+    def _client(self) -> MagicaClient:
+        # Built lazily (rather than in __init__) so tests/callers that mutate
+        # self.api_key after construction still get an up-to-date client.
+        return MagicaClient(api_key=self.api_key)
+
     def _headers(self) -> dict[str, str]:
-        return {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
+        return self._client.headers()
 
     def _start_run(self, input_params: dict[str, Any]) -> str:
         """POST a model run; return its runId.
@@ -287,17 +281,9 @@ class MagicaGenerator:
         Deliberately NOT retried: a model run is non-idempotent, so retrying an
         ambiguous POST failure could enqueue (and bill) duplicate runs.
         """
-        url = f"{MAGICA_BASE_URL}/v1/nodes/{self.node_type}/run"
-        body: dict[str, Any] = {"input": input_params}
-        if self.sub_model_id:
-            body["subModelId"] = self.sub_model_id
-        resp = httpx.post(url, headers=self._headers(), json=body, timeout=60.0)
-        resp.raise_for_status()
-        data = resp.json()
-        run_id = data.get("runId") or data.get("id")
-        if not run_id:
-            raise RuntimeError(f"Magica run response missing runId: {data}")
-        return str(run_id)
+        return self._client.start_run(
+            self.node_type, input_params, sub_model_id=self.sub_model_id
+        )
 
     @staticmethod
     def _extract_urls(data: dict[str, Any]) -> list[str]:
@@ -307,41 +293,11 @@ class MagicaGenerator:
         verified against a live run 2026-07-28. Older/MCP-style responses used a
         top-level ``assets[].url``; both are supported.
         """
-        output = data.get("output") or {}
-        result = output.get("result") if isinstance(output, dict) else None
-        urls = [u for u in (result or []) if isinstance(u, str)]
-        if not urls:
-            assets = data.get("assets") or []
-            urls = [
-                a["url"]
-                for a in assets
-                if isinstance(a, dict) and isinstance(a.get("url"), str)
-            ]
-        return urls
+        return _client_extract_urls(data)
 
     def _poll_run(self, run_id: str, timeout_s: float = 300.0) -> list[str]:
         """Poll a run to completion; return generated asset URLs."""
-        import time
-
-        url = f"{MAGICA_BASE_URL}/v1/nodes/runs/{run_id}"
-        deadline = time.monotonic() + timeout_s
-        while True:
-            resp = httpx.get(url, headers=self._headers(), timeout=30.0)
-            resp.raise_for_status()
-            data = resp.json()
-            status = str(data.get("status", "")).upper()
-            if status in _TERMINAL_OK:
-                urls = self._extract_urls(data)
-                if not urls:
-                    raise RuntimeError(f"Magica run {run_id} completed with no assets")
-                return urls
-            if status in _TERMINAL_FAIL:
-                raise RuntimeError(
-                    f"Magica run {run_id} failed: {data.get('error') or status}"
-                )
-            if time.monotonic() > deadline:
-                raise TimeoutError(f"Magica run {run_id} timed out after {timeout_s}s")
-            time.sleep(2.0)
+        return self._client.poll_run(run_id, timeout_s=timeout_s)
 
     def generate(
         self,
@@ -392,6 +348,20 @@ class MagicaGenerator:
             output_format="PNG",
             system_prompt=system_prompt,
         )
+        # Strip local/Replicate-only kwargs so studio call sites can share one
+        # generate(...) signature without leaking them into Magica's REST input.
+        for local_only in (
+            "lora_url",
+            "lora_scale",
+            "reference_image",
+            "ip_adapter_scale",
+            "negative_prompt",
+            "on_progress",
+            "use_refiner",
+            "num_inference_steps",
+            "guidance_scale",
+        ):
+            kwargs.pop(local_only, None)
         # Allow caller to override / add model-specific fields.
         input_params.update(kwargs)
 

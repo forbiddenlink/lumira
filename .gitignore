@@ -31,6 +31,10 @@ data/*.db-*
 data/lumira_memory.json
 data/lumira_enhanced_memory.json
 data/lumira_mood_history.json
+data/lumira_mood_state.json
+data/lumira_inner_dialogue.json
+data/lumira_desires.json
+data/lumira_evolved_statement.json
 data/adaptive_learning.json
 data/thematic_series.json
 data/vector_memory/

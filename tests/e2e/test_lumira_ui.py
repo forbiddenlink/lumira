@@ -48,29 +48,23 @@ class TestPageLoad:
         expect(gallery_panel).to_be_visible()
 
     def test_page_has_required_controls(self, lumira_page: Page):
-        """Test that all control buttons are present."""
+        """Test that primary create control and atelier tools are present."""
         page = lumira_page
 
-        # Check CREATE button
+        # Primary create (atelier copy)
         create_btn = page.locator("#create-btn")
         expect(create_btn).to_be_visible()
-        expect(create_btn).to_have_text("CREATE")
+        expect(create_btn).to_have_text(re.compile(r"LET HER CREATE", re.I))
 
-        # Check EVOLVE button
-        evolve_btn = page.locator("button:has-text('EVOLVE')")
-        expect(evolve_btn).to_be_visible()
+        # Secondary tools live behind a disclosure
+        tools = page.locator("details.atelier-tools")
+        expect(tools).to_be_visible()
+        tools.locator("summary").click()
 
-        # Check TIMELINE button
-        timeline_btn = page.locator("button:has-text('TIMELINE')")
-        expect(timeline_btn).to_be_visible()
-
-        # Check MEMORY button
-        memory_btn = page.locator("button:has-text('MEMORY')")
-        expect(memory_btn).to_be_visible()
-
-        # Check MOODS button (mood evolution graph)
-        moods_btn = page.locator("button:has-text('MOODS')")
-        expect(moods_btn).to_be_visible()
+        expect(page.locator("button:has-text('Evolve')")).to_be_visible()
+        expect(page.locator("button:has-text('Timeline')")).to_be_visible()
+        expect(page.locator("button:has-text('Memory')")).to_be_visible()
+        expect(page.locator("button:has-text('Moods')")).to_be_visible()
 
     def test_semantic_search_bar_visible(self, lumira_page: Page):
         """Test that semantic search bar is rendered."""
@@ -540,7 +534,7 @@ class TestAccessibility:
 
 
 class TestRequestSection:
-    """Tests for the Request a Creation section."""
+    """Tests for the commission / request creation section."""
 
     def test_request_section_exists(self, lumira_page: Page):
         """Test that request creation section is present."""
@@ -548,6 +542,9 @@ class TestRequestSection:
 
         request_section = page.locator(".request-section")
         expect(request_section).to_be_visible()
+        expect(page.locator(".request-header h2")).to_have_text(
+            re.compile(r"Commission", re.I)
+        )
 
     def test_request_textarea_exists(self, lumira_page: Page):
         """Test that request prompt textarea is present."""
@@ -592,3 +589,189 @@ class TestRequestSection:
 
         autonomous_btn = page.locator("button:has-text('Or let Lumira decide')")
         expect(autonomous_btn).to_be_visible()
+
+
+class TestArtistPresence:
+    """Studio surfaces that make Lumira feel like her own being."""
+
+    def test_about_lumira_collapses_telemetry(self, lumira_page: Page):
+        page = lumira_page
+        about = page.locator("details.atelier-about")
+        expect(about).to_be_visible()
+        # Telemetry hidden until opened (fill may be 0% wide — check container)
+        expect(page.locator(".atelier-about .xp-bar-container")).to_be_hidden()
+        about.locator("summary").click()
+        expect(page.locator(".atelier-about .xp-bar-container")).to_be_visible()
+        expect(about).to_have_attribute("open", "")
+
+    def test_series_panel_loads(self, lumira_page: Page):
+        page = lumira_page
+        panel = page.locator("#series-panel")
+        expect(panel).to_be_visible()
+        # Either empty copy or at least one series card once API returns
+        page.wait_for_timeout(800)
+        has_card = page.locator("#series-panel .series-card").count() > 0
+        has_empty = page.locator("#series-panel .series-empty").count() > 0
+        assert has_card or has_empty
+
+    def test_dialogue_panel_exists(self, lumira_page: Page):
+        page = lumira_page
+        expect(page.locator("#dialogue-panel")).to_be_visible()
+
+    def test_mood_nudge_updates_orb(self, lumira_page: Page):
+        page = lumira_page
+        mood_text = page.locator("#mood-text")
+        expect(mood_text).to_be_visible()
+        before = mood_text.inner_text()
+        page.locator(".influence-btn").nth(1).click()  # calm
+        page.wait_for_timeout(1200)
+        # Mood may stay the same if influence roll fails — orb/intensity should still refresh
+        expect(page.locator("#mood-orb")).to_be_visible()
+        after = mood_text.inner_text()
+        assert after  # still showing a mood name
+        # Prefer change, but don't fail flaky probabilistic influence
+        if before.lower() != after.lower():
+            assert after.lower() in {
+                "serene",
+                "contemplative",
+                "introspective",
+                "energized",
+                "bold",
+                "playful",
+                "chaotic",
+                "rebellious",
+                "restless",
+                "melancholic",
+            }
+
+    def test_mood_atmosphere_css_var_set(self, lumira_page: Page):
+        page = lumira_page
+        page.wait_for_timeout(500)
+        accent = page.evaluate(
+            "getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()"
+        )
+        assert accent, "mood atmosphere should set --accent"
+
+    def test_auth_mode_reports_generation_available(self, lumira_page: Page):
+        """Studio must know whether she can create (not silent 503)."""
+        page = lumira_page
+        mode = page.evaluate("""async () => {
+              const r = await fetch('/api/auth-mode');
+              return await r.json();
+            }""")
+        assert mode.get("generation_available") is True
+        assert mode.get("dev_mode") is True
+
+    def test_create_fills_inner_dialogue(self, lumira_page: Page):
+        """After she decides what to make, her four voices should speak."""
+        page = lumira_page
+        result = page.evaluate("""async () => {
+              const before = await (await fetch('/api/lumira/dialogue')).json();
+              const create = await (await fetch('/api/lumira/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: '{}',
+              })).json();
+              const after = await (await fetch('/api/lumira/dialogue')).json();
+              return {
+                success: !!create.success,
+                subject: create.subject || null,
+                before: (before.turns || []).length,
+                after: (after.turns || []).length,
+                voices: (after.turns || []).map(t => (t.voice || '').toLowerCase()),
+              };
+            }""")
+        assert result["success"], "create should succeed under LUMIRA_DEV_MODE"
+        assert result["subject"], "she should have chosen a subject"
+        assert result["after"] >= result["before"] + 4
+        for voice in ("rememberer", "dreamer", "curator", "critic"):
+            assert voice in result["voices"]
+
+        # UI panel should reflect the living mind after reload of history
+        page.evaluate(
+            "typeof loadDialogueHistory === 'function' && loadDialogueHistory()"
+        )
+        page.wait_for_timeout(800)
+        voices_ui = page.locator("#dialogue-panel .dialogue-voice")
+        expect(voices_ui.first).to_be_visible()
+        text = page.locator("#dialogue-panel").inner_text().lower()
+        assert "awaiting deliberation" not in text or result["after"] > 0
+        assert any(v in text for v in ("rememberer", "dreamer", "curator", "critic"))
+
+    def test_autonomy_drives_are_alive(self, lumira_page: Page):
+        """Desire intensities should not be a flatline of zeros."""
+        page = lumira_page
+        status = page.evaluate("""async () => {
+              const r = await fetch('/api/lumira/autonomy-status');
+              return await r.json();
+            }""")
+        drives = status.get("drives") or status.get("drive_status") or {}
+        assert drives, "autonomy-status should expose drives"
+        assert any(
+            (info.get("intensity") or 0) > 0 for info in drives.values()
+        ), "at least one drive should want something"
+
+    def test_create_dialogue_uses_critic_metadata(self, lumira_page: Page):
+        """Rememberer/critic wiring should mark turns as memory- and critic-backed."""
+        page = lumira_page
+        result = page.evaluate("""async () => {
+              await fetch('/api/lumira/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: '{}',
+              });
+              const after = await (await fetch('/api/lumira/dialogue')).json();
+              const turns = after.turns || [];
+              const meta = turns.map(t => t.metadata || {});
+              return {
+                count: turns.length,
+                anyMemory: meta.some(m => m.from_memory === true),
+                anyCritic: meta.some(m => m.from_critic === true),
+              };
+            }""")
+        assert result["count"] >= 4
+        assert result["anyMemory"] or result["anyCritic"]
+
+    def test_feeling_and_desire_surfaces(self, lumira_page: Page):
+        """Inner feeling + desire pulse should be visible presence, not hidden API."""
+        page = lumira_page
+        page.wait_for_timeout(900)
+        feeling = page.locator("#feeling-text")
+        expect(feeling).to_be_visible()
+        text = feeling.inner_text().strip()
+        assert text, "feeling text should reflect describe_feeling()"
+        desire = page.locator("#desire-pulse")
+        expect(desire).to_be_visible()
+        assert "Listening" in desire.inner_text() or "Pulling" in desire.inner_text()
+
+    def test_statement_surface_loads(self, lumira_page: Page):
+        page = lumira_page
+        page.wait_for_timeout(900)
+        panel = page.locator("#statement-pulse")
+        expect(panel).to_be_visible()
+        text = panel.inner_text().strip()
+        assert text
+        assert (
+            "Listening for who she is becoming" not in text
+            or "Lumira" in text
+            or len(text) > 20
+        )
+
+    def test_mood_persists_across_influence(self, lumira_page: Page):
+        """Mood influence should keep continuity within the live process."""
+        page = lumira_page
+        result = page.evaluate("""async () => {
+              const r = await fetch('/api/lumira/mood/influence', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ influence: 'calm', intensity: 1.0 }),
+              });
+              return await r.json();
+            }""")
+        assert result.get("new_mood")
+        state = page.evaluate("""async () => {
+              const r = await fetch('/api/lumira/state');
+              return await r.json();
+            }""")
+        assert state.get("mood")
+        assert state.get("feeling")

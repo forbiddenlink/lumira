@@ -20,9 +20,11 @@ to create next. Think of these like creative urges:
 
 from __future__ import annotations
 
+import contextlib
 import math
 import random
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field
@@ -125,17 +127,27 @@ class DesireEngine:
         memory_system: Any | None = None,
         learner: Any | None = None,
         narrative_engine: NarrativeEngine | None = None,
+        *,
+        persist: bool = True,
     ) -> None:
         self.mood_system = mood_system
         self.memory_system = memory_system
         self.learner = learner
         self.narrative_engine = narrative_engine
+        self._persist = persist
 
+        # Wake with lived-in drives — not a flatline at boot. Intensities still
+        # grow with time via update_drives(); this is just enough presence that
+        # autonomy-status and creative decisions feel like someone wanting.
         self.drives: dict[str, CreativeDrive] = {
             name: CreativeDrive(
                 name=name,
                 base_rate=params["base_rate"],
                 decay_rate=params["decay_rate"],
+                intensity=min(
+                    0.75,
+                    round(params["base_rate"] * 2.5 + random.uniform(0.18, 0.38), 3),
+                ),
             )
             for name, params in _DEFAULT_DRIVES.items()
         }
@@ -149,7 +161,104 @@ class DesireEngine:
         # Drive history: track which drives were satisfied and when
         self.drive_history: list[tuple[datetime, str]] = []
 
-        logger.info("desire_engine_initialized", drives=list(self.drives.keys()))
+        # Restore continuous desire state when available
+        if self._persist:
+            self.load()
+
+        logger.info(
+            "desire_engine_initialized",
+            drives=list(self.drives.keys()),
+            intensities={n: round(d.intensity, 3) for n, d in self.drives.items()},
+        )
+
+    # ------------------------------------------------------------------
+    # Persistence
+    # ------------------------------------------------------------------
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize drives + usage for continuity across restarts."""
+        return {
+            "drives": {
+                name: {
+                    "intensity": round(drive.intensity, 4),
+                    "base_rate": drive.base_rate,
+                    "decay_rate": drive.decay_rate,
+                    "last_satisfied": (
+                        drive.last_satisfied.isoformat()
+                        if drive.last_satisfied
+                        else None
+                    ),
+                    "satisfaction_count": drive.satisfaction_count,
+                }
+                for name, drive in self.drives.items()
+            },
+            "last_update": self._last_update.isoformat(),
+            "subject_usage": {
+                k: [ts.isoformat() for ts in v[-20:]]
+                for k, v in self.subject_usage.items()
+            },
+            "style_usage": {
+                k: [ts.isoformat() for ts in v[-20:]]
+                for k, v in self.style_usage.items()
+            },
+        }
+
+    def load(self, path: Path | None = None) -> bool:
+        """Restore desires from disk. Returns True if restored."""
+        from ..personality.continuity import DESIRES_FILE, load_json
+
+        data = load_json(path or DESIRES_FILE)
+        if not data:
+            return False
+        try:
+            drives = data.get("drives") or {}
+            for name, info in drives.items():
+                if name not in self.drives or not isinstance(info, dict):
+                    continue
+                drive = self.drives[name]
+                drive.intensity = min(
+                    1.0, max(0.0, float(info.get("intensity", drive.intensity)))
+                )
+                if "base_rate" in info:
+                    drive.base_rate = float(info["base_rate"])
+                if "decay_rate" in info:
+                    drive.decay_rate = float(info["decay_rate"])
+                drive.satisfaction_count = int(info.get("satisfaction_count", 0))
+                ls = info.get("last_satisfied")
+                if ls:
+                    with contextlib.suppress(TypeError, ValueError):
+                        drive.last_satisfied = datetime.fromisoformat(ls)
+            if data.get("last_update"):
+                with contextlib.suppress(TypeError, ValueError):
+                    self._last_update = datetime.fromisoformat(data["last_update"])
+            for key, store in (
+                ("subject_usage", self.subject_usage),
+                ("style_usage", self.style_usage),
+            ):
+                raw = data.get(key) or {}
+                for name, stamps in raw.items():
+                    parsed: list[datetime] = []
+                    for ts in stamps or []:
+                        with contextlib.suppress(TypeError, ValueError):
+                            parsed.append(datetime.fromisoformat(ts))
+                    if parsed:
+                        store[name] = parsed
+            logger.info("desire_state_loaded", source=str(path or DESIRES_FILE))
+            return True
+        except Exception as e:
+            logger.warning("desire_state_load_failed", error=str(e))
+            return False
+
+    def save(self, path: Path | None = None) -> None:
+        """Persist desires so she keeps wanting the same things after restart."""
+        if not getattr(self, "_persist", True) and path is None:
+            return
+        from ..personality.continuity import DESIRES_FILE, save_json
+
+        try:
+            save_json(path or DESIRES_FILE, self.to_dict())
+        except Exception as e:
+            logger.warning("desire_state_save_failed", error=str(e))
 
     # ------------------------------------------------------------------
     # Public API
@@ -256,6 +365,7 @@ class DesireEngine:
             subject=subject,
             style=style,
         )
+        self.save()
 
     def record_subject_usage(self, subject: str) -> None:
         """Record that a subject was used."""
@@ -687,7 +797,15 @@ def get_desire_engine(
             learner=learner,
             narrative_engine=narrative_engine,
         )
-    # Update narrative_engine if provided (allows late binding)
-    elif narrative_engine is not None and _desire_engine.narrative_engine is None:
+        return _desire_engine
+
+    # Late-bind so studio/CLI share one living drive system
+    if mood_system is not None:
+        _desire_engine.mood_system = mood_system
+    if memory_system is not None:
+        _desire_engine.memory_system = memory_system
+    if learner is not None:
+        _desire_engine.learner = learner
+    if narrative_engine is not None and _desire_engine.narrative_engine is None:
         _desire_engine.narrative_engine = narrative_engine
     return _desire_engine

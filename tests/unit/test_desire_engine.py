@@ -87,6 +87,7 @@ class TestDesireEngine:
             mood_system=create_mock_mood_system(),
             memory_system=create_mock_memory(),
             learner=create_mock_learner(),
+            persist=False,
         )
 
     def test_desire_engine_initialization(self, engine):
@@ -104,7 +105,8 @@ class TestDesireEngine:
         assert set(engine.drives.keys()) == expected_names
         for drive in engine.drives.values():
             assert isinstance(drive, CreativeDrive)
-            assert drive.intensity == 0.0
+            # She wakes wanting something — not a flatline of zeros
+            assert 0.0 < drive.intensity <= 1.0
 
     def test_drive_intensity_update(self, engine):
         """Drive intensities increase after simulating time passage."""
@@ -152,6 +154,7 @@ class TestDesireEngine:
             mood_system=None,
             memory_system=None,
             learner=None,
+            persist=False,
         )
         desire = engine.get_strongest_desire()
         assert isinstance(desire, CreativeDesire)
@@ -176,6 +179,7 @@ class TestDesireEngine:
             mood_system=mood_sys,
             memory_system=create_mock_memory(),
             learner=create_mock_learner(),
+            persist=False,
         )
         desire = engine._evaluate_emotional_drive()
         assert desire is not None
@@ -193,6 +197,7 @@ class TestNoveltyScoring:
             mood_system=create_mock_mood_system(),
             memory_system=create_mock_memory(),
             learner=create_mock_learner(),
+            persist=False,
         )
 
     def test_novelty_penalty_zero_for_new_items(self, engine):

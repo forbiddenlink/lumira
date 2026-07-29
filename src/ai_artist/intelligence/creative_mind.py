@@ -182,14 +182,23 @@ class CreativeMind:
 
         if self.has_llm:
             try:
-                return await self._llm_user_request(context)
+                intent = await self._llm_user_request(context)
             except Exception as e:
                 logger.warning(
                     "llm_user_request_failed", error=str(e), fallback="direct"
                 )
-                return self._fallback_user_request(context)
+                intent = self._fallback_user_request(context)
         else:
-            return self._fallback_user_request(context)
+            intent = self._fallback_user_request(context)
+
+        # Commissioned work still satisfies a drive — she's choosing how to answer
+        desire = self.desire_engine.get_strongest_desire()
+        self.desire_engine.satisfy_drive(
+            desire.drive_name,
+            subject=intent.subject,
+            style=intent.style,
+        )
+        return intent
 
     async def reflect_on_creation(
         self,
@@ -419,6 +428,16 @@ class CreativeMind:
         # Additional context
         if context.get("theme"):
             parts.append(f"\nSUGGESTED THEME: {context['theme']}")
+        if context.get("seed_subject"):
+            parts.append(
+                f"\nINNER COUNCIL SEED (honor this pull unless it contradicts mood): "
+                f"subject '{context['seed_subject']}'"
+                + (
+                    f", style '{context['seed_style']}'"
+                    if context.get("seed_style")
+                    else ""
+                )
+            )
 
         return "\n".join(parts)
 
@@ -610,28 +629,37 @@ class CreativeMind:
                 "colors": ["vibrant colors"],
             }
 
-        # Subject selection: 40% desire-driven, 30% affinity-weighted, 15% legacy mood, 15% exploratory
-        desire = self.desire_engine.get_strongest_desire()
-        roll = random.random()
-        if roll < 0.40 and desire.subject_suggestion:
-            subject = desire.subject_suggestion
-        elif roll < 0.70 and affinity_subjects:
-            subject = random.choice(affinity_subjects)
-        elif roll < 0.85 and mood_influences.get("subjects"):
-            subject = random.choice(mood_influences["subjects"])
+        # Subject selection: honor deep-deliberation seed when present
+        if context.get("seed_subject"):
+            subject = str(context["seed_subject"])
         else:
-            subject = random.choice(autonomous.subjects)
+            # Subject selection: 40% desire-driven, 30% affinity-weighted, 15% legacy mood, 15% exploratory
+            desire = self.desire_engine.get_strongest_desire()
+            roll = random.random()
+            if roll < 0.40 and desire.subject_suggestion:
+                subject = desire.subject_suggestion
+            elif roll < 0.70 and affinity_subjects:
+                subject = random.choice(affinity_subjects)
+            elif roll < 0.85 and mood_influences.get("subjects"):
+                subject = random.choice(mood_influences["subjects"])
+            else:
+                subject = random.choice(autonomous.subjects)
 
-        # Style selection: 35% desire-driven, 30% mood style prefs, 20% legacy mood, 15% exploratory
-        roll = random.random()
-        if roll < 0.35 and desire.style_suggestion:
-            style = desire.style_suggestion
-        elif roll < 0.65 and style_prefs["preferred_styles"]:
-            style = random.choice(style_prefs["preferred_styles"])
-        elif roll < 0.85 and mood_influences.get("styles"):
-            style = random.choice(mood_influences["styles"])
+        # Style selection: honor seed, else desire/mood blend
+        if context.get("seed_style"):
+            style = str(context["seed_style"])
         else:
-            style = random.choice(autonomous.styles)
+            desire = self.desire_engine.get_strongest_desire()
+            # Style selection: 35% desire-driven, 30% mood style prefs, 20% legacy mood, 15% exploratory
+            roll = random.random()
+            if roll < 0.35 and desire.style_suggestion:
+                style = desire.style_suggestion
+            elif roll < 0.65 and style_prefs["preferred_styles"]:
+                style = random.choice(style_prefs["preferred_styles"])
+            elif roll < 0.85 and mood_influences.get("styles"):
+                style = random.choice(mood_influences["styles"])
+            else:
+                style = random.choice(autonomous.styles)
 
         # Color: prefer mood palette
         colors = random.choice(color_palette["primary_colors"])
@@ -945,7 +973,11 @@ def get_creative_mind(
     memory_system=None,
     learner=None,
 ) -> CreativeMind:
-    """Get or create the global CreativeMind instance."""
+    """Get or create the global CreativeMind instance.
+
+    Late-binds mood/memory/learner so the first caller can't freeze her with
+    empty stubs — she stays one continuous creative mind.
+    """
     global _creative_mind
     if _creative_mind is None:
         _creative_mind = CreativeMind(
@@ -953,4 +985,20 @@ def get_creative_mind(
             memory_system=memory_system,
             learner=learner,
         )
+        return _creative_mind
+
+    if mood_system is not None:
+        _creative_mind.mood_system = mood_system
+        if getattr(_creative_mind, "desire_engine", None) is not None:
+            _creative_mind.desire_engine.mood_system = mood_system
+        if getattr(_creative_mind, "narrative_engine", None) is not None:
+            _creative_mind.narrative_engine.mood_system = mood_system
+    if memory_system is not None:
+        _creative_mind.memory_system = memory_system
+        if getattr(_creative_mind, "desire_engine", None) is not None:
+            _creative_mind.desire_engine.memory_system = memory_system
+    if learner is not None:
+        _creative_mind.learner = learner
+        if getattr(_creative_mind, "desire_engine", None) is not None:
+            _creative_mind.desire_engine.learner = learner
     return _creative_mind
