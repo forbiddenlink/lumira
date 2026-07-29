@@ -903,7 +903,16 @@ async def get_image_file(
         raise HTTPException(status_code=503, detail="Gallery not initialized")
 
     # Validate file extension (images + Magica multimodal assets)
-    allowed_extensions = {".png", ".jpg", ".jpeg", ".webp", ".mp3", ".mp4", ".wav", ".webm"}
+    allowed_extensions = {
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".webp",
+        ".mp3",
+        ".mp4",
+        ".wav",
+        ".webm",
+    }
     file_ext = Path(file_path).suffix.lower()
     if file_ext not in allowed_extensions:
         raise HTTPException(status_code=400, detail=ERROR_INVALID_FILE_TYPE)

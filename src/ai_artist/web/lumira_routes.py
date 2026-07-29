@@ -664,9 +664,7 @@ def _satisfy_creation_drive(
             learner=learner,
         )
         desire = desire_engine.get_strongest_desire()
-        desire_engine.satisfy_drive(
-            desire.drive_name, subject=subject, style=style
-        )
+        desire_engine.satisfy_drive(desire.drive_name, subject=subject, style=style)
     except Exception as e:
         logger.debug("satisfy_drive_failed", error=str(e))
 

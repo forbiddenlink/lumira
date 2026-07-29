@@ -465,9 +465,7 @@ class InnerDialogue:
         remember_meta: dict[str, Any] = {"mood": mood, "subject": subject}
         if self.rememberer is not None:
             try:
-                ctx = await self.rememberer.recall(
-                    mood=mood, theme=subject, limit=5
-                )
+                ctx = await self.rememberer.recall(mood=mood, theme=subject, limit=5)
                 spoken = self.rememberer.format_memory_message(ctx)
                 if spoken:
                     remember_msg = (
