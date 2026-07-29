@@ -833,6 +833,20 @@ class AIArtist:
                 },
             )
 
+            # Continuity with web studio — same being after CLI create
+            try:
+                from .personality.continuity import apply_cli_presence_after_creation
+
+                apply_cli_presence_after_creation(
+                    mood_system=self.mood_system,
+                    memory_system=self.enhanced_memory,
+                    subject=query or (theme or ""),
+                    style=extracted_style,
+                    score=float(best_score),
+                )
+            except Exception as presence_err:
+                logger.debug("cli_presence_failed", error=str(presence_err))
+
             # Store thinking session in memory for future reference
             self.thinking.store_in_memory()
 

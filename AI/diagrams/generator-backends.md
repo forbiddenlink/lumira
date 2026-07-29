@@ -41,5 +41,7 @@ flowchart TD
 
 `config.model.backend` (`local` \| `replicate` \| `magica`, added 2026-07-28, default
 `"local"`) selects the backend via `get_image_generator()` in `core/generator_factory.py`.
-Behavior-preserving: unset -> local, matching prior hardwired behavior at `main.py:127` and
-`worker.py:116`. `magica` requires `MAGICA_API_KEY`; see MAGICA_INTEGRATION.md.
+Studio/web create paths use `build_web_image_generator()` (2026-07-29): Magica-first when
+keys exist and backend is still `local`. Worker uses the factory directly. CLI
+`main.py` stays on local ImageGenerator. `magica` requires `MAGICA_API_KEY`; see
+MAGICA_INTEGRATION.md. Audio/video use `magica_media.py` (not the image factory).

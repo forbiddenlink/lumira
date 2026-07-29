@@ -35,11 +35,11 @@
       content="{{ request.url.scheme }}://{{ request.url.netloc }}/static/images/og-preview.png"
     />
 
-    <!-- Fonts -->
+    <!-- Fonts: Fraunces (display) + Figtree (UI) — atelier, not Inter/AI-default -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,560;0,9..144,700;1,9..144,400&display=swap"
       rel="stylesheet"
     />
 
@@ -57,29 +57,51 @@
 
     <style>
       :root {
-        --bg-dark: #0a0a0a;
-        --bg-panel: #141414;
-        --text-main: #e0e0e0;
-        --text-muted: #9a9a9a; /* Improved contrast: was #888888 */
-        --accent: #bb86fc;
-        --accent-glow: rgba(187, 134, 252, 0.2);
-        --accent-hover: #d4a8ff;
-        --border: #333;
-        --success: #00ff64;
-        --warning: #ffc800;
-        --danger: #ff3264;
-        --focus-ring: rgba(187, 134, 252, 0.5);
-        --xp-bar: linear-gradient(90deg, #bb86fc, #6c63ff);
+        color-scheme: dark;
+        /* Warm ink atelier — never pure black / Material purple */
+        --bg-dark: #12100e;
+        --bg-panel: #1a1714;
+        --bg-elevated: #221e1a;
+        --text-main: #ebe4d8;
+        --text-muted: #9a9084;
+        --text-faint: #6e665c;
+        --accent: #c4a574; /* gallery brass default */
+        --accent-soft: color-mix(in oklab, var(--accent) 22%, transparent);
+        --accent-glow: color-mix(in oklab, var(--accent) 28%, transparent);
+        --accent-hover: color-mix(in oklab, var(--accent) 82%, white);
+        --border: color-mix(in oklab, #ebe4d8 10%, transparent);
+        --border-strong: color-mix(in oklab, #ebe4d8 18%, transparent);
+        --success: #7dba8a;
+        --warning: #d4a84b;
+        --danger: #d4646a;
+        --focus-ring: color-mix(in oklab, var(--accent) 55%, transparent);
+        --xp-bar: linear-gradient(
+          90deg,
+          var(--accent),
+          color-mix(in oklab, var(--accent) 55%, #8b6914)
+        );
+        --mood-wash: color-mix(in oklab, var(--accent) 14%, transparent);
+        --font-display: "Fraunces", "Times New Roman", serif;
+        --font-ui: "Figtree", system-ui, sans-serif;
+        --radius-sm: 6px;
+        --radius-md: 10px;
+        --radius-lg: 16px;
+        --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
       }
 
       /* Light theme */
       [data-theme="light"] {
-        --bg-dark: #f5f5f5;
-        --bg-panel: #ffffff;
-        --text-main: #1a1a1a;
-        --text-muted: #666666;
-        --border: #e0e0e0;
-        --accent-glow: rgba(139, 92, 246, 0.15);
+        color-scheme: light;
+        --bg-dark: #f3efe8;
+        --bg-panel: #faf7f2;
+        --bg-elevated: #ffffff;
+        --text-main: #1c1916;
+        --text-muted: #6b635a;
+        --text-faint: #9a9084;
+        --border: color-mix(in oklab, #1c1916 12%, transparent);
+        --border-strong: color-mix(in oklab, #1c1916 20%, transparent);
+        --accent-glow: color-mix(in oklab, var(--accent) 18%, transparent);
+        --mood-wash: color-mix(in oklab, var(--accent) 10%, transparent);
       }
 
       /* High Contrast Mode */
@@ -153,91 +175,130 @@
       }
 
       body {
-        font-family: "Inter", sans-serif;
+        font-family: var(--font-ui);
         background-color: var(--bg-dark);
         color: var(--text-main);
         display: flex;
         height: 100vh;
         overflow: hidden;
+        position: relative;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+        background:
+          radial-gradient(
+            ellipse 80% 55% at 12% 18%,
+            var(--mood-wash),
+            transparent 62%
+          ),
+          radial-gradient(
+            ellipse 50% 40% at 88% 8%,
+            color-mix(in oklab, var(--accent) 6%, transparent),
+            transparent 55%
+          );
+        transition: background 1.2s var(--ease-out);
+      }
+
+      body > * {
+        position: relative;
+        z-index: 1;
       }
 
       /* === LEFT PANEL: THE MIND === */
       .mind-panel {
-        width: 420px;
-        background-color: var(--bg-panel);
+        width: min(360px, 34vw);
+        background-color: color-mix(in oklab, var(--bg-panel) 88%, transparent);
         border-right: 1px solid var(--border);
         display: flex;
         flex-direction: column;
-        padding: 2rem;
+        padding: clamp(1.25rem, 2vw, 1.75rem);
         z-index: 10;
-        box-shadow: 5px 0 30px rgba(0, 0, 0, 0.5);
+        box-shadow: none;
         overflow-y: auto;
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
       }
 
       header {
-        margin-bottom: 1.5rem;
+        margin-bottom: 1.25rem;
+        position: relative;
       }
 
       h1 {
-        font-family: "Space Mono", monospace;
-        font-size: 2rem;
+        font-family: var(--font-display);
+        font-size: clamp(1.75rem, 2.4vw, 2.15rem);
+        font-weight: 560;
         margin: 0;
-        letter-spacing: -1px;
-        background: linear-gradient(45deg, #fff, var(--accent));
-        background-clip: text;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        letter-spacing: -0.03em;
+        color: var(--text-main);
+        background: none;
+        -webkit-text-fill-color: unset;
+        text-wrap: balance;
       }
 
       .subtitle {
-        font-family: "Space Mono", monospace;
-        color: var(--text-muted);
-        font-size: 0.75rem;
+        font-family: var(--font-ui);
+        color: var(--text-faint);
+        font-size: 0.7rem;
+        font-weight: 500;
         text-transform: uppercase;
-        letter-spacing: 2px;
+        letter-spacing: 0.14em;
+        margin-top: 0.35rem;
       }
 
       /* Theme Toggle */
       .theme-toggle {
         position: absolute;
-        top: 2rem;
-        right: 2rem;
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid var(--border);
+        top: 0;
+        right: 0;
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-strong);
         border-radius: 50%;
-        width: 40px;
-        height: 40px;
+        width: 36px;
+        height: 36px;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.2rem;
-        transition: all 0.3s ease;
+        font-size: 1rem;
+        transition:
+          transform 0.2s var(--ease-out),
+          border-color 0.2s var(--ease-out);
       }
       .theme-toggle:hover {
-        background: rgba(255, 255, 255, 0.2);
-        transform: scale(1.1);
+        background: var(--bg-elevated);
+        transform: scale(1.05);
+        border-color: color-mix(in oklab, var(--accent) 40%, var(--border-strong));
       }
 
       /* Mood Orb */
       .mood-container {
         display: flex;
         align-items: center;
-        gap: 1.5rem;
-        background: rgba(255, 255, 255, 0.03);
-        padding: 1.25rem;
-        border-radius: 12px;
-        margin-bottom: 1.5rem;
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        gap: 1.15rem;
+        background: transparent;
+        padding: 0.85rem 0;
+        border-radius: 0;
+        margin-bottom: 1rem;
+        border: none;
+        border-bottom: 1px solid var(--border);
       }
 
       .orb {
-        width: 60px;
-        height: 60px;
+        width: 52px;
+        height: 52px;
         border-radius: 50%;
         background: var(--accent);
-        box-shadow: 0 0 30px var(--accent-glow);
-        transition: all 1s ease;
+        box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 35%, transparent),
+          0 12px 40px var(--accent-glow);
+        transition:
+          background-color 1s var(--ease-out),
+          box-shadow 1s var(--ease-out);
         position: relative;
         flex-shrink: 0;
       }
@@ -270,23 +331,27 @@
         flex: 1;
       }
       .mood-label {
-        font-size: 0.75rem;
-        color: var(--text-muted);
+        font-size: 0.68rem;
+        color: var(--text-faint);
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 0.12em;
+        font-weight: 600;
       }
       .mood-value {
-        font-size: 1.2rem;
-        font-weight: 600;
+        font-family: var(--font-display);
+        font-size: 1.35rem;
+        font-weight: 560;
+        letter-spacing: -0.02em;
         text-transform: capitalize;
+        color: var(--text-main);
       }
 
       /* Stats Grid */
       .stats-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 0.75rem;
-        margin-bottom: 1.5rem;
+        gap: 0.65rem;
+        margin-bottom: 0;
       }
 
       .stat-card {
@@ -484,19 +549,20 @@
       }
 
       button {
-        background: var(--text-main);
-        color: #000;
+        background: var(--accent);
+        color: #1a1510;
         border: none;
         padding: 0.875rem 1.25rem;
-        border-radius: 8px;
-        font-family: "Space Mono", monospace;
+        border-radius: var(--radius-md);
+        font-family: var(--font-ui);
         font-weight: 700;
         font-size: 0.8rem;
         cursor: pointer;
         transition:
-          transform 0.15s ease,
+          transform 0.2s var(--ease-out),
           opacity 0.2s,
-          box-shadow 0.2s;
+          box-shadow 0.2s var(--ease-out),
+          background-color 0.2s var(--ease-out);
         flex: 1;
         position: relative;
         overflow: hidden;
@@ -786,46 +852,52 @@
       .art-card {
         break-inside: avoid;
         margin-bottom: 1.5rem;
-        background: var(--bg-panel);
-        border-radius: 12px;
+        background: transparent;
+        border-radius: var(--radius-sm);
         overflow: hidden;
-        transition: transform 0.3s ease;
+        transition:
+          transform 0.35s var(--ease-out),
+          opacity 0.35s var(--ease-out);
         cursor: pointer;
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        border: none;
       }
 
       .art-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        border-color: rgba(255, 255, 255, 0.2);
+        transform: translateY(-3px);
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+        border-color: transparent;
       }
 
       .art-img {
         width: 100%;
         display: block;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        border-bottom: none;
+        border-radius: var(--radius-sm);
       }
 
       .art-info {
-        padding: 1rem;
+        padding: 0.85rem 0.15rem 0.25rem;
       }
 
       .art-title {
-        font-family: "Space Mono", monospace;
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        margin-bottom: 0.4rem;
+        font-family: var(--font-ui);
+        font-size: 0.68rem;
+        font-weight: 600;
+        color: var(--text-faint);
+        margin-bottom: 0.35rem;
         text-transform: uppercase;
+        letter-spacing: 0.1em;
       }
 
       .art-prompt {
-        font-size: 0.85rem;
-        color: #ddd;
+        font-size: 0.88rem;
+        color: var(--text-muted);
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.65rem;
+        line-height: 1.45;
       }
 
       .tags {
@@ -1292,6 +1364,63 @@
         color: var(--text-main);
       }
 
+      /* Thematic series panel */
+      .series-panel {
+        margin-top: 0.75rem;
+        max-height: 140px;
+        overflow-y: auto;
+        margin-bottom: 0.5rem;
+      }
+      .series-card {
+        border-left: 2px solid rgba(187, 134, 252, 0.45);
+        padding: 0.55rem 0.65rem;
+        margin-bottom: 0.55rem;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 0 8px 8px 0;
+      }
+      .series-card:last-child {
+        margin-bottom: 0;
+      }
+      .series-title {
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 0.9rem;
+        color: var(--text-main);
+        margin-bottom: 0.2rem;
+      }
+      .series-meta {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        margin-bottom: 0.35rem;
+      }
+      .series-progress {
+        height: 3px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 2px;
+        overflow: hidden;
+        margin-bottom: 0.35rem;
+      }
+      .series-progress > span {
+        display: block;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          var(--accent),
+          color-mix(in oklab, var(--accent) 55%, #8b6914)
+        );
+      }
+      .series-threads {
+        font-size: 0.78rem;
+        color: var(--text-secondary, var(--text-muted));
+        line-height: 1.35;
+      }
+      .series-empty {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        padding: 0.4rem 0;
+      }
+
       /* Explore modal */
       .explore-modal {
         display: none;
@@ -1663,29 +1792,33 @@
       }
 
       .request-section {
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 14px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid var(--border);
+        border-radius: 0;
+        padding: 0 0 1.75rem;
+        margin-bottom: 1.75rem;
       }
 
       .request-header {
         margin-bottom: 1.25rem;
       }
       .request-header h2 {
-        font-family: "Space Mono", monospace;
-        font-size: 1rem;
-        margin: 0 0 0.3rem 0;
-        background: linear-gradient(45deg, var(--accent), #6c63ff);
-        background-clip: text;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        font-family: var(--font-display);
+        font-size: clamp(1.35rem, 2vw, 1.7rem);
+        font-weight: 560;
+        letter-spacing: -0.02em;
+        margin: 0 0 0.4rem 0;
+        color: var(--text-main);
+        background: none;
+        -webkit-text-fill-color: unset;
+        text-wrap: balance;
       }
       .request-header .request-subtitle {
-        font-size: 0.75rem;
+        font-size: 0.9rem;
         color: var(--text-muted);
-        line-height: 1.4;
+        line-height: 1.5;
+        max-width: 42ch;
       }
 
       .request-field {
@@ -1693,35 +1826,38 @@
       }
       .request-field label {
         display: block;
-        font-size: 0.65rem;
-        color: var(--text-muted);
+        font-size: 0.68rem;
+        color: var(--text-faint);
         text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 0.4rem;
-        font-family: "Space Mono", monospace;
+        letter-spacing: 0.12em;
+        margin-bottom: 0.45rem;
+        font-family: var(--font-ui);
+        font-weight: 600;
       }
 
       .request-textarea {
         width: 100%;
-        min-height: 80px;
-        padding: 0.75rem;
-        background: rgba(0, 0, 0, 0.3);
-        border: 1px solid var(--border);
-        border-radius: 8px;
+        min-height: 96px;
+        padding: 0.9rem 1rem;
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-strong);
+        border-radius: var(--radius-md);
         color: var(--text-main);
-        font-family: "Inter", sans-serif;
-        font-size: 0.85rem;
+        font-family: var(--font-ui);
+        font-size: 1rem;
+        line-height: 1.5;
         resize: vertical;
-        transition: border-color 0.2s;
+        transition:
+          border-color 0.2s var(--ease-out),
+          box-shadow 0.2s var(--ease-out);
       }
       .request-textarea:focus {
         outline: none;
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px var(--focus-ring);
+        border-color: color-mix(in oklab, var(--accent) 55%, var(--border-strong));
+        box-shadow: 0 0 0 3px var(--accent-soft);
       }
       .request-textarea::placeholder {
-        color: var(--text-muted);
-        opacity: 0.6;
+        color: var(--text-faint);
       }
 
       /* Prompt Suggestion Panel */
@@ -1819,7 +1955,7 @@
         border: 1px solid var(--border);
         border-radius: 8px;
         color: var(--text-main);
-        font-family: "Inter", sans-serif;
+        font-family: var(--font-ui);
         font-size: 0.8rem;
         cursor: pointer;
         transition: border-color 0.2s;
@@ -1896,23 +2032,26 @@
         margin-top: 0.5rem;
       }
       .btn-request {
-        background: linear-gradient(135deg, var(--accent), #6c63ff);
-        color: #fff;
+        background: var(--accent);
+        color: #1a1510;
         border: none;
-        padding: 0.75rem 1.25rem;
-        border-radius: 8px;
-        font-family: "Space Mono", monospace;
+        padding: 0.85rem 1.35rem;
+        border-radius: var(--radius-md);
+        font-family: var(--font-ui);
         font-weight: 700;
-        font-size: 0.8rem;
+        font-size: 0.85rem;
+        letter-spacing: 0.02em;
         cursor: pointer;
         flex: 1;
         transition:
-          transform 0.15s,
-          box-shadow 0.2s;
+          transform 0.2s var(--ease-out),
+          background-color 0.2s var(--ease-out),
+          box-shadow 0.2s var(--ease-out);
       }
       .btn-request:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 16px var(--accent-glow);
+        transform: translateY(-1px);
+        background: var(--accent-hover);
+        box-shadow: 0 8px 24px var(--accent-glow);
       }
       .btn-request:disabled {
         opacity: 0.5;
@@ -2043,27 +2182,22 @@
         pointer-events: none;
       }
       .loader-wordmark {
-        font-family: "Space Grotesk", "Inter", sans-serif;
-        font-size: 52px;
-        font-weight: 700;
-        letter-spacing: -2px;
-        background: linear-gradient(
-          135deg,
-          var(--accent) 0%,
-          #6c63ff 55%,
-          #d4a8ff 100%
-        );
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+        font-family: var(--font-display);
+        font-size: clamp(2.5rem, 6vw, 3.25rem);
+        font-weight: 560;
+        letter-spacing: -0.04em;
+        color: var(--text-main);
+        background: none;
+        -webkit-text-fill-color: unset;
         animation: loaderPulse 1.8s ease-in-out infinite;
       }
       .loader-sub {
-        font-size: 13px;
+        font-size: 0.75rem;
         color: var(--text-muted);
-        letter-spacing: 3px;
+        letter-spacing: 0.18em;
         text-transform: uppercase;
-        font-family: "Space Mono", monospace;
+        font-family: var(--font-ui);
+        font-weight: 500;
       }
       .loader-bar-wrap {
         width: 200px;
@@ -2074,7 +2208,11 @@
       }
       .loader-bar-fill {
         height: 100%;
-        background: linear-gradient(90deg, var(--accent), #6c63ff);
+        background: linear-gradient(
+          90deg,
+          var(--accent),
+          color-mix(in oklab, var(--accent) 55%, #8b6914)
+        );
         border-radius: 2px;
         animation: loaderFill 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
       }
@@ -2112,25 +2250,179 @@
         background: transparent;
       }
       ::-webkit-scrollbar-thumb {
-        background: linear-gradient(180deg, var(--accent), #6c63ff);
+        background: color-mix(in oklab, var(--accent) 70%, transparent);
         border-radius: 4px;
-      }
-      h1 {
-        font-family: "Space Grotesk", "Inter", sans-serif;
       }
       /* WebSocket status indicator */
       .ws-status {
-        width: 8px;
-        height: 8px;
+        width: 7px;
+        height: 7px;
         border-radius: 50%;
         display: inline-block;
-        transition: background 0.3s;
+        transition: background 0.3s var(--ease-out);
         vertical-align: middle;
         margin-left: 8px;
       }
-      .ws-status-connected { background: #3fb950; }
-      .ws-status-reconnecting { background: #d29922; animation: ws-pulse 1s infinite; }
-      .ws-status-disconnected { background: #f85149; }
+      .ws-status-connected { background: var(--success); }
+      .ws-status-reconnecting { background: var(--warning); animation: ws-pulse 1s infinite; }
+      .ws-status-disconnected { background: var(--danger); }
+
+      /* === Atelier instruments === */
+      .section-header {
+        font-family: var(--font-ui);
+        font-size: 0.68rem;
+        font-weight: 600;
+        color: var(--text-faint);
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        margin: 1.35rem 0 0.65rem;
+      }
+
+      .atelier-about {
+        margin: 0.85rem 0 0.25rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: color-mix(in oklab, var(--bg-elevated) 70%, transparent);
+      }
+      .atelier-about > summary {
+        list-style: none;
+        cursor: pointer;
+        padding: 0.75rem 0.9rem;
+        font-family: var(--font-ui);
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+      }
+      .atelier-about > summary::-webkit-details-marker { display: none; }
+      .atelier-about > summary::after {
+        content: "+";
+        color: var(--accent);
+        font-size: 1rem;
+        line-height: 1;
+      }
+      .atelier-about[open] > summary::after { content: "–"; }
+      .atelier-about > summary:hover { color: var(--text-main); }
+      .atelier-about-body {
+        padding: 0 0.9rem 0.95rem;
+        border-top: 1px solid var(--border);
+      }
+      .atelier-about .experience-section,
+      .atelier-about .personality-section {
+        margin-top: 0.85rem;
+      }
+      .atelier-about .stat-card {
+        background: transparent;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 0.65rem 0.7rem;
+      }
+
+      .atelier-tools {
+        margin-top: 0.75rem;
+      }
+      .atelier-tools summary {
+        list-style: none;
+        cursor: pointer;
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        padding: 0.35rem 0;
+      }
+      .atelier-tools summary::-webkit-details-marker { display: none; }
+      .atelier-tools[open] summary { color: var(--text-muted); }
+      .atelier-tools .controls {
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        margin-top: 0.5rem;
+      }
+
+      .dialogue-panel,
+      .series-panel,
+      .stream-container {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-md);
+        background: color-mix(in oklab, var(--bg-elevated) 55%, transparent);
+      }
+      .dialogue-panel { padding: 0.15rem 0; }
+      .series-panel { padding: 0.65rem 0.75rem; }
+      .series-card {
+        border-left-color: color-mix(in oklab, var(--accent) 55%, transparent);
+        background: transparent;
+      }
+      .series-title {
+        font-family: var(--font-display);
+        font-weight: 560;
+      }
+
+      .influence-btn {
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-strong);
+        background: transparent;
+      }
+      .influence-btn:hover {
+        border-color: color-mix(in oklab, var(--accent) 50%, var(--border-strong));
+        background: var(--accent-soft);
+        box-shadow: none;
+      }
+
+      .stream-container {
+        max-height: 120px;
+        overflow-y: auto;
+      }
+      .dialogue-panel {
+        max-height: 130px;
+      }
+      .mind-panel .controls {
+        margin-top: 1rem;
+        position: sticky;
+        bottom: 0;
+        padding-top: 0.75rem;
+        background: linear-gradient(
+          to top,
+          var(--bg-panel) 70%,
+          transparent
+        );
+      }
+
+      .gallery-panel {
+        flex: 1;
+        overflow-y: auto;
+        padding: clamp(1.25rem, 2.5vw, 2.25rem);
+        background: transparent;
+      }
+
+      .theme-toggle {
+        border-radius: 999px;
+        border: 1px solid var(--border-strong);
+        background: var(--bg-elevated);
+        transition:
+          transform 0.2s var(--ease-out),
+          border-color 0.2s var(--ease-out);
+      }
+      .theme-toggle:hover {
+        transform: scale(1.05);
+        border-color: color-mix(in oklab, var(--accent) 40%, var(--border-strong));
+      }
+
+      .btn-outline,
+      .btn-autonomous {
+        font-family: var(--font-ui);
+        border-radius: var(--radius-sm);
+      }
+
+      .tag {
+        border-radius: 999px;
+        background: color-mix(in oklab, var(--accent) 12%, transparent);
+        color: color-mix(in oklab, var(--accent) 75%, var(--text-main));
+      }
       @keyframes ws-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
     </style>
   </head>
@@ -2219,6 +2511,18 @@
               margin-top: 0.2rem;
             "
           ></div>
+          <div
+            id="feeling-text"
+            role="status"
+            aria-live="polite"
+            style="
+              font-size: 0.72rem;
+              color: var(--text-muted);
+              margin-top: 0.45rem;
+              line-height: 1.35;
+              max-width: 18rem;
+            "
+          ></div>
         </div>
       </div>
 
@@ -2228,7 +2532,7 @@
         role="group"
         aria-label="Influence Lumira's mood"
       >
-        <div class="influence-label">Influence Her Mood</div>
+        <div class="influence-label">Nudge her mood</div>
         <div class="influence-buttons">
           <button
             class="influence-btn"
@@ -2265,84 +2569,89 @@
         </div>
       </div>
 
-      <!-- Experience/Level Section -->
-      <div
-        class="experience-section"
-        role="status"
-        aria-label="Experience progress"
-      >
-        <div class="level-display">
-          <div id="level-badge" class="level-badge" aria-label="Current level">
-            L1
-          </div>
-          <div id="level-title" class="level-title">Novice Artist</div>
-        </div>
-        <div
-          class="xp-bar-container"
-          role="progressbar"
-          aria-valuenow="0"
-          aria-valuemin="0"
-          aria-valuemax="100"
-          aria-label="Experience progress"
-        >
-          <div id="xp-bar" class="xp-bar-fill" style="width: 0%"></div>
-        </div>
-        <div id="xp-text" class="xp-text">0 / 100 XP</div>
-
-        <!-- Style Axes -->
-        <div
-          id="style-axes-container"
-          class="style-axes"
-          role="group"
-          aria-label="Creative style axes"
-        >
-          <!-- Populated by JS -->
-        </div>
-      </div>
-
-      <!-- Stats -->
-      <div class="stats-grid" role="group" aria-label="Statistics">
-        <div class="stat-card">
-          <div class="stat-label" id="energy-label">Energy</div>
+      <details class="atelier-about">
+        <summary>About Lumira</summary>
+        <div class="atelier-about-body">
+          <!-- Experience/Level Section -->
           <div
-            id="energy-val"
-            class="stat-value"
-            aria-labelledby="energy-label"
+            class="experience-section"
+            role="status"
+            aria-label="Experience progress"
           >
-            --%
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label" id="creations-label">Creations</div>
-          <div
-            id="count-val"
-            class="stat-value"
-            aria-labelledby="creations-label"
-          >
-            --
-          </div>
-        </div>
-      </div>
+            <div class="level-display">
+              <div id="level-badge" class="level-badge" aria-label="Current level">
+                L1
+              </div>
+              <div id="level-title" class="level-title">Novice Artist</div>
+            </div>
+            <div
+              class="xp-bar-container"
+              role="progressbar"
+              aria-valuenow="0"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-label="Experience progress"
+            >
+              <div id="xp-bar" class="xp-bar-fill" style="width: 0%"></div>
+            </div>
+            <div id="xp-text" class="xp-text">0 / 100 XP</div>
 
-      <!-- Personality Traits (OCEAN) -->
-      <div
-        class="personality-section"
-        id="personality-section"
-        role="group"
-        aria-label="Personality traits"
-      >
-        <div class="section-header">Personality</div>
-        <div id="personality-traits" role="list">
-          <!-- Populated by JS -->
+            <!-- Style Axes -->
+            <div
+              id="style-axes-container"
+              class="style-axes"
+              role="group"
+              aria-label="Creative style axes"
+            >
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- Stats -->
+          <div class="stats-grid" role="group" aria-label="Statistics">
+            <div class="stat-card">
+              <div class="stat-label" id="energy-label">Energy</div>
+              <div
+                id="energy-val"
+                class="stat-value"
+                aria-labelledby="energy-label"
+              >
+                --%
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label" id="creations-label">Creations</div>
+              <div
+                id="count-val"
+                class="stat-value"
+                aria-labelledby="creations-label"
+              >
+                --
+              </div>
+            </div>
+          </div>
+
+          <!-- Personality Traits (OCEAN) -->
+          <div
+            class="personality-section"
+            id="personality-section"
+            role="group"
+            aria-label="Personality traits"
+          >
+            <div class="section-header">Personality</div>
+            <div id="personality-traits" role="list">
+              <!-- Populated by JS -->
+            </div>
+          </div>
         </div>
-      </div>
+      </details>
 
       <!-- Stream of Consciousness -->
       <div class="section-header">Stream of Consciousness</div>
       <div id="thought-stream" class="stream-container">
         <div class="log-entry">
           <div class="log-meta">SYSTEM</div>
-          <div class="log-content">Neural pathways initializing...</div>
+          <div class="log-content">Listening for the next impulse…</div>
         </div>
       </div>
 
@@ -2360,6 +2669,40 @@
         </div>
       </div>
 
+      <div class="section-header">What she wants</div>
+      <div
+        id="desire-pulse"
+        class="series-empty"
+        role="status"
+        aria-live="polite"
+        aria-label="Lumira creative drives"
+      >
+        Listening for an urge…
+      </div>
+
+      <div class="section-header">Artist statement</div>
+      <div
+        id="statement-pulse"
+        class="series-empty"
+        role="status"
+        aria-live="polite"
+        aria-label="Lumira artist statement"
+        style="white-space: pre-wrap; max-height: 7.5rem; overflow: auto;"
+      >
+        Listening for who she is becoming…
+      </div>
+
+      <div class="section-header">Thematic Series</div>
+      <div
+        id="series-panel"
+        class="series-panel"
+        role="region"
+        aria-live="polite"
+        aria-label="Lumira thematic series"
+      >
+        <div class="series-empty">Listening for an arc worth continuing…</div>
+      </div>
+
       <!-- Controls -->
       <nav class="controls" role="group" aria-label="Primary actions">
         <button
@@ -2367,7 +2710,7 @@
           onclick="triggerCreate()"
           aria-describedby="create-desc"
         >
-          CREATE
+          LET HER CREATE
         </button>
         <span id="create-desc" hidden
           >Trigger Lumira to create a new artwork</span
@@ -2381,55 +2724,57 @@
           ?
         </button>
       </nav>
-      <nav
-        class="controls"
-        style="margin-top: 0.75rem"
-        role="group"
-        aria-label="Secondary actions"
-      >
-        <button
-          class="btn-outline"
-          onclick="forceEvolve()"
-          aria-label="Evolve Lumira's state"
+      <details class="atelier-tools">
+        <summary>Studio tools</summary>
+        <nav
+          class="controls"
+          role="group"
+          aria-label="Secondary actions"
         >
-          EVOLVE
-        </button>
-        <button
-          class="btn-outline"
-          onclick="showEvolution()"
-          aria-label="View evolution timeline"
-        >
-          TIMELINE
-        </button>
-        <button
-          class="btn-outline"
-          onclick="showMoodGraph()"
-          aria-label="View mood evolution graph"
-        >
-          MOODS
-        </button>
-        <button
-          class="btn-outline"
-          onclick="showMemory()"
-          aria-label="View memory dashboard"
-        >
-          MEMORY
-        </button>
-        <button
-          class="btn-outline"
-          onclick="window.location.href = '/monitoring'"
-          aria-label="View monitoring dashboard"
-        >
-          MONITOR
-        </button>
-        <button
-          class="btn-outline"
-          onclick="window.location.href = '/'"
-          aria-label="Go back to gallery"
-        >
-          ← GALLERY
-        </button>
-      </nav>
+          <button
+            class="btn-outline"
+            onclick="forceEvolve()"
+            aria-label="Evolve Lumira's state"
+          >
+            Evolve
+          </button>
+          <button
+            class="btn-outline"
+            onclick="showEvolution()"
+            aria-label="View evolution timeline"
+          >
+            Timeline
+          </button>
+          <button
+            class="btn-outline"
+            onclick="showMoodGraph()"
+            aria-label="View mood evolution graph"
+          >
+            Moods
+          </button>
+          <button
+            class="btn-outline"
+            onclick="showMemory()"
+            aria-label="View memory dashboard"
+          >
+            Memory
+          </button>
+          <button
+            class="btn-outline"
+            onclick="window.location.href = '/monitoring'"
+            aria-label="View monitoring dashboard"
+          >
+            Monitor
+          </button>
+          <button
+            class="btn-outline"
+            onclick="window.location.href = '/'"
+            aria-label="Go back to gallery"
+          >
+            Gallery
+          </button>
+        </nav>
+      </details>
     </aside>
 
     <!-- RIGHT PANEL: GALLERY -->
@@ -2440,10 +2785,10 @@
         aria-label="Request a creation from Lumira"
       >
         <div class="request-header">
-          <h2>Request a Creation</h2>
+          <h2>Commission a piece</h2>
           <p class="request-subtitle">
-            Tell Lumira what you'd like, and she'll create it with her own
-            artistic touch
+            Offer a vision. Lumira will interpret it through her present mood
+            and taste.
           </p>
         </div>
 
@@ -2530,6 +2875,20 @@
             <div class="toggle-label">Lumira Style</div>
             <div class="toggle-desc">
               Apply Lumira's trained artistic style to the creation
+            </div>
+          </div>
+        </div>
+
+        <div class="request-toggle">
+          <input
+            type="checkbox"
+            id="request-soundtrack"
+            aria-label="Pair artwork with Magica instrumental soundtrack"
+          />
+          <div>
+            <div class="toggle-label">Soundtrack</div>
+            <div class="toggle-desc">
+              Pair the piece with a Magica instrumental (uses Magica credits)
             </div>
           </div>
         </div>
@@ -2882,6 +3241,7 @@
       }
 
       var _authRequired = false;
+      var _generationAvailable = true;
       var _pendingStudioGeneration = false;
 
       function lumiraApiHeaders(extra) {
@@ -2893,6 +3253,15 @@
         return headers;
       }
 
+      function ensureGenerationAvailable() {
+        if (_generationAvailable) return true;
+        addLog(
+          "SYSTEM",
+          "Generation is locked. Set LUMIRA_DEV_MODE=1 locally or configure RAILWAY_API_KEY.",
+        );
+        return false;
+      }
+
       function finishStudioCreationOverlay() {
         _pendingStudioGeneration = false;
         var overlay = document.getElementById("creating-overlay");
@@ -2902,19 +3271,45 @@
         stopProgressPreviewStudio();
       }
 
-      // Mood colors
+      // Mood colors — atelier pigments (not neon SaaS)
       const MOOD_COLORS = {
-        contemplative: "#7B8FA1",
-        energized: "#FFD93D",
-        melancholic: "#4B56D2",
-        chaotic: "#FF6B6B",
-        serene: "#A8D1D1",
-        restless: "#FF8E4F",
-        introspective: "#5F6F94",
-        rebellious: "#FF0032",
-        playful: "#F7A4A4",
-        bold: "#FFD700",
+        contemplative: "#8a9aab",
+        energized: "#d4a017",
+        melancholic: "#5c6a9a",
+        chaotic: "#c45c52",
+        serene: "#8fafa8",
+        restless: "#c47a48",
+        introspective: "#6f7a68",
+        rebellious: "#b8323a",
+        playful: "#c9898a",
+        bold: "#c4a574",
       };
+
+      function applyMoodAtmosphere(mood, color) {
+        var root = document.documentElement;
+        root.style.setProperty("--accent", color);
+        root.style.setProperty(
+          "--accent-soft",
+          "color-mix(in oklab, " + color + " 22%, transparent)",
+        );
+        root.style.setProperty(
+          "--accent-glow",
+          "color-mix(in oklab, " + color + " 28%, transparent)",
+        );
+        root.style.setProperty(
+          "--accent-hover",
+          "color-mix(in oklab, " + color + " 82%, white)",
+        );
+        root.style.setProperty(
+          "--focus-ring",
+          "color-mix(in oklab, " + color + " 55%, transparent)",
+        );
+        root.style.setProperty(
+          "--mood-wash",
+          "color-mix(in oklab, " + color + " 16%, transparent)",
+        );
+        root.dataset.mood = mood;
+      }
 
       function normalizeMood(value) {
         if (!value || typeof value !== "string") return "contemplative";
@@ -3208,6 +3603,9 @@
             finishStudioCreationOverlay();
             addLog("LUMIRA", "Generation complete");
             fetchState(true);
+            loadThematicSeries();
+            loadDesirePulse();
+            loadArtistStatement();
             break;
           case "generation_error":
             finishStudioCreationOverlay();
@@ -3278,12 +3676,18 @@
 
       function updateMoodDisplay(data) {
         var mood = normalizeMood(data.mood);
-        var color = MOOD_COLORS[mood] || "#bb86fc";
+        var color = MOOD_COLORS[mood] || "#c4a574";
+        applyMoodAtmosphere(mood, color);
 
         document.getElementById("mood-text").textContent = mood;
         var orb = document.getElementById("mood-orb");
         orb.style.backgroundColor = color;
-        orb.style.boxShadow = "0 0 30px " + color + "66";
+        orb.style.boxShadow =
+          "0 0 0 1px color-mix(in oklab, " +
+          color +
+          " 40%, transparent), 0 14px 36px color-mix(in oklab, " +
+          color +
+          " 32%, transparent)";
 
         if (data.energy !== undefined) {
           document.getElementById("energy-val").textContent =
@@ -3306,6 +3710,11 @@
             "% (" +
             intensityLabel +
             ")";
+        }
+
+        var feelingEl = document.getElementById("feeling-text");
+        if (feelingEl && data.feeling) {
+          feelingEl.textContent = data.feeling;
         }
 
         // Update intensity ring animation class
@@ -3691,6 +4100,7 @@
       }
 
       function triggerCreate() {
+        if (!ensureGenerationAvailable()) return;
         var btn = document.getElementById("create-btn");
         var overlay = document.getElementById("creating-overlay");
 
@@ -4868,6 +5278,15 @@
       function addDialogueTurn(voice, content) {
         var panel = document.getElementById("dialogue-panel");
         if (!panel || !content) return;
+        // Drop the idle placeholder once a real voice speaks
+        var placeholder = panel.querySelector(".dialogue-turn .dialogue-voice");
+        if (
+          placeholder &&
+          placeholder.textContent === "SYSTEM" &&
+          panel.children.length === 1
+        ) {
+          panel.textContent = "";
+        }
         var turn = document.createElement("div");
         turn.className = "dialogue-turn";
         var voiceEl = document.createElement("div");
@@ -4896,6 +5315,129 @@
             data.turns.slice(-10).reverse().forEach(function (turn) {
               addDialogueTurn(turn.voice, turn.content);
             });
+          })
+          .catch(function () {});
+      }
+
+      function renderSeriesPanel(data) {
+        var panel = document.getElementById("series-panel");
+        if (!panel) return;
+        panel.textContent = "";
+        var active = (data && data.active) || [];
+        if (!active.length) {
+          var empty = document.createElement("div");
+          empty.className = "series-empty";
+          empty.textContent =
+            "No active series yet — create something that wants a sequel.";
+          panel.appendChild(empty);
+          if (data && (data.completed_count || data.abandoned_count)) {
+            var stats = document.createElement("div");
+            stats.className = "series-empty";
+            stats.textContent =
+              (data.completed_count || 0) +
+              " completed · " +
+              (data.abandoned_count || 0) +
+              " abandoned";
+            panel.appendChild(stats);
+          }
+          return;
+        }
+        active.forEach(function (series) {
+          var card = document.createElement("div");
+          card.className = "series-card";
+          var title = document.createElement("div");
+          title.className = "series-title";
+          title.textContent = series.title || series.theme || "Untitled series";
+          var meta = document.createElement("div");
+          meta.className = "series-meta";
+          meta.textContent = (series.theme || "theme") + " · in progress";
+          var progressWrap = document.createElement("div");
+          progressWrap.className = "series-progress";
+          var bar = document.createElement("span");
+          var pct = 0;
+          var progressRaw = series.progress;
+          if (typeof progressRaw === "number") {
+            pct = progressRaw <= 1 ? progressRaw * 100 : progressRaw;
+          } else if (typeof progressRaw === "string" && progressRaw.indexOf("/") >= 0) {
+            var parts = progressRaw.split("/");
+            var done = parseFloat(parts[0]);
+            var total = parseFloat(parts[1]);
+            if (total > 0) pct = (done / total) * 100;
+          }
+          pct = Math.max(0, Math.min(100, Math.round(pct)));
+          bar.style.width = pct + "%";
+          progressWrap.appendChild(bar);
+          var threads = document.createElement("div");
+          threads.className = "series-threads";
+          var threadList = series.visual_threads || [];
+          threads.textContent = threadList.length
+            ? threadList.slice(0, 3).join(" · ")
+            : (progressRaw || pct + "%") + " complete";
+          card.appendChild(title);
+          card.appendChild(meta);
+          card.appendChild(progressWrap);
+          card.appendChild(threads);
+          panel.appendChild(card);
+        });
+      }
+
+      function loadThematicSeries() {
+        fetch("/api/lumira/series")
+          .then(function (res) {
+            return res.json();
+          })
+          .then(renderSeriesPanel)
+          .catch(function () {});
+      }
+
+      function loadDesirePulse() {
+        fetch("/api/lumira/autonomy-status")
+          .then(function (res) {
+            return res.json();
+          })
+          .then(function (data) {
+            var el = document.getElementById("desire-pulse");
+            if (!el) return;
+            var drives = data.drives || {};
+            var ranked = Object.keys(drives)
+              .map(function (name) {
+                return {
+                  name: name,
+                  intensity: (drives[name] && drives[name].intensity) || 0,
+                };
+              })
+              .sort(function (a, b) {
+                return b.intensity - a.intensity;
+              });
+            if (!ranked.length) {
+              el.textContent = "Quiet for now — urges will build.";
+              return;
+            }
+            var top = ranked[0];
+            var label = top.name.replace(/_/g, " ");
+            var pct = Math.round(top.intensity * 100);
+            var second =
+              ranked[1] && ranked[1].intensity > 0.15
+                ? " · also " + ranked[1].name.replace(/_/g, " ")
+                : "";
+            el.textContent =
+              "Pulling toward " + label + " (" + pct + "%)" + second;
+          })
+          .catch(function () {});
+      }
+
+      function loadArtistStatement() {
+        fetch("/api/lumira/statement")
+          .then(function (res) {
+            return res.json();
+          })
+          .then(function (data) {
+            var el = document.getElementById("statement-pulse");
+            if (!el) return;
+            var text = (data && data.statement) || "";
+            el.textContent = text
+              ? text.slice(0, 420) + (text.length > 420 ? "…" : "")
+              : "Still finding the words.";
           })
           .catch(function () {});
       }
@@ -5078,6 +5620,7 @@
 
       // === USER CREATION REQUEST ===
       function submitCreationRequest() {
+        if (!ensureGenerationAvailable()) return;
         var promptEl = document.getElementById("request-prompt");
         var prompt = promptEl.value.trim();
         if (!prompt) {
@@ -5090,6 +5633,7 @@
         var moodEl = document.getElementById("request-mood");
         var interpEl = document.getElementById("request-interpretation");
         var loraEl = document.getElementById("request-lora");
+        var soundtrackEl = document.getElementById("request-soundtrack");
         var btn = document.getElementById("request-create-btn");
         var resultEl = document.getElementById("request-result");
         var resultImg = document.getElementById("request-result-img");
@@ -5101,6 +5645,12 @@
 
         // Save LoRA preference
         localStorage.setItem("lumira-use-lora", loraEl.checked);
+        if (soundtrackEl) {
+          localStorage.setItem(
+            "lumira-with-soundtrack",
+            soundtrackEl.checked ? "true" : "false",
+          );
+        }
 
         var body = {
           prompt: prompt,
@@ -5108,6 +5658,7 @@
           mood: moodEl.value || null,
           allow_interpretation: interpEl.checked,
           use_lora: loraEl.checked,
+          with_soundtrack: !!(soundtrackEl && soundtrackEl.checked),
         };
 
         btn.disabled = true;
@@ -5232,6 +5783,11 @@
         if (loraEl && savedLora === "true") {
           loraEl.checked = true;
         }
+        const savedSoundtrack = localStorage.getItem("lumira-with-soundtrack");
+        const soundtrackEl = document.getElementById("request-soundtrack");
+        if (soundtrackEl && savedSoundtrack === "true") {
+          soundtrackEl.checked = true;
+        }
       }
 
       // === PROMPT SUGGESTION PANEL ===
@@ -5333,6 +5889,16 @@
           .then(function (res) { return res.json(); })
           .then(function (data) {
             _authRequired = !!data.auth_required;
+            _generationAvailable =
+              data.generation_available !== undefined
+                ? !!data.generation_available
+                : true;
+            if (!_generationAvailable) {
+              addLog(
+                "SYSTEM",
+                "I can think and remember, but creation is locked until auth is configured (LUMIRA_DEV_MODE=1 or RAILWAY_API_KEY).",
+              );
+            }
             if (_authRequired && !sessionStorage.getItem("lumira_api_key")) {
               var key = window.prompt("Enter API key for generation:");
               if (key) sessionStorage.setItem("lumira_api_key", key);
@@ -5341,10 +5907,16 @@
           .catch(function () {});
         fetchState(true);
         loadDialogueHistory();
+        loadThematicSeries();
+        loadDesirePulse();
+        loadArtistStatement();
         // wsConnection is initialized above, no manual connect needed
         setInterval(function () {
           fetchState(false);
         }, 10000);
+        setInterval(loadThematicSeries, 30000);
+        setInterval(loadDesirePulse, 20000);
+        setInterval(loadArtistStatement, 45000);
 
         // ===== AWWWARDS: Page loader =====
         (function () {

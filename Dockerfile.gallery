@@ -1,8 +1,9 @@
 # Lumira - Lightweight gallery + cloud-generation image (Railway/Vercel).
 # No local ML stack: the web app boots torch-free and image generation runs
-# via the cloud Replicate API. Much smaller/faster to build than the full
-# Dockerfile. Deps come from requirements-gallery.txt; the package itself is
-# installed with --no-deps so pyproject's torch stack is NOT pulled in.
+# via cloud APIs (Magica preferred when MAGICA_API_KEY is set, else Replicate).
+# Much smaller/faster to build than the full Dockerfile. Deps come from
+# requirements-gallery.txt; the package itself is installed with --no-deps so
+# pyproject's torch stack is NOT pulled in.
 
 # ============================================
 # Stage 1: Builder

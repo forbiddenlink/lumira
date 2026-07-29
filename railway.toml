@@ -20,7 +20,9 @@ restartPolicyMaxRetries = 3
 # - RAILWAY_API_KEY   -> enables fail-closed auth on generation/admin routes
 #                        (gallery browsing stays public). Without it those
 #                        routes return 503.
-# Optional:
-# - REPLICATE_API_TOKEN -> enables cloud image generation
+# Optional (cloud generation — Magica preferred, Replicate fallback):
+# - MAGICA_API_KEY        -> Magica/Galaxy AI multi-model image (+ audio/video APIs)
+# - REPLICATE_API_TOKEN   -> Replicate fallback + img2img/variations
+# - LUMIRA_AUTO_SOUNDTRACK=1 -> pair new artworks with Magica instrumentals
 # - ALLOWED_ORIGINS=https://<your-domain>  -> CORS/WebSocket allowlist
 # - UNSPLASH_ACCESS_KEY / UNSPLASH_SECRET_KEY -> stock-image features

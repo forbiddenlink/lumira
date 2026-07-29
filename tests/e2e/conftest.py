@@ -129,11 +129,24 @@ def server_process(test_port: int) -> Generator[None, None, None]:
     e2e_root = Path(tempfile.mkdtemp(prefix="lumira-e2e-"))
     _seed_e2e_runtime(e2e_root)
 
+    project_root = Path(__file__).resolve().parents[2]
+    # Share real config so Magica/local factory resolves like production studio
+    config_link = e2e_root / "config"
+    if not config_link.exists():
+        try:
+            config_link.symlink_to(project_root / "config", target_is_directory=True)
+        except OSError:
+            shutil.copytree(project_root / "config", config_link)
+
     # Set environment variables for test mode
     env = os.environ.copy()
     env["PORT"] = str(test_port)
     env["TESTING"] = "1"
+    env["LUMIRA_DEV_MODE"] = "1"
     env["WS_MAX_CONNECTIONS"] = "20"
+    env["PYTHONPATH"] = str(project_root / "src") + (
+        os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else ""
+    )
 
     # Start the server in an isolated cwd with minimal data files
     proc = subprocess.Popen(

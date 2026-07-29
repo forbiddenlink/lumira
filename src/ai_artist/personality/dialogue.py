@@ -11,6 +11,7 @@ This implements the "Reflection" agentic pattern with max 2-3 iterations.
 
 from collections.abc import Awaitable, Callable
 from datetime import datetime
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from ..utils.logging import get_logger
@@ -21,6 +22,8 @@ if TYPE_CHECKING:
     from .moods import MoodSystem
 
 logger = get_logger(__name__)
+
+_DEFAULT_DIALOGUE_PATH = Path("data/lumira_inner_dialogue.json")
 
 
 class InnerDialogue:
@@ -37,6 +40,7 @@ class InnerDialogue:
     """
 
     MAX_ITERATIONS = 2
+    MAX_PERSISTED_TURNS = 40
 
     def __init__(
         self,
@@ -46,6 +50,7 @@ class InnerDialogue:
         rememberer: Rememberer | None = None,
         mood_system: "MoodSystem | None" = None,
         on_turn: Callable[[DialogueTurn], Awaitable[None] | None] | None = None,
+        history_path: Path | str | None = _DEFAULT_DIALOGUE_PATH,
     ):
         """Initialize the inner dialogue.
 
@@ -56,6 +61,7 @@ class InnerDialogue:
             rememberer: The Rememberer voice for memory retrieval
             mood_system: Reference to mood system for state
             on_turn: Async callback for each dialogue turn
+            history_path: Optional path to persist recent turns across restarts
         """
         self.dreamer = dreamer or Dreamer()
         self.critic = critic
@@ -63,11 +69,16 @@ class InnerDialogue:
         self.rememberer = rememberer or Rememberer()
         self.mood_system = mood_system
         self.on_turn = on_turn
+        self.history_path = Path(history_path) if history_path else None
 
-        # Dialogue history for current session
+        # Dialogue history for current session (rehydrated from disk when possible)
         self.history: list[DialogueTurn] = []
+        self._load_history()
 
-        logger.info("inner_dialogue_initialized")
+        logger.info(
+            "inner_dialogue_initialized",
+            restored_turns=len(self.history),
+        )
 
     async def _broadcast(
         self,
@@ -104,16 +115,78 @@ class InnerDialogue:
             except Exception as e:
                 logger.warning("dialogue_broadcast_failed", error=str(e))
 
+        self._persist_history()
+
+    def _load_history(self) -> None:
+        """Restore recent turns so her inner life survives restarts."""
+        if not self.history_path or not self.history_path.exists():
+            return
+        try:
+            import json
+
+            payload = json.loads(self.history_path.read_text())
+            turns = payload.get("turns", []) if isinstance(payload, dict) else payload
+            restored: list[DialogueTurn] = []
+            for item in turns[-self.MAX_PERSISTED_TURNS :]:
+                try:
+                    voice = Voice(item.get("voice", "dreamer"))
+                except ValueError:
+                    voice = Voice.DREAMER
+                ts_raw = item.get("timestamp")
+                try:
+                    ts = (
+                        datetime.fromisoformat(ts_raw)
+                        if isinstance(ts_raw, str)
+                        else datetime.now()
+                    )
+                except (TypeError, ValueError):
+                    ts = datetime.now()
+                restored.append(
+                    DialogueTurn(
+                        voice=voice,
+                        message=str(item.get("message") or item.get("content") or ""),
+                        timestamp=ts,
+                        metadata=item.get("metadata") or {},
+                    )
+                )
+            self.history = [t for t in restored if t.message]
+        except Exception as e:
+            logger.warning("dialogue_history_load_failed", error=str(e))
+
+    def _persist_history(self) -> None:
+        """Write the last N turns to disk for continuity."""
+        if not self.history_path:
+            return
+        try:
+            import json
+
+            self.history_path.parent.mkdir(parents=True, exist_ok=True)
+            payload = {
+                "turns": [
+                    t.to_dict() for t in self.history[-self.MAX_PERSISTED_TURNS :]
+                ],
+                "saved_at": datetime.now().isoformat(),
+            }
+            tmp = self.history_path.with_suffix(".tmp")
+            tmp.write_text(json.dumps(payload, indent=2))
+            tmp.replace(self.history_path)
+        except Exception as e:
+            logger.debug("dialogue_history_persist_failed", error=str(e))
+
     async def deliberate(
         self,
         theme: str | None = None,
         mood: str | None = None,
+        *,
+        clear_history: bool = False,
     ) -> Concept:
         """Run the full inner dialogue to develop a concept.
 
         Args:
             theme: Optional theme suggestion
             mood: Current mood (uses mood_system if not provided)
+            clear_history: If True, wipe prior turns (preview/CLI). Default False
+                so continuous studio presence keeps her inner thread.
 
         Returns:
             The approved concept after deliberation
@@ -123,10 +196,15 @@ class InnerDialogue:
             mood = self.mood_system.current_mood.value
         mood = mood or "contemplative"
 
-        logger.info("dialogue_started", mood=mood, theme=theme)
+        logger.info(
+            "dialogue_started",
+            mood=mood,
+            theme=theme,
+            clear_history=clear_history,
+        )
 
-        # Clear history for new session
-        self.history = []
+        if clear_history:
+            self.history = []
 
         # 1. The Rememberer provides context
         context = await self.rememberer.recall(mood=mood, theme=theme)
@@ -355,6 +433,113 @@ class InnerDialogue:
             List of turn dictionaries
         """
         return [turn.to_dict() for turn in self.history]
+
+    # Alias used by AIArtist / older call sites
+    def get_history(self) -> list[dict[str, Any]]:
+        """Alias for :meth:`get_dialogue_history`."""
+        return self.get_dialogue_history()
+
+    async def reflect_on_intent(
+        self,
+        *,
+        subject: str,
+        style: str,
+        mood: str,
+        reasoning: str = "",
+        artistic_goals: list[str] | None = None,
+    ) -> None:
+        """Narrate an already-chosen creative intent through her inner voices.
+
+        Uses Rememberer + Critic when wired (memory-backed), otherwise a compact
+        four-voice beat so the studio still shows continuous presence.
+        """
+        mood = mood or "contemplative"
+        goals = ", ".join((artistic_goals or [])[:3]) or "honest feeling"
+        why = (reasoning or "Something in this mood wants form.").strip()
+
+        # --- Rememberer (memory-backed when possible) ---
+        remember_msg = (
+            f"Holding {mood} close. Recent threads pull toward '{subject}' — "
+            f"I won't pretend this arrived from nowhere."
+        )
+        remember_meta: dict[str, Any] = {"mood": mood, "subject": subject}
+        if self.rememberer is not None:
+            try:
+                ctx = await self.rememberer.recall(
+                    mood=mood, theme=subject, limit=5
+                )
+                spoken = self.rememberer.format_memory_message(ctx)
+                if spoken:
+                    remember_msg = (
+                        f"{spoken} Now '{subject}' wants attention in this "
+                        f"{mood} state."
+                    )
+                remember_meta["from_memory"] = True
+                remember_meta["recent_subjects"] = list(
+                    getattr(ctx, "recent_subjects", []) or []
+                )[:5]
+            except Exception as e:
+                logger.debug("reflect_rememberer_failed", error=str(e))
+
+        await self._broadcast(Voice.REMEMBERER, remember_msg, metadata=remember_meta)
+
+        await self._broadcast(
+            Voice.DREAMER,
+            f"What if we meet '{subject}' through {style}? {why}",
+            metadata={"subject": subject, "style": style},
+        )
+        await self._broadcast(
+            Voice.CURATOR,
+            f"Does it belong with the rest of me? Yes — if we keep {goals} "
+            f"as the quiet through-line.",
+            metadata={"subject": subject, "goals": artistic_goals or []},
+        )
+
+        # --- Critic (real ArtistCritic when wired) ---
+        critic_msg = (
+            f"Approved, with care. Make '{subject}' feel inevitable for a "
+            f"{mood} state — no empty spectacle."
+        )
+        critic_meta: dict[str, Any] = {
+            "approved": True,
+            "subject": subject,
+            "mood": mood,
+        }
+        if self.critic is not None:
+            try:
+                energy = 0.5
+                if self.mood_system is not None:
+                    energy = float(getattr(self.mood_system, "energy_level", 0.5))
+                recent = remember_meta.get("recent_subjects") or []
+                result = self.critic.critique_concept(
+                    {
+                        "subject": subject,
+                        "style": style,
+                        "mood": mood,
+                        "complexity": 0.55,
+                    },
+                    {
+                        "mood": mood,
+                        "energy": energy,
+                        "recent_subjects": recent,
+                    },
+                )
+                critique = (result.get("critique") or "").strip()
+                if critique:
+                    critic_msg = critique
+                critic_meta["approved"] = bool(result.get("approved", True))
+                critic_meta["confidence"] = result.get("confidence")
+                critic_meta["from_critic"] = True
+                suggestions = result.get("suggestions") or []
+                if suggestions:
+                    critic_msg = (
+                        f"{critic_msg} "
+                        f"Hold onto: {'; '.join(str(s) for s in suggestions[:2])}."
+                    )
+            except Exception as e:
+                logger.debug("reflect_critic_failed", error=str(e))
+
+        await self._broadcast(Voice.CRITIC, critic_msg, metadata=critic_meta)
 
     def clear_history(self) -> None:
         """Clear dialogue history for new session."""

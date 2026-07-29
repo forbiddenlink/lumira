@@ -44,6 +44,82 @@ logger = get_logger(__name__)
 _background_tasks: set[asyncio.Task] = set()
 
 
+def _web_dtype(config: Any) -> Any:
+    """Resolve torch dtype for local backends; remote backends ignore it."""
+    try:
+        import torch
+
+        return torch.float32 if config.model.dtype == "float32" else torch.float16
+    except ImportError:  # torch-free gallery deploy
+        return None
+
+
+def _build_studio_generator(
+    config: Any, *, mood: str | None = None, require_img2img: bool = False
+) -> tuple[str, Any]:
+    """Construct the studio image generator via the shared backend factory."""
+    from ..core.generator_factory import build_web_image_generator
+
+    return build_web_image_generator(
+        config,
+        mood=mood,
+        dtype=_web_dtype(config),
+        require_img2img=require_img2img,
+    )
+
+
+def _maybe_pair_soundtrack(
+    *,
+    prompt: str,
+    mood: str | None,
+    image_path: Path,
+    metadata: dict[str, Any],
+    enabled: bool,
+) -> Path | None:
+    """Optionally generate a Magica soundtrack next to a new artwork.
+
+    Opt-in via request flag or ``LUMIRA_AUTO_SOUNDTRACK=1``. Failures are logged
+    and swallowed so image creation still succeeds.
+    """
+    import os
+
+    if not enabled and os.getenv("LUMIRA_AUTO_SOUNDTRACK", "").strip() not in {
+        "1",
+        "true",
+        "yes",
+    }:
+        return None
+    if not os.environ.get("MAGICA_API_KEY"):
+        return None
+    try:
+        from ..core.magica_media import MagicaAudioGenerator
+
+        audio_prompt = (
+            f"Instrumental soundtrack for an artwork: {prompt[:200]}. "
+            f"Mood: {mood or 'contemplative'}."
+        )
+        path = MagicaAudioGenerator().generate_audio(
+            audio_prompt,
+            duration_seconds=30,
+            mood=mood,
+            gallery_root="gallery",
+        )
+        meta = metadata.setdefault("metadata", {})
+        meta["soundtrack"] = str(path)
+        try:
+            rel = path.relative_to(Path("gallery"))
+            meta["soundtrack_url"] = f"/api/images/file/{rel.as_posix()}"
+        except ValueError:
+            meta["soundtrack_url"] = str(path)
+        sidecar = image_path.with_suffix(".json")
+        sidecar.write_text(json.dumps(metadata, indent=2))
+        logger.info("soundtrack_paired", image=str(image_path), audio=str(path))
+        return path
+    except Exception as e:
+        logger.warning("soundtrack_pairing_failed", error=str(e))
+        return None
+
+
 async def _guard_generation(coro: Any) -> Any:
     """Run a generation coroutine under the process-wide concurrency cap."""
     async with generation_semaphore:
@@ -160,6 +236,10 @@ class UserCreationRequest(BaseModel):
     use_lora: bool = Field(
         default=False,
         description="Apply Lumira's trained style LoRA",
+    )
+    with_soundtrack: bool = Field(
+        default=False,
+        description="Pair the artwork with a Magica-generated instrumental soundtrack",
     )
 
 
@@ -398,6 +478,8 @@ REFERENCE_IMAGES_PATH = Path("gallery/references")
 
 # Personality persistence file — survives server restarts
 _PERSONALITY_FILE = Path("data/lumira_personality.json")
+# Mood continuity — same emotional being across restarts
+_MOOD_STATE_FILE = Path("data/lumira_mood_state.json")
 
 # Default OCEAN trait ranges for Lumira's character archetype
 _DEFAULT_OCEAN_RANGES = {
@@ -446,20 +528,164 @@ def _save_personality(traits: dict[str, float]) -> None:
         logger.warning("personality_save_failed", error=str(e))
 
 
+def _load_mood_system() -> MoodSystem:
+    """Restore last mood so she doesn't reboot as a different emotional being."""
+    if _MOOD_STATE_FILE.exists():
+        try:
+            data = json.loads(_MOOD_STATE_FILE.read_text())
+            system = MoodSystem.from_dict(data)
+            logger.info(
+                "mood_state_loaded",
+                mood=system.current_mood.value,
+                source=str(_MOOD_STATE_FILE),
+            )
+            return system
+        except Exception as e:
+            logger.warning("mood_state_load_failed", error=str(e))
+    return MoodSystem()
+
+
+def _save_mood_system(mood_system: MoodSystem) -> None:
+    """Persist current mood/energy so the next process continues as her."""
+    try:
+        _MOOD_STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        tmp = _MOOD_STATE_FILE.with_suffix(".tmp")
+        tmp.write_text(json.dumps(mood_system.to_dict(), indent=2))
+        tmp.replace(_MOOD_STATE_FILE)
+    except Exception as e:
+        logger.warning("mood_state_save_failed", error=str(e))
+
+
+async def _broadcast_presence_after_creation(
+    *,
+    session_id: str,
+    mood_system: MoodSystem,
+    prompt: str,
+    image_url: str,
+) -> None:
+    """After a piece lands: mood drifts, persists, and clients feel the shift."""
+    from ..web.websocket import manager as ws_manager
+
+    mood_system.update_mood()
+    _save_mood_system(mood_system)
+    new_mood = mood_system.current_mood.value
+    intensity = float(getattr(mood_system, "mood_intensity", 0.7))
+    try:
+        await ws_manager.broadcast_mood_drift(
+            mood=new_mood,
+            intensity=intensity,
+            reason="creation",
+        )
+    except Exception as e:
+        logger.debug("mood_drift_broadcast_failed", error=str(e))
+
+    await ws_manager.send_generation_complete(
+        session_id=session_id,
+        image_paths=[image_url],
+        metadata={"prompt": prompt, "mood": new_mood, "intensity": intensity},
+    )
+
+
+def _record_studio_creation(
+    memory: Any,
+    *,
+    artwork_details: dict[str, Any],
+    emotional_state: dict[str, Any],
+    outcome: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
+    """Grow from studio work via record_creation (XP, semantic learn, save)."""
+    try:
+        return memory.record_creation(
+            artwork_details=artwork_details,
+            emotional_state=emotional_state,
+            outcome=outcome or {"score": artwork_details.get("score", 0.0)},
+        )
+    except Exception as mem_err:
+        logger.debug("memory_record_creation_failed", error=str(mem_err))
+        return None
+
+
+def _advance_thematic_series(
+    mood_system: MoodSystem,
+    creation_record: dict[str, Any],
+    *,
+    subject: str,
+    filename: str,
+) -> None:
+    """Continue or start a series so arcs survive beyond a single canvas."""
+    try:
+        from ..intelligence.narrative_engine import get_narrative_engine
+
+        narrative = get_narrative_engine(mood_system=mood_system)
+        active_series = narrative.get_active_series()
+        continued_series = False
+        for series in active_series:
+            if (
+                series.theme.lower() in subject.lower()
+                or subject.lower() in series.theme.lower()
+            ):
+                narrative.complete_series_work(series.series_id, filename)
+                logger.info(
+                    "series_work_completed",
+                    series_id=series.series_id,
+                    title=series.title,
+                    artwork_id=filename,
+                )
+                continued_series = True
+                break
+
+        if not continued_series and narrative.should_start_series(creation_record):
+            new_series = narrative.create_series(creation_record)
+            logger.info(
+                "new_series_started",
+                series_id=new_series.series_id,
+                title=new_series.title,
+                theme=new_series.theme,
+            )
+    except Exception as narr_err:
+        logger.debug("narrative_engine_failed", error=str(narr_err))
+
+
+def _satisfy_creation_drive(
+    *,
+    mood_system: MoodSystem,
+    memory: Any,
+    learner: Any,
+    subject: str,
+    style: str,
+) -> None:
+    """Mark a drive as expressed so autonomy isn't decorative."""
+    try:
+        from ..intelligence.desire_engine import get_desire_engine
+
+        desire_engine = get_desire_engine(
+            mood_system=mood_system,
+            memory_system=memory,
+            learner=learner,
+        )
+        desire = desire_engine.get_strongest_desire()
+        desire_engine.satisfy_drive(
+            desire.drive_name, subject=subject, style=style
+        )
+    except Exception as e:
+        logger.debug("satisfy_drive_failed", error=str(e))
+
+
 def _get_lumira_state() -> dict[str, Any]:
-    """Get or initialize Lumira's state, with personality persisted across restarts."""
+    """Get or initialize Lumira's state, with personality + mood persisted."""
     global _lumira_state
 
     if _lumira_state is None:
         _lumira_state = {
             "name": "Lumira",
-            "mood_system": MoodSystem(),
+            "mood_system": _load_mood_system(),
             "memory": EnhancedMemorySystem(),
             "profile": ArtisticProfile(name="Lumira"),
             "paintings_created": 0,
             "portfolio": [],
             # OCEAN personality traits — loaded from disk or generated fresh
             "personality": _load_personality(),
+            "inner_dialogue": None,  # lazy singleton — see _get_inner_dialogue()
         }
         logger.info(
             "lumira_state_initialized",
@@ -467,6 +693,111 @@ def _get_lumira_state() -> dict[str, Any]:
         )
 
     return _lumira_state
+
+
+def _get_inner_dialogue(session_id: str | None = None) -> Any:
+    """Return the process-wide InnerDialogue singleton (creates on first use).
+
+    Studio create paths share this so /dialogue and the UI panel show the same
+    inner life instead of a fresh empty instance on every request. Wired with
+    Rememberer(memory) + ArtistCritic so voices aren't empty theater.
+    """
+    from ..personality.critic import ArtistCritic
+    from ..personality.dialogue import InnerDialogue
+    from ..personality.inner_voices import DialogueTurn, Rememberer
+    from ..web.websocket import manager as ws_manager
+
+    state = _get_lumira_state()
+    dialogue = state.get("inner_dialogue")
+    if dialogue is not None:
+        return dialogue
+
+    async def _on_turn(turn: DialogueTurn) -> None:
+        voice = turn.voice.value if hasattr(turn.voice, "value") else str(turn.voice)
+        await ws_manager.broadcast_inner_dialogue(
+            session_id=session_id or "studio",
+            voice=voice,
+            content=turn.message,
+            metadata=turn.metadata or {},
+        )
+
+    rememberer = Rememberer(enhanced_memory=state.get("memory"))
+    critic = ArtistCritic(name="Lumira's Inner Critic")
+    dialogue = InnerDialogue(
+        mood_system=state["mood_system"],
+        critic=critic,
+        rememberer=rememberer,
+        on_turn=_on_turn,
+    )
+    state["inner_dialogue"] = dialogue
+    state["critic"] = critic
+    return dialogue
+
+
+async def _notify_growth_presence(
+    experience_result: dict[str, Any] | None,
+) -> None:
+    """Surface XP / reflection as living memory insights in the studio."""
+    if not experience_result:
+        return
+    from ..web.websocket import manager as ws_manager
+
+    try:
+        xp = experience_result.get("xp_earned") or 0
+        if xp:
+            await ws_manager.broadcast_memory_insight(
+                f"This piece taught me something — +{xp} XP settles in.",
+                "growth",
+            )
+        if experience_result.get("level_up"):
+            title = experience_result.get("new_title") or "a new title"
+            await ws_manager.broadcast_memory_insight(
+                f"I leveled into {title}. The work is changing me.",
+                "growth",
+            )
+        reflection = experience_result.get("reflection")
+        if isinstance(reflection, dict):
+            insight = reflection.get("insight") or reflection.get("summary")
+            if insight:
+                await ws_manager.broadcast_memory_insight(str(insight), "reflection")
+        elif isinstance(reflection, str) and reflection.strip():
+            await ws_manager.broadcast_memory_insight(reflection.strip(), "reflection")
+    except Exception as e:
+        logger.debug("growth_presence_broadcast_failed", error=str(e))
+
+
+async def _narrate_creation_presence(
+    *,
+    session_id: str,
+    subject: str,
+    style: str,
+    mood: str,
+    reasoning: str = "",
+    artistic_goals: list[str] | None = None,
+) -> None:
+    """Make Lumira's inner voices speak about a creation she's about to make."""
+    dialogue = _get_inner_dialogue(session_id=session_id)
+    # Keep on_turn session id fresh for this creation.
+    from ..personality.inner_voices import DialogueTurn
+    from ..web.websocket import manager as ws_manager
+
+    async def _on_turn(turn: DialogueTurn) -> None:
+        voice = turn.voice.value if hasattr(turn.voice, "value") else str(turn.voice)
+        await ws_manager.broadcast_inner_dialogue(
+            session_id=session_id,
+            voice=voice,
+            content=turn.message,
+            metadata=turn.metadata or {},
+        )
+
+    dialogue.on_turn = _on_turn
+    await dialogue.reflect_on_intent(
+        subject=subject,
+        style=style,
+        mood=mood,
+        reasoning=reasoning,
+        artistic_goals=artistic_goals,
+    )
 
 
 async def _load_portfolio_from_gallery() -> list[dict]:
@@ -754,9 +1085,59 @@ async def create_artwork(
                 generation_params=cached_intent.get("generation_params", {}),
             )
             logger.info("creative_intent_cache_hit", mood=mood.value)
+            # Cache skips decide_what_to_create — still express a drive
+            _satisfy_creation_drive(
+                mood_system=mood_system,
+                memory=memory,
+                learner=learner,
+                subject=intent.subject,
+                style=intent.style,
+            )
         else:
-            # Let Lumira decide what to create
-            intent = await creative_mind.decide_what_to_create()
+            # Occasionally convene the full inner council before choosing
+            decide_context: dict[str, Any] = {}
+            try:
+                from ..intelligence.desire_engine import get_desire_engine
+                from ..personality.continuity import should_deep_deliberate
+
+                drive_status = get_desire_engine(
+                    mood_system=mood_system,
+                    memory_system=memory,
+                    learner=learner,
+                ).get_drive_status()
+                if should_deep_deliberate(drive_status=drive_status):
+                    dialogue = _get_inner_dialogue(session_id=session_id)
+                    concept = await dialogue.deliberate(
+                        mood=mood.value, clear_history=False
+                    )
+                    if concept and concept.subject:
+                        decide_context["seed_subject"] = concept.subject
+                        decide_context["theme"] = concept.subject
+                        top_style = None
+                        if concept.style_blend:
+                            top_style = max(
+                                concept.style_blend.items(), key=lambda x: x[1]
+                            )[0]
+                        if top_style:
+                            decide_context["seed_style"] = top_style
+                        await ws_manager.send_thinking_update(
+                            session_id=session_id,
+                            thought_type="deliberate",
+                            content=(
+                                f"My inner council settled on '{concept.subject}'"
+                                + (f" through {top_style}" if top_style else "")
+                                + "."
+                            ),
+                        )
+                        logger.info(
+                            "deep_deliberation_seeded",
+                            subject=concept.subject,
+                            style=top_style,
+                        )
+            except Exception as e:
+                logger.debug("deep_deliberation_skipped", error=str(e))
+
+            intent = await creative_mind.decide_what_to_create(decide_context)
 
             # Cache the intent for cost optimization
             await gen_cache.set_creative_intent(
@@ -834,6 +1215,16 @@ async def create_artwork(
             has_llm=creative_mind.has_llm,
         )
 
+        # Inner voices — so the studio dialogue panel shows a living mind
+        await _narrate_creation_presence(
+            session_id=session_id,
+            subject=subject,
+            style=style,
+            mood=mood.value,
+            reasoning=intent.reasoning or thinking or "",
+            artistic_goals=list(intent.artistic_goals or []),
+        )
+
         # Get mood-influenced generation parameters, refined by learner
         gen_params = intent.generation_params or {}
         gen_params = learner.suggest_parameters(gen_params)
@@ -843,7 +1234,6 @@ async def create_artwork(
         # Start background generation
         async def generate_task():
             generator = None
-            from ..core.replicate_generator import ReplicateGenerator as ImageGenerator
             from ..db.session import get_session_factory
 
             try:
@@ -863,13 +1253,6 @@ async def create_artwork(
                     content="Beginning the creation process... channeling my vision into form.",
                 )
 
-                # Parse dtype correctly
-                import torch
-
-                dtype = (
-                    torch.float32 if config.model.dtype == "float32" else torch.float16
-                )
-
                 logger.info(
                     "creating_generator",
                     session_id=session_id,
@@ -878,11 +1261,8 @@ async def create_artwork(
                     model=config.model.base_model,
                 )
 
-                # Create generator with proper dtype
-                generator = ImageGenerator(
-                    model_id=config.model.base_model,
-                    device=config.model.device,
-                    dtype=dtype,
+                backend, generator = _build_studio_generator(
+                    config, mood=mood.value if mood else None
                 )
                 generator.load_model()
 
@@ -920,7 +1300,9 @@ async def create_artwork(
 
                     # Save the image file
                     images[0].save(save_path)
-                    logger.info("image_saved_to_disk", path=str(save_path))
+                    logger.info(
+                        "image_saved_to_disk", path=str(save_path), backend=backend
+                    )
 
                     # Save metadata JSON for gallery API
                     metadata_path = save_path.with_suffix(".json")
@@ -930,7 +1312,10 @@ async def create_artwork(
                             "mood": mood.value,
                             "subject": subject,
                             "style": style,
-                            "model": config.model.base_model,
+                            "model": getattr(generator, "node_type", None)
+                            or getattr(generator, "model_name", None)
+                            or config.model.base_model,
+                            "backend": backend,
                             "reasoning": intent.reasoning,
                             "artistic_goals": intent.artistic_goals,
                             "has_llm": creative_mind.has_llm,
@@ -939,6 +1324,27 @@ async def create_artwork(
                         "featured": False,
                     }
                     metadata_path.write_text(json.dumps(metadata_json, indent=2))
+                    try:
+                        from ..intelligence.desire_engine import get_desire_engine
+                        from ..personality.continuity import should_pair_soundtrack
+
+                        want_sound = should_pair_soundtrack(
+                            mood=mood.value,
+                            drive_status=get_desire_engine(
+                                mood_system=mood_system,
+                                memory_system=memory,
+                                learner=learner,
+                            ).get_drive_status(),
+                        )
+                    except Exception:
+                        want_sound = False
+                    _maybe_pair_soundtrack(
+                        prompt=prompt,
+                        mood=mood.value,
+                        image_path=save_path,
+                        metadata=metadata_json,
+                        enabled=want_sound,
+                    )
 
                     image_url = f"/api/images/file/{now.strftime('%Y/%m/%d')}/archive/{filename}"
 
@@ -1061,7 +1467,7 @@ async def create_artwork(
                     except Exception as rlaif_err:
                         logger.debug("rlaif_record_failed", error=str(rlaif_err))
 
-                    # Store creation in episodic memory
+                    # Grow as a continuous being (XP, semantic learning, disk)
                     creation_record = {
                         "id": filename,
                         "details": {
@@ -1077,68 +1483,47 @@ async def create_artwork(
                             "mood_alignment": intent.mood_alignment,
                         },
                     }
+                    growth = _record_studio_creation(
+                        memory,
+                        artwork_details=creation_record["details"],
+                        emotional_state=creation_record["emotional_state"],
+                        outcome={
+                            "score": critic_score,
+                            "featured": False,
+                        },
+                    )
+                    await _notify_growth_presence(growth)
                     try:
-                        memory.record_episode(
-                            event_type="creation",
-                            details=creation_record["details"],
-                            emotional_state=creation_record["emotional_state"],
-                        )
-                    except Exception as mem_err:
-                        logger.debug("memory_record_failed", error=str(mem_err))
+                        from ..personality.continuity import note_creation_for_statement
 
-                    # Check if this creation should start or continue a thematic series
-                    try:
-                        from ..intelligence.narrative_engine import get_narrative_engine
+                        evolved = note_creation_for_statement(creation_record)
+                        if evolved and evolved.get("full_statement"):
+                            from ..web.websocket import manager as ws_manager
 
-                        narrative = get_narrative_engine(mood_system=mood_system)
-
-                        # Check if we're continuing an existing series
-                        active_series = narrative.get_active_series()
-                        continued_series = False
-                        for series in active_series:
-                            if (
-                                series.theme.lower() in subject.lower()
-                                or subject.lower() in series.theme.lower()
-                            ):
-                                narrative.complete_series_work(
-                                    series.series_id, filename
-                                )
-                                logger.info(
-                                    "series_work_completed",
-                                    series_id=series.series_id,
-                                    title=series.title,
-                                    artwork_id=filename,
-                                )
-                                continued_series = True
-                                break
-
-                        # If not continuing, check if we should start a new series
-                        if not continued_series and narrative.should_start_series(
-                            creation_record
-                        ):
-                            new_series = narrative.create_series(creation_record)
-                            logger.info(
-                                "new_series_started",
-                                series_id=new_series.series_id,
-                                title=new_series.title,
-                                theme=new_series.theme,
+                            await ws_manager.broadcast_memory_insight(
+                                "My artist statement shifted with this work.",
+                                "statement",
                             )
-                    except Exception as narr_err:
-                        logger.debug("narrative_engine_failed", error=str(narr_err))
+                    except Exception as e:
+                        logger.debug("statement_note_failed", error=str(e))
 
-                    # Update mood after successful creation
-                    mood_system.update_mood()
+                    _advance_thematic_series(
+                        mood_system,
+                        creation_record,
+                        subject=subject,
+                        filename=filename,
+                    )
 
                     # Update autonomy counters and bust portfolio cache
                     global _autonomy_creation_count, _portfolio_cache_ts
                     _autonomy_creation_count += 1
                     _portfolio_cache_ts = 0.0  # force re-scan on next /state call
 
-                    # Send completion event
-                    await ws_manager.send_generation_complete(
+                    await _broadcast_presence_after_creation(
                         session_id=session_id,
-                        image_paths=[image_url],
-                        metadata={"prompt": prompt, "mood": mood.value},
+                        mood_system=mood_system,
+                        prompt=prompt,
+                        image_url=image_url,
                     )
 
                     logger.info(
@@ -1347,6 +1732,15 @@ async def user_request_creation(
             has_llm=creative_mind.has_llm,
         )
 
+        await _narrate_creation_presence(
+            session_id=session_id,
+            subject=subject,
+            style=style,
+            mood=mood.value,
+            reasoning=intent.reasoning or thinking or body.prompt,
+            artistic_goals=list(intent.artistic_goals or []),
+        )
+
         # Get mood-influenced generation parameters, refined by learner
         gen_params = intent.generation_params or {}
         gen_params = learner.suggest_parameters(gen_params)
@@ -1356,7 +1750,6 @@ async def user_request_creation(
         # Start background generation (reuses same pattern as /create)
         async def generate_task():
             generator = None
-            from ..core.replicate_generator import ReplicateGenerator as ImageGenerator
             from ..db.session import get_session_factory
 
             try:
@@ -1373,16 +1766,8 @@ async def user_request_creation(
                     content=f"Bringing your vision to life... '{body.prompt}'",
                 )
 
-                import torch
-
-                dtype = (
-                    torch.float32 if config.model.dtype == "float32" else torch.float16
-                )
-
-                generator = ImageGenerator(
-                    model_id=config.model.base_model,
-                    device=config.model.device,
-                    dtype=dtype,
+                backend, generator = _build_studio_generator(
+                    config, mood=mood.value if mood else None
                 )
                 generator.load_model()
 
@@ -1397,7 +1782,7 @@ async def user_request_creation(
                     _background_tasks.add(t)
                     t.add_done_callback(_background_tasks.discard)
 
-                # Load LoRA config if requested
+                # Load LoRA config if requested (Replicate-compatible; Magica strips it)
                 lora_url = None
                 lora_scale = 0.8
                 final_prompt = prompt
@@ -1456,7 +1841,9 @@ async def user_request_creation(
                             "mood": mood.value,
                             "subject": subject,
                             "style": style,
-                            "model": config.model.base_model,
+                            "model": getattr(generator, "node_type", None)
+                            or config.model.base_model,
+                            "backend": backend,
                             "reasoning": intent.reasoning,
                             "is_user_request": True,
                         },
@@ -1464,6 +1851,28 @@ async def user_request_creation(
                         "featured": False,
                     }
                     metadata_path.write_text(json.dumps(metadata_json, indent=2))
+                    try:
+                        from ..intelligence.desire_engine import get_desire_engine
+                        from ..personality.continuity import should_pair_soundtrack
+
+                        want_sound = should_pair_soundtrack(
+                            mood=mood.value,
+                            drive_status=get_desire_engine(
+                                mood_system=mood_system,
+                                memory_system=memory,
+                                learner=learner,
+                            ).get_drive_status(),
+                            explicit=bool(getattr(body, "with_soundtrack", False)),
+                        )
+                    except Exception:
+                        want_sound = bool(getattr(body, "with_soundtrack", False))
+                    _maybe_pair_soundtrack(
+                        prompt=prompt,
+                        mood=mood.value,
+                        image_path=save_path,
+                        metadata=metadata_json,
+                        enabled=want_sound,
+                    )
 
                     image_url = f"/api/images/file/{now.strftime('%Y/%m/%d')}/archive/{filename}"
 
@@ -1518,27 +1927,47 @@ async def user_request_creation(
                             )
                         )
 
-                    # Store in memory
-                    with contextlib.suppress(Exception):
-                        memory.record_episode(
-                            event_type="user_request",
-                            details={
-                                "prompt": prompt,
-                                "user_request": body.prompt,
-                                "subject": subject,
-                                "style": style,
-                            },
-                            emotional_state={
-                                "mood": mood.value,
-                            },
-                        )
+                    # Grow + series + presence (same continuity as /create)
+                    creation_record = {
+                        "id": filename,
+                        "details": {
+                            "prompt": prompt,
+                            "user_request": body.prompt,
+                            "subject": subject,
+                            "style": style,
+                            "score": 0.7,
+                        },
+                        "emotional_state": {"mood": mood.value},
+                    }
+                    growth = _record_studio_creation(
+                        memory,
+                        artwork_details=creation_record["details"],
+                        emotional_state=creation_record["emotional_state"],
+                        outcome={"score": 0.7, "featured": False},
+                    )
+                    await _notify_growth_presence(growth)
+                    _satisfy_creation_drive(
+                        mood_system=mood_system,
+                        memory=memory,
+                        learner=learner,
+                        subject=subject,
+                        style=style,
+                    )
+                    _advance_thematic_series(
+                        mood_system,
+                        creation_record,
+                        subject=subject,
+                        filename=filename,
+                    )
+                    global _autonomy_creation_count, _portfolio_cache_ts
+                    _autonomy_creation_count += 1
+                    _portfolio_cache_ts = 0.0
 
-                    mood_system.update_mood()
-
-                    await ws_manager.send_generation_complete(
+                    await _broadcast_presence_after_creation(
                         session_id=session_id,
-                        image_paths=[image_url],
-                        metadata={"prompt": prompt, "mood": mood.value},
+                        mood_system=mood_system,
+                        prompt=prompt,
+                        image_url=image_url,
                     )
                 else:
                     await ws_manager.send_generation_error(
@@ -1659,6 +2088,20 @@ async def influence_mood(
         new_mood=new_mood.value,
         shifted=previous_mood != new_mood.value,
     )
+
+    # Live presence — studio clients feel the shift immediately
+    try:
+        from ..web.websocket import manager as ws_manager
+
+        await ws_manager.broadcast_mood_drift(
+            mood=new_mood.value if hasattr(new_mood, "value") else str(new_mood),
+            intensity=float(getattr(mood_system, "mood_intensity", body.intensity)),
+            reason=f"influence:{body.influence}",
+        )
+    except Exception as e:
+        logger.debug("mood_drift_broadcast_failed", error=str(e))
+
+    _save_mood_system(mood_system)
 
     return MoodInfluenceResponse(
         previous_mood=previous_mood,
@@ -1905,13 +2348,18 @@ async def get_mood_evolution(request: Request) -> MoodEvolutionResponse:
 @router.get("/statement", response_model=LumiraStatementResponse)
 @limiter.limit("30/minute")
 async def get_artist_statement(request: Request):
-    """Get Lumira's artist statement."""
+    """Get Lumira's artist statement — evolved when her work has changed her."""
     state = _get_lumira_state()
     profile = state["profile"]
     mood_system = state["mood_system"]
 
-    # Get base statement and customize based on current mood
-    statement = profile.artist_statement
+    from ..personality.continuity import load_evolved_statement
+
+    evolved = load_evolved_statement()
+    if evolved and evolved.get("full_statement"):
+        statement = str(evolved["full_statement"])
+    else:
+        statement = profile.artist_statement
 
     # Add mood-influenced postscript
     mood = mood_system.current_mood
@@ -2134,6 +2582,129 @@ async def get_thematic_series(request: Request):
         active=active_items,
         completed_count=status["completed_count"],
         abandoned_count=status["abandoned_count"],
+    )
+
+
+# =============================================================================
+# Magica multimodal (audio / video)
+# =============================================================================
+
+
+class MagicaAudioRequest(BaseModel):
+    """Request a Magica instrumental soundtrack."""
+
+    prompt: str = Field(..., min_length=1, max_length=2000)
+    mood: str | None = Field(default=None, max_length=100)
+    duration_seconds: int = Field(default=30, ge=5, le=120)
+    model_id: str | None = Field(default=None, max_length=100)
+
+
+class MagicaVideoRequest(BaseModel):
+    """Request a Magica short video."""
+
+    prompt: str = Field(..., min_length=1, max_length=2000)
+    mood: str | None = Field(default=None, max_length=100)
+    duration_seconds: int = Field(default=5, ge=2, le=20)
+    aspect_ratio: str = Field(default="16:9", max_length=16)
+    model_id: str | None = Field(default=None, max_length=100)
+
+
+class MagicaMediaResponse(BaseModel):
+    """Saved Magica media asset."""
+
+    path: str
+    url: str
+    kind: str
+    prompt: str
+    mood: str | None = None
+
+
+def _media_public_url(path: Path) -> str:
+    try:
+        rel = path.relative_to(Path("gallery"))
+        return f"/api/images/file/{rel.as_posix()}"
+    except ValueError:
+        return str(path)
+
+
+@router.post("/soundtrack", response_model=MagicaMediaResponse)
+@limiter.limit("5/minute")
+async def create_soundtrack(
+    request: Request,
+    _auth: GenerationAuthDep,
+    body: MagicaAudioRequest,
+):
+    """Generate a Magica instrumental soundtrack for a prompt/mood."""
+    import os
+
+    if not os.environ.get("MAGICA_API_KEY"):
+        raise HTTPException(status_code=503, detail="MAGICA_API_KEY not configured")
+
+    state = _get_lumira_state()
+    mood = body.mood or state["mood_system"].current_mood.value
+
+    from ..core.magica_media import MagicaAudioGenerator
+
+    try:
+        path = MagicaAudioGenerator(model_id=body.model_id).generate_audio(
+            body.prompt,
+            duration_seconds=body.duration_seconds,
+            mood=mood,
+            gallery_root="gallery",
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+    except Exception as e:
+        logger.error("soundtrack_generation_failed", error=str(e))
+        raise HTTPException(status_code=502, detail=f"Magica audio failed: {e}") from e
+
+    return MagicaMediaResponse(
+        path=str(path),
+        url=_media_public_url(path),
+        kind="audio",
+        prompt=body.prompt,
+        mood=mood,
+    )
+
+
+@router.post("/video", response_model=MagicaMediaResponse)
+@limiter.limit("3/minute")
+async def create_video(
+    request: Request,
+    _auth: GenerationAuthDep,
+    body: MagicaVideoRequest,
+):
+    """Generate a short Magica video from a prompt/mood."""
+    import os
+
+    if not os.environ.get("MAGICA_API_KEY"):
+        raise HTTPException(status_code=503, detail="MAGICA_API_KEY not configured")
+
+    state = _get_lumira_state()
+    mood = body.mood or state["mood_system"].current_mood.value
+
+    from ..core.magica_media import MagicaVideoGenerator
+
+    try:
+        path = MagicaVideoGenerator(model_id=body.model_id).generate_video(
+            body.prompt,
+            duration_seconds=body.duration_seconds,
+            aspect_ratio=body.aspect_ratio,
+            mood=mood,
+            gallery_root="gallery",
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+    except Exception as e:
+        logger.error("video_generation_failed", error=str(e))
+        raise HTTPException(status_code=502, detail=f"Magica video failed: {e}") from e
+
+    return MagicaMediaResponse(
+        path=str(path),
+        url=_media_public_url(path),
+        kind="video",
+        prompt=body.prompt,
+        mood=mood,
     )
 
 
@@ -2676,7 +3247,6 @@ async def create_with_reference(
     Returns:
         Same as /create endpoint, but with reference-conditioned generation
     """
-    from ..core.replicate_generator import ReplicateGenerator as ImageGenerator
     from ..inspiration.autonomous import AutonomousInspiration
     from ..web.websocket import manager as ws_manager
 
@@ -2776,8 +3346,6 @@ async def create_with_reference(
 
         # Background generation with reference
         async def generate_task():
-            import torch
-
             generator = None
             from ..db.session import get_session_factory
 
@@ -2796,17 +3364,11 @@ async def create_with_reference(
                     content="Blending reference style with my vision...",
                 )
 
-                dtype = (
-                    torch.float32 if config.model.dtype == "float32" else torch.float16
-                )
-
                 # Load reference image
                 ref_image = Image.open(reference_path)
 
-                generator = ImageGenerator(
-                    model_id=config.model.base_model,
-                    device=config.model.device,
-                    dtype=dtype,
+                backend, generator = _build_studio_generator(
+                    config, mood=mood.value if mood else None
                 )
                 generator.load_model()
 
@@ -2821,7 +3383,7 @@ async def create_with_reference(
                     _background_tasks.add(task)
                     task.add_done_callback(_background_tasks.discard)
 
-                # Generate with reference image
+                # Generate with reference image (backends that ignore these kwargs strip them)
                 images = generator.generate(
                     prompt=prompt,
                     negative_prompt=negative_prompt,
@@ -2843,7 +3405,11 @@ async def create_with_reference(
                     save_path = date_path / filename
 
                     images[0].save(save_path)
-                    logger.info("reference_image_generated", path=str(save_path))
+                    logger.info(
+                        "reference_image_generated",
+                        path=str(save_path),
+                        backend=backend,
+                    )
 
                     metadata_path = save_path.with_suffix(".json")
                     metadata_json = {
@@ -2852,7 +3418,9 @@ async def create_with_reference(
                             "mood": mood.value,
                             "subject": subject,
                             "style": style,
-                            "model": config.model.base_model,
+                            "model": getattr(generator, "node_type", None)
+                            or config.model.base_model,
+                            "backend": backend,
                             "reference_id": body.reference_id,
                             "ip_adapter_scale": body.ip_adapter_scale,
                         },
@@ -3041,20 +3609,21 @@ async def img2img_generation(
 
     # Generate variation using img2img
     try:
-        import torch
-
-        from ..core.replicate_generator import ReplicateGenerator as ImageGenerator
-
         config_path = Path("config/config.yaml")
         config = load_config(config_path)
-        dtype = torch.float32 if config.model.dtype == "float32" else torch.float16
-
-        generator = ImageGenerator(
-            model_id=config.model.base_model,
-            device=config.model.device,
-            dtype=dtype,
-        )
+        try:
+            _backend, generator = _build_studio_generator(
+                config, mood=mood.value if mood else None, require_img2img=True
+            )
+        except RuntimeError as e:
+            raise HTTPException(status_code=501, detail=str(e)) from e
         generator.load_model()
+
+        if not hasattr(generator, "generate_img2img"):
+            raise HTTPException(
+                status_code=501,
+                detail="Selected image backend does not support img2img",
+            )
 
         images = generator.generate_img2img(
             prompt=prompt,
@@ -3224,20 +3793,25 @@ async def generate_variations(
     selected_prompts = random.sample(prompts, min(var_request.count, len(prompts)))
 
     try:
-        import torch
-
-        from ..core.replicate_generator import ReplicateGenerator as ImageGenerator
-
         config_path = Path("config/config.yaml")
         config = load_config(config_path)
-        dtype = torch.float32 if config.model.dtype == "float32" else torch.float16
-
-        generator = ImageGenerator(
-            model_id=config.model.base_model,
-            device=config.model.device,
-            dtype=dtype,
-        )
+        state = _get_lumira_state()
+        mood = state["mood_system"].current_mood
+        try:
+            _backend, generator = _build_studio_generator(
+                config,
+                mood=mood.value if mood else None,
+                require_img2img=True,
+            )
+        except RuntimeError as e:
+            raise HTTPException(status_code=501, detail=str(e)) from e
         generator.load_model()
+
+        if not hasattr(generator, "generate_img2img"):
+            raise HTTPException(
+                status_code=501,
+                detail="Selected image backend does not support img2img",
+            )
 
         now = datetime.now()
         gallery_base = Path("gallery")
@@ -4019,20 +4593,9 @@ async def get_dialogue_history(request: Request):
     Returns the deliberation history showing how Lumira's inner voices
     (Dreamer, Critic, Curator, Rememberer) discussed recent creations.
     """
-    from ..personality.dialogue import InnerDialogue
-
     try:
-        state = _get_lumira_state()
-        mood_system = state["mood_system"]
-
-        # Get or create dialogue instance
-        dialogue = InnerDialogue(
-            mood_system=mood_system,
-        )
-
-        # Access history directly (it's an attribute, not a method)
+        dialogue = _get_inner_dialogue()
         history_turns = dialogue.history
-        current = None  # InnerDialogue doesn't track current_concept
 
         turns = [
             DialogueTurn(
@@ -4049,21 +4612,12 @@ async def get_dialogue_history(request: Request):
                 ),
                 metadata=turn.metadata,
             )
-            for turn in history_turns
+            for turn in history_turns[-40:]
         ]
-
-        current_concept = None
-        if current:
-            current_concept = {
-                "subject": current.subject,
-                "style": current.style,
-                "prompt": current.prompt,
-                "confidence": current.confidence,
-            }
 
         return DialogueHistoryResponse(
             turns=turns,
-            current_concept=current_concept,
+            current_concept=None,
         )
 
     except Exception as e:

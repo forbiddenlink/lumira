@@ -712,12 +712,19 @@ async def test_websocket(request: Request):
 
 @app.get("/api/auth-mode", tags=["health"])
 async def auth_mode():
-    """Check if authentication is required for admin actions.
+    """Report whether generation requires a key, and whether it can run at all.
 
-    Used by the frontend to hide admin-only UI controls in production.
+    Fail-closed deployments with no ``RAILWAY_API_KEY`` and no ``LUMIRA_DEV_MODE``
+    refuse generation with 503 — the studio needs that signal so create doesn't
+    look "alive" while silently failing.
     """
     config = get_web_config()
-    return {"auth_required": len(config.api_keys) > 0}
+    has_keys = len(config.api_keys) > 0
+    return {
+        "auth_required": has_keys,
+        "dev_mode": bool(config.dev_mode),
+        "generation_available": has_keys or bool(config.dev_mode),
+    }
 
 
 @app.get("/api/images", response_model=list[ImageMetadata], tags=["images"])
@@ -895,8 +902,8 @@ async def get_image_file(
     if not gallery_path_obj:
         raise HTTPException(status_code=503, detail="Gallery not initialized")
 
-    # Validate file extension
-    allowed_extensions = {".png", ".jpg", ".jpeg", ".webp"}
+    # Validate file extension (images + Magica multimodal assets)
+    allowed_extensions = {".png", ".jpg", ".jpeg", ".webp", ".mp3", ".mp4", ".wav", ".webm"}
     file_ext = Path(file_path).suffix.lower()
     if file_ext not in allowed_extensions:
         raise HTTPException(status_code=400, detail=ERROR_INVALID_FILE_TYPE)
@@ -918,8 +925,12 @@ async def get_image_file(
         ".jpg": "image/jpeg",
         ".jpeg": "image/jpeg",
         ".webp": "image/webp",
+        ".mp3": "audio/mpeg",
+        ".wav": "audio/wav",
+        ".mp4": "video/mp4",
+        ".webm": "video/webm",
     }
-    media_type = mime_types.get(file_ext, "image/png")
+    media_type = mime_types.get(file_ext, "application/octet-stream")
 
     # Images are immutable (filenames include timestamp/uuid) — cache aggressively
     stat = full_path.stat()

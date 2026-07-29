@@ -3,6 +3,8 @@
 # Model settings
 model:
   base_model: "stabilityai/stable-diffusion-xl-base-1.0"
+  # Image backend: "local" | "replicate" | "magica" (default local)
+  backend: magica
   # Options: "cuda" (NVIDIA GPU), "mps" (Apple Silicon), "cpu"
   device: "cuda"
   # Options: "float16" (faster, less memory) or "float32" (more accurate)

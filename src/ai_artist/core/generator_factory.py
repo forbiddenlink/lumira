@@ -18,6 +18,7 @@ call site.
 
 from __future__ import annotations
 
+import os
 from typing import Any, Literal, Protocol, cast, runtime_checkable
 
 from ..utils.logging import get_logger
@@ -41,6 +42,96 @@ class ImageBackend(Protocol):
     def generate(self, prompt: str, *args: Any, **kwargs: Any) -> list: ...
 
     def unload(self) -> None: ...
+
+
+def resolve_web_image_backend(configured: str | None = None) -> str:
+    """Resolve the image backend for studio / cloud create paths.
+
+    Explicit ``magica`` / ``replicate`` / ``local`` values win. When the config
+    still says ``local`` (the Pydantic default) but Magica or Replicate keys are
+    present, prefer Magica then Replicate — matching Magica-first studio intent
+    and torch-free Railway deploys. Set ``LUMIRA_FORCE_LOCAL_WEB=1`` to keep
+    on-device generation even when cloud keys exist.
+    """
+    backend = (configured or BACKEND_LOCAL).lower()
+    if backend not in KNOWN_BACKENDS:
+        logger.warning("unknown_image_backend", backend=backend, fallback=BACKEND_LOCAL)
+        backend = BACKEND_LOCAL
+
+    if backend != BACKEND_LOCAL:
+        return backend
+
+    if os.getenv("LUMIRA_FORCE_LOCAL_WEB", "").strip() in {"1", "true", "yes"}:
+        return BACKEND_LOCAL
+    if os.environ.get("MAGICA_API_KEY"):
+        return BACKEND_MAGICA
+    if os.environ.get("REPLICATE_API_TOKEN"):
+        return BACKEND_REPLICATE
+    return BACKEND_LOCAL
+
+
+def _model_id_for_backend(backend: str, config: Any, mood: str | None) -> str:
+    """Pick a backend-appropriate model id (mood-aware for Magica)."""
+    if backend == BACKEND_MAGICA:
+        from .magica_generator import DEFAULT_MODEL, model_for_mood
+
+        return model_for_mood(mood) if mood else DEFAULT_MODEL
+
+    if backend == BACKEND_REPLICATE:
+        from .replicate_generator import DEFAULT_MODEL as REP_DEFAULT
+        from .replicate_generator import REPLICATE_MODELS
+
+        base = getattr(getattr(config, "model", None), "base_model", None) or ""
+        # HuggingFace-style ids (e.g. Lykon/dreamshaper-8) are not Replicate keys;
+        # fall back to the cloud default so studio create keeps working.
+        if base in REPLICATE_MODELS or "/" in base and ":" in base:
+            return base
+        lowered = base.lower()
+        for key in REPLICATE_MODELS:
+            if key in lowered:
+                return key
+        return REP_DEFAULT
+
+    return getattr(getattr(config, "model", None), "base_model", "") or (
+        "stabilityai/stable-diffusion-xl-base-1.0"
+    )
+
+
+def build_web_image_generator(
+    config: Any,
+    *,
+    mood: str | None = None,
+    dtype: Any = None,
+    require_img2img: bool = False,
+) -> tuple[str, ImageBackend]:
+    """Build the studio/cloud image generator from config + env keys.
+
+    Returns ``(backend, generator)``. When ``require_img2img`` is True and the
+    resolved backend is Magica (no img2img yet), fall back to Replicate if a
+    token is present; otherwise raise ``RuntimeError``.
+    """
+    backend = resolve_web_image_backend(getattr(config.model, "backend", None))
+
+    if require_img2img and backend == BACKEND_MAGICA:
+        if os.environ.get("REPLICATE_API_TOKEN"):
+            logger.info(
+                "img2img_backend_fallback",
+                requested=BACKEND_MAGICA,
+                using=BACKEND_REPLICATE,
+            )
+            backend = BACKEND_REPLICATE
+        else:
+            raise RuntimeError(
+                "img2img is not available on the Magica image backend yet. "
+                "Set REPLICATE_API_TOKEN or config.model.backend=local."
+            )
+
+    model_id = _model_id_for_backend(backend, config, mood)
+    device = getattr(config.model, "device", "cpu")
+    generator = get_image_generator(
+        backend, model_id=model_id, device=device, dtype=dtype
+    )
+    return backend, generator
 
 
 def get_image_generator(
