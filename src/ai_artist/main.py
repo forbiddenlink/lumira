@@ -70,6 +70,18 @@ class AIArtist:
 
         # Lumira's personality - the core of who she is
         self.mood_system = MoodSystem()
+        try:
+            from .personality.continuity import MOOD_STATE_FILE, load_json
+
+            mood_data = load_json(MOOD_STATE_FILE)
+            if mood_data:
+                self.mood_system = MoodSystem.from_dict(mood_data)
+                logger.info(
+                    "mood_restored_from_disk",
+                    mood=self.mood_system.current_mood.value,
+                )
+        except Exception as e:
+            logger.debug("mood_restore_skipped", error=str(e))
         # Simple memory for backward compatibility
         self.memory = ArtistMemory()
         # Advanced episodic/semantic memory
@@ -354,6 +366,20 @@ class AIArtist:
             current_mood=self.mood_system.current_mood.value, limit=3
         )
 
+        # Presence parity with web: occasional full inner council before choosing
+        presence_seed: dict = {}
+        try:
+            from .personality.continuity import apply_cli_presence_before_creation
+
+            presence_seed = await apply_cli_presence_before_creation(
+                mood_system=self.mood_system,
+                inner_dialogue=self.inner_dialogue,
+                memory_system=self.enhanced_memory,
+                theme=theme,
+            )
+        except Exception as presence_pre_err:
+            logger.debug("cli_presence_before_failed", error=str(presence_pre_err))
+
         # === VISIBLE THINKING: OBSERVE ===
         # Determine time of day for context
         from datetime import datetime as dt
@@ -379,7 +405,7 @@ class AIArtist:
         self.thinking.observe(
             {
                 "time_of_day": time_of_day,
-                "theme": theme,
+                "theme": theme or presence_seed.get("theme"),
                 "recent_work": recent_work,
             }
         )
@@ -396,11 +422,21 @@ class AIArtist:
         with PerformanceTimer(logger, "artwork_creation"):
             # === VISIBLE THINKING: REFLECT & DECIDE ===
             # Lumira chooses what to paint (autonomous decision)
+            seed_subject = presence_seed.get("seed_subject")
             if theme:
                 query = theme
                 # Reflect on the suggested theme
                 self.thinking.reflect(theme)
                 logger.info("theme_suggested", theme=theme, source="human_suggestion")
+            elif seed_subject:
+                query = seed_subject
+                self.thinking.reflect(seed_subject)
+                logger.info(
+                    "lumira_chose_subject",
+                    subject=query,
+                    mood=self.mood_system.current_mood.value,
+                    source="inner_council",
+                )
             else:
                 # Lumira reflects on possible directions
                 mood_subjects = self.mood_system.mood_influences[
@@ -524,6 +560,28 @@ class AIArtist:
                     [s for s in mood_subjects if s.lower() != query.lower()]
                 )
                 attempts += 1
+
+            # Inner voices narrate the chosen intent (web studio parity)
+            chosen_style = (
+                presence_seed.get("seed_style") or self.mood_system.get_mood_style()
+            )
+            if self.inner_dialogue:
+                try:
+                    await self.inner_dialogue.reflect_on_intent(
+                        subject=query or (theme or "untitled"),
+                        style=chosen_style,
+                        mood=self.mood_system.current_mood.value,
+                        reasoning=(
+                            (
+                                critique_history[-1].get("critique")
+                                if critique_history
+                                else ""
+                            )
+                            or "This mood wants form."
+                        ),
+                    )
+                except Exception as reflect_err:
+                    logger.debug("cli_reflect_on_intent_failed", error=str(reflect_err))
 
             # === TRULY AUTONOMOUS PROMPT GENERATION ===
             # Lumira creates her own original vision, not based on existing photos
@@ -843,6 +901,8 @@ class AIArtist:
                     subject=query or (theme or ""),
                     style=extracted_style,
                     score=float(best_score),
+                    prompt=prompt,
+                    image_path=saved_path,
                 )
             except Exception as presence_err:
                 logger.debug("cli_presence_failed", error=str(presence_err))
@@ -884,28 +944,45 @@ class AIArtist:
         # Update mood
         self.mood_system.update_mood()
 
+        preview_subject = theme or "abstract composition"
+        preview_style = self.mood_system.get_mood_style()
+
         # Use inner dialogue to decide what to create
         if self.inner_dialogue:
             concept = await self.inner_dialogue.deliberate(
                 theme=theme,
                 mood=self.mood_system.current_mood.value,
+                clear_history=False,
             )
             prompt = concept.prompt
             style_weights = concept.style_blend
             mood_blend = {self.mood_system.current_mood.value: 1.0}
+            preview_subject = concept.subject or preview_subject
+            if style_weights:
+                preview_style = max(style_weights.items(), key=lambda x: x[1])[0]
 
             logger.info(
                 "inner_dialogue_concept",
                 subject=concept.subject,
-                style=concept.style,
+                style=preview_style,
                 confidence=concept.confidence,
             )
+            try:
+                await self.inner_dialogue.reflect_on_intent(
+                    subject=preview_subject,
+                    style=preview_style,
+                    mood=self.mood_system.current_mood.value,
+                    reasoning="Two-stage preview — commit if the light holds.",
+                )
+            except Exception as reflect_err:
+                logger.debug("preview_reflect_failed", error=str(reflect_err))
         else:
             # Fallback to simple prompt
             mood_style = self.mood_system.get_mood_style()
             prompt = f"{theme or 'abstract composition'}, {mood_style}"
             style_weights = None
             mood_blend = {self.mood_system.current_mood.value: 1.0}
+            preview_style = mood_style
 
         # Use two-stage generator
         if self.two_stage_generator:
@@ -949,6 +1026,26 @@ class AIArtist:
                     )
                 except Exception as e:
                     logger.debug("graph_memory_record_failed", error=str(e))
+
+            # Presence parity — drives, mood persist, statement, soundtrack
+            if result.get("preview_approved"):
+                try:
+                    from .personality.continuity import (
+                        apply_cli_presence_after_creation,
+                    )
+
+                    image_path = result.get("final_path") or result.get("image_path")
+                    apply_cli_presence_after_creation(
+                        mood_system=self.mood_system,
+                        memory_system=self.enhanced_memory,
+                        subject=str(preview_subject),
+                        style=str(preview_style),
+                        score=float(result.get("preview_score") or 0.0),
+                        prompt=prompt,
+                        image_path=image_path,
+                    )
+                except Exception as presence_err:
+                    logger.debug("preview_presence_failed", error=str(presence_err))
 
             return result
 
