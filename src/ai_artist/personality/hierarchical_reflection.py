@@ -155,7 +155,7 @@ class HierarchicalReflection:
         self,
         storage_path: Path = Path("data/reflections.json"),
         api_key: str | None = None,
-        model: str = "claude-sonnet-4-20250514",
+        model: str = "claude-sonnet-4-5",
     ):
         self.storage_path = storage_path
         self.model = model
