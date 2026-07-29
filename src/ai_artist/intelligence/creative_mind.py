@@ -367,7 +367,7 @@ class CreativeMind:
 
             # Learner-suggested parameters so the LLM can reason about them
             suggested = self.learner.suggest_parameters()
-            if suggested:
+            if isinstance(suggested, dict) and suggested:
                 param_desc = ", ".join(f"{k}={v}" for k, v in suggested.items())
                 parts.append(f"- Learner-suggested params: {param_desc}")
 

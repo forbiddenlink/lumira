@@ -1,6 +1,7 @@
 """Lumira API routes - personality, state, and creation endpoints."""
 
 import asyncio
+import contextlib
 import io
 import json
 import random
@@ -42,6 +43,43 @@ logger = get_logger(__name__)
 
 # Set to hold strong references to background tasks (prevent GC)
 _background_tasks: set[asyncio.Task] = set()
+
+
+async def _run_in_thread(func: Any, /, *args: Any, **kwargs: Any) -> Any:
+    """Run blocking generator I/O off the event loop.
+
+    Magica (and local SD) ``generate()`` / ``load_model()`` are synchronous.
+    Running them inline inside a background ``asyncio.Task`` blocks the loop and
+    delays the HTTP response that should return ``session_id`` immediately.
+    """
+    return await asyncio.to_thread(func, *args, **kwargs)
+
+
+def _progress_callback(
+    *,
+    session_id: str,
+    ws_manager: Any,
+) -> Any:
+    """Thread-safe progress reporter for generators running in a worker thread."""
+    loop = asyncio.get_running_loop()
+
+    def on_progress(step: int, total: int, latents: Any = None) -> None:
+        fut = asyncio.run_coroutine_threadsafe(
+            ws_manager.send_generation_progress(
+                session_id=session_id,
+                step=step,
+                total_steps=total,
+            ),
+            loop,
+        )
+
+        def _done(f: Any) -> None:
+            with contextlib.suppress(Exception):
+                f.result()
+
+        fut.add_done_callback(_done)
+
+    return on_progress
 
 
 def _web_dtype(config: Any) -> Any:
@@ -1233,22 +1271,15 @@ async def create_artwork(
                 backend, generator = _build_studio_generator(
                     config, mood=mood.value if mood else None
                 )
-                generator.load_model()
+                await _run_in_thread(generator.load_model)
 
-                # Progress callback for WebSocket updates
-                def on_progress(step: int, total: int, latents: Any = None):
-                    task = asyncio.create_task(
-                        ws_manager.send_generation_progress(
-                            session_id=session_id,
-                            step=step,
-                            total_steps=total,
-                        )
-                    )
-                    _background_tasks.add(task)
-                    task.add_done_callback(_background_tasks.discard)
+                on_progress = _progress_callback(
+                    session_id=session_id, ws_manager=ws_manager
+                )
 
-                # Generate image with mood-influenced parameters
-                images = generator.generate(
+                # Generate image with mood-influenced parameters (off event loop)
+                images = await _run_in_thread(
+                    generator.generate,
                     prompt=prompt,
                     negative_prompt=negative_prompt,
                     num_inference_steps=num_steps,
@@ -1736,18 +1767,11 @@ async def user_request_creation(
                 backend, generator = _build_studio_generator(
                     config, mood=mood.value if mood else None
                 )
-                generator.load_model()
+                await _run_in_thread(generator.load_model)
 
-                def on_progress(step: int, total: int, latents: Any = None):
-                    t = asyncio.create_task(
-                        ws_manager.send_generation_progress(
-                            session_id=session_id,
-                            step=step,
-                            total_steps=total,
-                        )
-                    )
-                    _background_tasks.add(t)
-                    t.add_done_callback(_background_tasks.discard)
+                on_progress = _progress_callback(
+                    session_id=session_id, ws_manager=ws_manager
+                )
 
                 # Load LoRA config if requested (Replicate-compatible; Magica strips it)
                 lora_url = None
@@ -1778,7 +1802,8 @@ async def user_request_creation(
                                 "lora_enabled", lora_url=lora_url[:50], trigger=trigger
                             )
 
-                images = generator.generate(
+                images = await _run_in_thread(
+                    generator.generate,
                     prompt=final_prompt,
                     negative_prompt=negative_prompt,
                     num_inference_steps=num_steps,
@@ -3337,21 +3362,15 @@ async def create_with_reference(
                 backend, generator = _build_studio_generator(
                     config, mood=mood.value if mood else None
                 )
-                generator.load_model()
+                await _run_in_thread(generator.load_model)
 
-                def on_progress(step: int, total: int, latents=None):
-                    task = asyncio.create_task(
-                        ws_manager.send_generation_progress(
-                            session_id=session_id,
-                            step=step,
-                            total_steps=total,
-                        )
-                    )
-                    _background_tasks.add(task)
-                    task.add_done_callback(_background_tasks.discard)
+                on_progress = _progress_callback(
+                    session_id=session_id, ws_manager=ws_manager
+                )
 
                 # Generate with reference image (backends that ignore these kwargs strip them)
-                images = generator.generate(
+                images = await _run_in_thread(
+                    generator.generate,
                     prompt=prompt,
                     negative_prompt=negative_prompt,
                     num_inference_steps=30,
@@ -4432,9 +4451,10 @@ async def approve_preview(
             prompt=body.prompt,
         )
 
-        # Generate full quality
-        generator.load_model()
-        images = generator.generate(
+        # Generate full quality off the event loop
+        await _run_in_thread(generator.load_model)
+        images = await _run_in_thread(
+            generator.generate,
             prompt=body.prompt,
             negative_prompt=config.generation.negative_prompt,
             width=config.generation.width,

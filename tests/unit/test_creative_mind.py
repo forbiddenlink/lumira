@@ -238,3 +238,21 @@ class TestCreativeMind:
         assert "a cat in space" in intent.prompt
         assert intent.is_user_request is True
         assert intent.user_prompt == "a cat in space"
+
+
+def test_build_context_prompt_tolerates_list_suggest_parameters():
+    """Regression: historical param hashes parsed as list crashed .items()."""
+    mood_sys = create_mock_mood_system(Mood.ENERGIZED)
+    learner = create_mock_learner()
+    learner.suggest_parameters = MagicMock(
+        return_value=[("guidance_scale", 7.5), ("width", 768)]
+    )
+    cm = CreativeMind(
+        mood_system=mood_sys,
+        memory_system=create_mock_memory(),
+        learner=learner,
+    )
+    # Must not raise AttributeError: list has no attribute items
+    text = cm._build_context_prompt({})
+    assert "CURRENT STATE" in text
+    assert "Learner-suggested params" not in text

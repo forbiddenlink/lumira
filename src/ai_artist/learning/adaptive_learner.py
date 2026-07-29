@@ -211,12 +211,8 @@ class AdaptiveLearner:
         # Find best performing parameter combination
         best_combo = max(self.param_scores.items(), key=lambda x: x[1].avg_score)
 
-        # Parse stored params
-        import ast
-
-        try:
-            suggested_params: dict[str, Any] = ast.literal_eval(best_combo[0])
-        except (ValueError, SyntaxError):
+        suggested_params = self._parse_param_hash(best_combo[0])
+        if not suggested_params:
             return base_params or {}
 
         # Merge with base params
@@ -463,7 +459,31 @@ class AdaptiveLearner:
             if k
             in ("num_inference_steps", "guidance_scale", "scheduler", "width", "height")
         }
+        # Historical format: str(sorted(items)). Keep so existing scores still match.
         return str(sorted(key_params.items()))
+
+    @staticmethod
+    def _parse_param_hash(param_hash: str) -> dict[str, Any]:
+        """Parse a param-hash key back into a dict.
+
+        Keys are ``str(sorted(items()))``, so ``ast.literal_eval`` yields a list of
+        pairs — not a dict. Always normalize to ``dict`` for callers.
+        """
+        import ast
+
+        try:
+            parsed = ast.literal_eval(param_hash)
+        except (ValueError, SyntaxError):
+            return {}
+
+        if isinstance(parsed, dict):
+            return {str(k): v for k, v in parsed.items()}
+        if isinstance(parsed, list):
+            try:
+                return {str(k): v for k, v in parsed}
+            except (TypeError, ValueError):
+                return {}
+        return {}
 
     def _save_state(self) -> None:
         """Persist learning state to disk."""
