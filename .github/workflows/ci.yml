@@ -155,6 +155,7 @@ jobs:
           tests/e2e/test_gallery_ui.py \
           tests/e2e/test_lumira_ui.py \
           -v \
+          -s \
           --browser chromium \
           --tb=short \
           --durations=10 \
