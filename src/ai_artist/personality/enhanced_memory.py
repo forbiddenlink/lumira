@@ -617,6 +617,22 @@ class EnhancedMemorySystem:
             title=self.experience.title,
         )
 
+    def get_recent_episodes(
+        self,
+        count: int | None = None,
+        event_type: str | None = None,
+        *,
+        limit: int | None = None,
+    ) -> list[dict]:
+        """Delegate to episodic memory; accept ``count`` or ``limit``."""
+        n = (
+            10
+            if count is None and limit is None
+            else (limit if limit is not None else count)
+        )
+        assert n is not None
+        return self.episodic.get_recent_episodes(count=n, event_type=event_type)
+
     def _load(self):
         """Load memory from disk."""
         if self.memory_file.exists():

@@ -177,3 +177,52 @@ class TestRLAIF:
         assert learner2._critic_reliability == pytest.approx(
             learner._critic_reliability, rel=0.01
         )
+
+
+class TestSuggestParameters:
+    """Param-hash keys are str(sorted(items)) — must round-trip to a dict."""
+
+    @pytest.fixture
+    def learner(self):
+        with TemporaryDirectory() as tmpdir:
+            storage_path = Path(tmpdir) / "test_learning.json"
+            yield AdaptiveLearner(storage_path=storage_path)
+
+    def test_suggest_parameters_returns_dict_not_list(self, learner):
+        feedback = FeedbackSignal(
+            artwork_id="art1",
+            user_action="like",
+            generation_params={
+                "num_inference_steps": 40,
+                "guidance_scale": 7.5,
+                "width": 768,
+                "height": 768,
+            },
+            prompt="misty harbor",
+            model_id="test-model",
+            source="user",
+        )
+        learner.record_feedback(feedback)
+
+        suggested = learner.suggest_parameters()
+        assert isinstance(suggested, dict)
+        assert suggested["num_inference_steps"] == 40
+        assert suggested["guidance_scale"] == 7.5
+        # Must support .items() (creative_mind context builder)
+        assert "guidance_scale=7.5" in ", ".join(
+            f"{k}={v}" for k, v in suggested.items()
+        )
+
+    def test_parse_param_hash_list_of_pairs(self):
+        raw = "[('guidance_scale', 7.5), ('height', 768), ('num_inference_steps', 40), ('width', 768)]"
+        parsed = AdaptiveLearner._parse_param_hash(raw)
+        assert parsed == {
+            "guidance_scale": 7.5,
+            "height": 768,
+            "num_inference_steps": 40,
+            "width": 768,
+        }
+
+    def test_parse_param_hash_dict_form(self):
+        parsed = AdaptiveLearner._parse_param_hash("{'width': 512, 'height': 512}")
+        assert parsed == {"width": 512, "height": 512}
