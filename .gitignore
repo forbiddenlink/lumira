@@ -37,6 +37,8 @@ data/lumira_desires.json
 data/lumira_evolved_statement.json
 data/adaptive_learning.json
 data/thematic_series.json
+data/lumira_personality.json
+data/reflections.json
 data/vector_memory/
 logs/
 *.log
