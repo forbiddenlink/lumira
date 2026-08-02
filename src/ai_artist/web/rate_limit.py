@@ -19,6 +19,12 @@ from ..utils.logging import get_logger
 
 logger = get_logger(__name__)
 
+# Throttling is disabled under test, where a single client hammers every
+# endpoint across the whole E2E session (page loads poll autonomy-status,
+# series, state, statement) and would otherwise trip 429s unrelated to real
+# traffic. Every module-level Limiter passes enabled=RATE_LIMIT_ENABLED.
+RATE_LIMIT_ENABLED = os.getenv("TESTING") != "1"
+
 
 # Rate limit constants for generation endpoints
 # These limits protect GPU resources and prevent abuse
@@ -159,19 +165,13 @@ def setup_rate_limiting(app) -> Limiter:
     Returns:
         The configured Limiter instance.
     """
-    # Disable throttling under test, where a single client hammers every
-    # endpoint across the whole E2E session (page loads poll autonomy-status,
-    # series, state, statement) and would otherwise trip 429s that have nothing
-    # to do with real traffic.
-    enabled = os.getenv("TESTING") != "1"
-
     # Create limiter with IP-based key function
     limiter = Limiter(
         key_func=get_rate_limit_key,
         default_limits=["200/minute"],  # Default for unlisted endpoints
         headers_enabled=True,  # Enable X-RateLimit-* headers
         strategy="fixed-window",  # Use fixed window strategy
-        enabled=enabled,
+        enabled=RATE_LIMIT_ENABLED,
     )
 
     # Attach limiter to app state
