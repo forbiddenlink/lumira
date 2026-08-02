@@ -28,7 +28,13 @@ class ConnectionManager:
         # Use list instead of set for better iteration safety
         self.active_connections: list[WebSocket] = []
         self.generation_sessions: dict[str, dict] = {}
-        self._lock = asyncio.Lock()
+        # Lock is bound lazily to the running event loop (see _lock). Creating it
+        # here would bind it to whichever loop was current at import time, and
+        # asyncio.Lock raises if later acquired from a different loop — which is
+        # exactly what happens with function-scoped test loops against this
+        # module-level singleton.
+        self._lock_obj: asyncio.Lock | None = None
+        self._lock_loop: asyncio.AbstractEventLoop | None = None
         self.max_connections = int(
             os.getenv("WS_MAX_CONNECTIONS", str(DEFAULT_WS_MAX_CONNECTIONS))
         )
@@ -39,6 +45,22 @@ class ConnectionManager:
             )
         )
         self._message_times: dict[int, deque[float]] = {}
+
+    @property
+    def _lock(self) -> asyncio.Lock:
+        """Return a lock bound to the current running loop, recreating it if the
+        loop changed. In production there is a single loop, so the lock is made
+        once; under test isolation each async test gets a fresh loop and a
+        matching fresh lock, avoiding 'bound to a different event loop' errors.
+        """
+        try:
+            loop: asyncio.AbstractEventLoop | None = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if self._lock_obj is None or self._lock_loop is not loop:
+            self._lock_obj = asyncio.Lock()
+            self._lock_loop = loop
+        return self._lock_obj
 
     async def connect(self, websocket: WebSocket, client_id: str = "") -> bool:
         """Accept and register a WebSocket connection."""

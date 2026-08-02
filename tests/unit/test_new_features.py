@@ -243,9 +243,18 @@ class TestPortfolioCache:
 
         import asyncio
 
+        # Save/restore the thread's event loop so a closed loop is not left as
+        # "current" for later tests on this thread.
+        try:
+            prev_loop = asyncio.get_event_loop_policy().get_event_loop()
+        except RuntimeError:
+            prev_loop = None
         loop = asyncio.new_event_loop()
-        result = loop.run_until_complete(routes._load_portfolio_from_gallery())
-        loop.close()
+        try:
+            result = loop.run_until_complete(routes._load_portfolio_from_gallery())
+        finally:
+            loop.close()
+            asyncio.set_event_loop(prev_loop)
 
         # Should return the cached value without touching the filesystem
         assert result == [{"prompt": "cached"}]

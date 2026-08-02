@@ -614,7 +614,12 @@ class TestOnThought:
         mock_thought.content = "Reflecting on the concept"
         mock_thought.context = {"theme": "sunset"}
 
-        # Run in async context
+        # Run in async context. Save/restore the thread's event loop so we don't
+        # leave a closed loop as "current" for later tests on this thread.
+        try:
+            prev_loop = asyncio.get_event_loop_policy().get_event_loop()
+        except RuntimeError:
+            prev_loop = None
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
@@ -626,6 +631,7 @@ class TestOnThought:
             pass
         finally:
             loop.close()
+            asyncio.set_event_loop(prev_loop)
 
 
 class TestGetWsManager:
