@@ -151,7 +151,10 @@ def server_process(test_port: int) -> Generator[None, None, None]:
     # Capture server output so failures (e.g. a 500 behind an E2E assertion) are
     # diagnosable instead of silently discarded to /dev/null.
     server_log_path = e2e_root / "server.log"
-    server_log = open(server_log_path, "w")
+    # Long-lived handle: owned by the subprocess for the whole session and
+    # closed explicitly in the finally block below (a context manager would
+    # close it immediately), so a manual open is correct here.
+    server_log = open(server_log_path, "w")  # noqa: SIM115
 
     # Start the server in an isolated cwd with minimal data files
     proc = subprocess.Popen(
