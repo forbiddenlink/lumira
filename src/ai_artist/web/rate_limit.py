@@ -4,6 +4,7 @@ Provides centralized rate limit configuration for generation endpoints
 with proper headers and helpful error messages.
 """
 
+import os
 from collections.abc import Awaitable, Callable
 
 from fastapi import Request, Response
@@ -158,12 +159,19 @@ def setup_rate_limiting(app) -> Limiter:
     Returns:
         The configured Limiter instance.
     """
+    # Disable throttling under test, where a single client hammers every
+    # endpoint across the whole E2E session (page loads poll autonomy-status,
+    # series, state, statement) and would otherwise trip 429s that have nothing
+    # to do with real traffic.
+    enabled = os.getenv("TESTING") != "1"
+
     # Create limiter with IP-based key function
     limiter = Limiter(
         key_func=get_rate_limit_key,
         default_limits=["200/minute"],  # Default for unlisted endpoints
         headers_enabled=True,  # Enable X-RateLimit-* headers
         strategy="fixed-window",  # Use fixed window strategy
+        enabled=enabled,
     )
 
     # Attach limiter to app state
