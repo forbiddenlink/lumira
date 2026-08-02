@@ -70,7 +70,7 @@ from .middleware import (
     add_cors_middleware,
 )
 from .prompt_routes import router as prompt_router
-from .rate_limit import rate_limit_exceeded_handler
+from .rate_limit import RATE_LIMIT_ENABLED, rate_limit_exceeded_handler
 from .websocket import ALLOWED_CLIENT_MESSAGE_TYPES
 from .websocket import manager as ws_manager
 
@@ -95,7 +95,11 @@ _background_tasks: set = set()
 # still capped. Set well above any legitimate polling rate; stricter per-route
 # decorators (e.g. 5/minute on generation) bind first, so this only ever
 # throttles otherwise-unlimited endpoints.
-limiter = Limiter(key_func=get_remote_address, default_limits=["600/minute"])
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["600/minute"],
+    enabled=RATE_LIMIT_ENABLED,
+)
 
 logger = get_logger(__name__)
 
