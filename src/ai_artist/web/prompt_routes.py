@@ -11,11 +11,12 @@ from ..utils.logging import get_logger
 from ..utils.prompt_emphasis import PromptEmphasis
 from ..utils.prompt_matrix import PromptMatrix
 from ..utils.style_presets import StylePresetsManager
+from .rate_limit import RATE_LIMIT_ENABLED
 
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/api/prompt", tags=["prompt"])
-limiter = Limiter(key_func=get_remote_address)
+limiter = Limiter(key_func=get_remote_address, enabled=RATE_LIMIT_ENABLED)
 
 # Initialize utilities
 prompt_emphasis = PromptEmphasis()
