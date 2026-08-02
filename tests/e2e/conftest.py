@@ -148,6 +148,14 @@ def server_process(test_port: int) -> Generator[None, None, None]:
         os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else ""
     )
 
+    # Capture server output so failures (e.g. a 500 behind an E2E assertion) are
+    # diagnosable instead of silently discarded to /dev/null.
+    server_log_path = e2e_root / "server.log"
+    # Long-lived handle: owned by the subprocess for the whole session and
+    # closed explicitly in the finally block below (a context manager would
+    # close it immediately), so a manual open is correct here.
+    server_log = open(server_log_path, "w")  # noqa: SIM115
+
     # Start the server in an isolated cwd with minimal data files
     proc = subprocess.Popen(
         [
@@ -163,9 +171,19 @@ def server_process(test_port: int) -> Generator[None, None, None]:
         ],
         cwd=e2e_root,
         env=env,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stdout=server_log,
+        stderr=subprocess.STDOUT,
     )
+
+    def _dump_server_log(reason: str) -> None:
+        server_log.flush()
+        try:
+            tail = server_log_path.read_text(errors="replace").splitlines()[-60:]
+        except OSError:
+            tail = []
+        print(f"\n----- e2e server log ({reason}) -----")
+        print("\n".join(tail))
+        print("----- end e2e server log -----\n")
 
     # Wait for server to be ready (with timeout)
     base_url = f"http://127.0.0.1:{test_port}"
@@ -183,6 +201,8 @@ def server_process(test_port: int) -> Generator[None, None, None]:
     else:
         proc.terminate()
         proc.wait(timeout=5)
+        _dump_server_log("startup timeout")
+        server_log.close()
         raise RuntimeError(
             f"Server failed to start within {max_wait}s.\n" f"isolated cwd: {e2e_root}"
         )
@@ -197,6 +217,10 @@ def server_process(test_port: int) -> Generator[None, None, None]:
         except subprocess.TimeoutExpired:
             proc.kill()
             proc.wait()
+        # Surface any server-side errors (5xx tracebacks) recorded during the run.
+        if os.getenv("E2E_DUMP_SERVER_LOG", "1") != "0":
+            _dump_server_log("session teardown")
+        server_log.close()
         shutil.rmtree(e2e_root, ignore_errors=True)
 
 
