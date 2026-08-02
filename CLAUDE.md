@@ -90,7 +90,7 @@ FastAPI routers mounted at:
 
 - `/api/lumira` - Personality & generation endpoints
 - `/api/gallery` - Gallery management
-- `/api/health` - Kubernetes probes
+- `/health` - Kubernetes probes (also `/health/live`, `/health/ready`)
 - `/api/metrics` - Prometheus metrics
 - `/ws` - WebSocket for real-time updates
 

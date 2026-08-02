@@ -67,8 +67,8 @@ ai_artist = ["web/templates/*.html", "web/static/**/*"]
 [project.optional-dependencies]
 dev = [
     "pytest>=9.0.3",
-    "pytest-asyncio>=0.23.0",
-    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=1.3.0",
+    "pytest-cov>=7.0.0",
     "pytest-mock>=3.12.0",
     "pytest-timeout>=2.3.0",
     "mypy>=1.8.0",
@@ -155,15 +155,8 @@ ignore = [
 line-length = 88
 target-version = ["py311"]
 
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
-testpaths = ["tests"]
-markers = [
-    "slow: marks tests as slow",
-    "integration: marks integration tests",
-    "unit: marks unit tests",
-    "e2e: marks end-to-end tests requiring browser (Playwright)",
-]
+# pytest config lives in pytest.ini (single source of truth). Do not re-add
+# [tool.pytest.ini_options] here — pytest.ini takes precedence and this block was dead.
 
 [tool.mypy]
 python_version = "3.11"
