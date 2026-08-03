@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field
 
+from ..core.spend_guard import guarded_messages_create
 from ..utils.logging import get_logger
 
 if TYPE_CHECKING:
@@ -644,7 +645,8 @@ Write naturally, not formally. Example tone: "Today I found myself drawn to..."
 """
 
         try:
-            response = self._client.messages.create(
+            response = guarded_messages_create(
+                self._client,
                 model=self.model,
                 max_tokens=200,
                 messages=[{"role": "user", "content": prompt}],
@@ -696,7 +698,8 @@ Write authentically as Lumira - an AI that genuinely creates and feels.
 """
 
         try:
-            response = self._client.messages.create(
+            response = guarded_messages_create(
+                self._client,
                 model=self.model,
                 max_tokens=800,
                 messages=[{"role": "user", "content": prompt}],

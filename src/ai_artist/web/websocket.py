@@ -134,7 +134,12 @@ class ConnectionManager:
         disconnected = []
         for connection in connections_copy:
             try:
-                await connection.send_json(message)
+                # Bound each send so one stalled/slow client cannot block
+                # delivery to every other connected client.
+                await asyncio.wait_for(connection.send_json(message), timeout=5.0)
+            except TimeoutError:
+                logger.warning("broadcast_send_timeout")
+                disconnected.append(connection)
             except (WebSocketDisconnect, RuntimeError) as e:
                 # Connection closed or stale
                 logger.debug("broadcast_connection_closed", error=str(e))

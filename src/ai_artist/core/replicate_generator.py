@@ -13,6 +13,7 @@ import replicate
 from PIL import Image
 
 from ..utils.logging import get_logger
+from .spend_guard import check_and_record_images
 
 logger = get_logger(__name__)
 
@@ -41,38 +42,19 @@ REPLICATE_MODELS = {
 # Default to FLUX 2 Pro for best quality/speed balance
 DEFAULT_MODEL = "flux2-pro"
 
-# Daily spend backstop for the metered Replicate API. Counts images generated
-# per UTC day across this process; refuses new calls once the cap is hit so a
-# scripted caller cannot run up an unbounded bill. 0 disables. Configure via
+# Rough per-image cost estimate for the shared dollar budget (override as
+# pricing shifts). Configure the image-count cap via
 # LUMIRA_REPLICATE_DAILY_MAX_IMAGES.
-_spend_day: str | None = None
-_spend_count = 0
+_REPLICATE_COST_PER_IMAGE_USD = float(
+    os.getenv("LUMIRA_REPLICATE_COST_PER_IMAGE_USD", "0.04")
+)
 
 
 def _check_replicate_budget(num_images: int) -> None:
-    """Enforce the per-day Replicate image budget; raise if exceeded."""
-    global _spend_day, _spend_count
+    """Enforce the per-day Replicate image budget (Redis-backed, cross-worker,
+    survives restart) plus the global kill switch and dollar cap."""
     cap = int(os.getenv("LUMIRA_REPLICATE_DAILY_MAX_IMAGES", "200"))
-    if cap <= 0:
-        return
-    from datetime import UTC, datetime
-
-    today = datetime.now(UTC).strftime("%Y-%m-%d")
-    if today != _spend_day:
-        _spend_day = today
-        _spend_count = 0
-    if _spend_count + num_images > cap:
-        logger.error(
-            "replicate_budget_exceeded",
-            used=_spend_count,
-            requested=num_images,
-            daily_cap=cap,
-        )
-        raise RuntimeError(
-            f"Replicate daily image budget exceeded ({_spend_count}/{cap}). "
-            "Raise LUMIRA_REPLICATE_DAILY_MAX_IMAGES or wait for the daily reset."
-        )
-    _spend_count += num_images
+    check_and_record_images("replicate", num_images, cap, _REPLICATE_COST_PER_IMAGE_USD)
 
 
 class ReplicateGenerator:

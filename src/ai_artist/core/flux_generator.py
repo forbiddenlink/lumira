@@ -347,13 +347,11 @@ class FluxGenerator:
         def progress_callback(pipeline, step_index, timestep, callback_kwargs):
             step = step_index + 1
             progress_pct = int((step / num_inference_steps) * 100)
-            bar_length = 30
-            filled = int(bar_length * step // num_inference_steps)
-            bar = "\u2588" * filled + "\u2591" * (bar_length - filled)
-            print(
-                f"\r   [{bar}] {progress_pct}% ({step}/{num_inference_steps} steps)",
-                end="",
-                flush=True,
+            logger.debug(
+                "flux_generation_progress",
+                step=step,
+                total=num_inference_steps,
+                percent=progress_pct,
             )
             if on_progress is not None:
                 message = f"FLUX generating: step {step}/{num_inference_steps}"
@@ -382,7 +380,6 @@ class FluxGenerator:
 
         try:
             result = self.pipeline(**gen_kwargs)
-            print()  # New line after progress bar
 
             images = result.images
 
@@ -398,7 +395,6 @@ class FluxGenerator:
             return images
 
         except Exception as e:
-            print()  # Clear progress bar line
             logger.error(
                 "flux_generation_failed",
                 error=str(e),

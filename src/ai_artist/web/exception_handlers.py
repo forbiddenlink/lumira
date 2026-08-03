@@ -120,6 +120,7 @@ def validation_exception_handler(
         status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
         content={
             "error": "Validation error",
+            "status_code": status.HTTP_422_UNPROCESSABLE_CONTENT,
             "detail": safe_errors,
             "path": str(request.url.path),
         },
@@ -151,6 +152,7 @@ def general_exception_handler(request: Request, exc: Exception) -> Response:
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "error": "Internal server error",
+            "status_code": status.HTTP_500_INTERNAL_SERVER_ERROR,
             "path": str(request.url.path),
         },
     )

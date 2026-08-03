@@ -9,15 +9,23 @@ from datetime import UTC, datetime
 from typing import Annotated
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
 from ai_artist.db.models import GeneratedImage, UserFeedback
 from ai_artist.db.session import get_db
 from ai_artist.learning import FeedbackSignal, get_adaptive_learner
 
+from .rate_limit import RATE_LIMIT_ENABLED
+
 logger = structlog.get_logger(__name__)
+
+# Feedback writes directly bias the adaptive learner; throttle it in line with
+# other public write endpoints (comments 10/min) to prevent preference poisoning.
+limiter = Limiter(key_func=get_remote_address, enabled=RATE_LIMIT_ENABLED)
 
 router = APIRouter(prefix="/api/feedback", tags=["feedback"])
 
@@ -60,7 +68,9 @@ class LearningStatsResponse(BaseModel):
 
 
 @router.post("/submit", response_model=FeedbackResponse)
+@limiter.limit("15/minute")
 async def submit_feedback(
+    request: Request,
     feedback: FeedbackRequest,
     db: DbSession,
 ) -> FeedbackResponse:

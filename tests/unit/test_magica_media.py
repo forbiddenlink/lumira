@@ -19,11 +19,16 @@ pytestmark = pytest.mark.unit
 
 @pytest.fixture(autouse=True)
 def _reset_budget(monkeypatch):
-    # Isolate the module-level per-kind daily counters between tests.
-    monkeypatch.setitem(mm._spend_day, "audio", None)
-    monkeypatch.setitem(mm._spend_day, "video", None)
-    monkeypatch.setitem(mm._spend_count, "audio", 0)
-    monkeypatch.setitem(mm._spend_count, "video", 0)
+    # Isolate the shared spend-guard ledger between tests. A fresh fakeredis
+    # client per test gives real per-provider counters without a live Redis.
+    import fakeredis
+
+    from ai_artist.core import spend_guard
+
+    monkeypatch.setattr(spend_guard, "_redis_checked", True)
+    monkeypatch.setattr(spend_guard, "_redis_client", fakeredis.FakeStrictRedis())
+    monkeypatch.delenv("LUMIRA_AI_KILL_SWITCH", raising=False)
+    monkeypatch.delenv("LUMIRA_DAILY_SPEND_USD_MAX", raising=False)
     yield
 
 
@@ -259,16 +264,24 @@ def test_video_budget_guard_blocks_over_cap(monkeypatch, tmp_path):
         gen.generate_video("y", gallery_root=tmp_path)
 
 
-def test_budget_not_consumed_on_failed_run(monkeypatch, tmp_path):
+def test_budget_routed_through_spend_guard(monkeypatch, tmp_path):
+    # Spend is now tracked by the shared spend guard: generate_audio() must call
+    # check_and_record_images with the kind-scoped provider, count, and cap.
     monkeypatch.setenv("MAGICA_API_KEY", "k")
     monkeypatch.setenv("LUMIRA_MAGICA_DAILY_MAX_AUDIO", "5")
     gen = MagicaAudioGenerator()
+    post_resp, poll_resp, dl_resp = _mock_ok_run(
+        "run-g", ["https://cdn.example/a.mp3"], b"a"
+    )
     with (
-        patch.object(mm.httpx, "post", side_effect=mm.httpx.HTTPError("boom")),
-        pytest.raises(RuntimeError),
+        patch.object(mm, "check_and_record_images") as guard,
+        patch.object(mm.httpx, "post", return_value=post_resp),
+        patch.object(mm.httpx, "get", side_effect=[poll_resp, dl_resp]),
     ):
         gen.generate_audio("x", gallery_root=tmp_path)
-    assert mm._spend_count["audio"] == 0
+    assert guard.call_args.args[0] == "magica_audio"
+    assert guard.call_args.args[1] == 1
+    assert guard.call_args.args[2] == 5
 
 
 def test_audio_and_video_budgets_are_independent(monkeypatch, tmp_path):
@@ -285,15 +298,16 @@ def test_audio_and_video_budgets_are_independent(monkeypatch, tmp_path):
     ):
         audio_gen.generate_audio("x", gallery_root=tmp_path)
 
-    # Video budget is untouched by the audio spend above.
+    # Video budget is untouched by the audio spend above: it succeeds even
+    # though the audio cap (1) is already consumed.
     v_post, v_poll, v_dl = _mock_ok_run("run-v", ["https://cdn.example/v.mp4"], b"v")
     with (
         patch.object(mm.httpx, "post", return_value=v_post),
         patch.object(mm.httpx, "get", side_effect=[v_poll, v_dl]),
     ):
-        video_gen.generate_video("y", gallery_root=tmp_path)
+        video_path = video_gen.generate_video("y", gallery_root=tmp_path)
 
-    assert mm._spend_count == {"audio": 1, "video": 1}
+    assert video_path.exists()
 
 
 def test_generate_failed_run_raises(monkeypatch, tmp_path):

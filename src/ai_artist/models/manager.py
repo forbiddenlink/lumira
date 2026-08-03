@@ -28,6 +28,12 @@ class ModelManager:
     """Manages downloading and organizing models."""
 
     def __init__(self, base_path: Path | str = "models", api_key: str | None = None):
+        # Reject non-path base_path (e.g. an unconfigured Mock attribute) so a
+        # bad value can't silently mkdir junk directories at the repo root.
+        if not isinstance(base_path, str | Path):
+            raise TypeError(
+                f"base_path must be str or Path, got {type(base_path).__name__}"
+            )
         self.base_path = Path(base_path)
         self.lora_path = self.base_path / "lora"
         self.checkpoint_path = self.base_path / "checkpoints"
@@ -38,7 +44,11 @@ class ModelManager:
             timeout=30.0, follow_redirects=True, headers={"User-Agent": "AIArtist/1.0"}
         )
 
-        # Create directories
+        self.ensure_dirs()
+
+    def ensure_dirs(self) -> None:
+        """Create the model storage directories (side effect kept out of init
+        so constructing a manager for its interface alone touches no disk)."""
         self.lora_path.mkdir(parents=True, exist_ok=True)
         self.checkpoint_path.mkdir(parents=True, exist_ok=True)
 

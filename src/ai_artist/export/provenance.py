@@ -1,15 +1,23 @@
-"""C2PA Content Provenance and Authenticity metadata embedding.
+"""Best-effort content provenance metadata embedding.
 
-Implements the Coalition for Content Provenance and Authenticity (C2PA) standard
-for embedding provenance metadata in AI-generated images. Required for EU AI Act
-compliance (effective August 2, 2026).
+Embeds C2PA-*shaped* provenance metadata in AI-generated images as a best-effort
+transparency measure. This is NOT a full C2PA implementation: it writes an
+unsigned manifest plus descriptive fields into PNG tEXt chunks / XMP, but does
+NOT perform cryptographic C2PA signing (no signed C2PA claim, no tamper-evident
+chain of custody). Treat it as informative metadata, not a verifiable
+credential.
 
-C2PA metadata includes:
-- AI generation disclosure (required by EU AI Act)
+This may help toward transparency expectations such as the EU AI Act's
+AI-generated-content disclosure, but on its own it does not establish
+regulatory compliance, and the cryptographic signing that C2PA relies on for
+tamper detection is not yet implemented.
+
+Embedded metadata includes:
+- AI generation disclosure (Lumira as the generating tool)
 - Model information and parameters
 - Creator attribution
-- Timestamp and chain of custody
-- Digital signatures for tamper detection
+- Timestamp
+- An instance ID hash (identifier only, not a tamper-proof signature)
 
 References:
 - C2PA Specification: https://c2pa.org/specifications/
@@ -373,9 +381,10 @@ class ProvenanceManager:
             additional_metadata=kwargs if kwargs else None,
         )
 
-        # Embed using best available method
+        # Embed using best available method. NOTE: cryptographic C2PA signing is
+        # not yet implemented, so both branches currently write unsigned PNG
+        # metadata (see _embed_c2pa).
         if self.c2pa_available:
-            # Use full C2PA library for cryptographic signatures
             return self._embed_c2pa(image, manifest, output_path)
         else:
             # Fallback to PNG metadata embedding
@@ -388,7 +397,11 @@ class ProvenanceManager:
         manifest: dict[str, Any],
         output_path: Path,
     ) -> Path:
-        """Embed C2PA metadata using the c2pa library.
+        """Embed provenance metadata (unsigned).
+
+        Placeholder for full C2PA cryptographic signing via the c2pa-python
+        library. That signing is NOT yet implemented, so this currently writes
+        the same unsigned PNG metadata as the fallback path.
 
         Args:
             image: PIL Image
@@ -398,8 +411,8 @@ class ProvenanceManager:
         Returns:
             Path to saved image
         """
-        # This would use the c2pa-python library when available
-        # For now, fall back to PNG metadata
+        # Cryptographic C2PA signing (c2pa-python) is not yet implemented; write
+        # unsigned PNG metadata instead. Do NOT present this as a signed claim.
         logger.warning(
             "c2pa_full_not_implemented",
             message="Full C2PA with signatures not yet implemented, using PNG metadata",

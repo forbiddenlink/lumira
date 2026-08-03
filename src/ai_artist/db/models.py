@@ -128,7 +128,12 @@ class GalleryLike(Base):  # type: ignore[misc, valid-type]
     # Relationship
     image = relationship("GeneratedImage", back_populates="likes")
 
-    __table_args__ = ({"sqlite_autoincrement": True},)
+    __table_args__ = (
+        UniqueConstraint(
+            "image_id", "session_id", name="uq_gallery_likes_image_session"
+        ),
+        {"sqlite_autoincrement": True},
+    )
 
 
 class GalleryComment(Base):  # type: ignore[misc, valid-type]

@@ -561,13 +561,11 @@ class ImageGenerator:
         def progress_callback_modern(pipeline, step_index, timestep, callback_kwargs):
             step = step_index + 1  # Make it 1-based for display
             progress_pct = int((step / num_inference_steps) * 100)
-            bar_length = 30
-            filled = int(bar_length * step // num_inference_steps)
-            bar = "\u2588" * filled + "\u2591" * (bar_length - filled)
-            print(
-                f"\r   [{bar}] {progress_pct}% ({step}/{num_inference_steps} steps)",
-                end="",
-                flush=True,
+            logger.debug(
+                "generation_progress",
+                step=step,
+                total=num_inference_steps,
+                percent=progress_pct,
             )
             # Call external progress callback if provided (for WebSocket updates)
             if on_progress is not None:
@@ -639,7 +637,6 @@ class ImageGenerator:
             )
 
         result = self.pipeline(**call_kwargs)
-        print()  # New line after progress bar
 
         images = result.images
 

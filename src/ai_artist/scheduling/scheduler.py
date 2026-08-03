@@ -1,10 +1,13 @@
 """Automated scheduling for artwork creation."""
 
 import asyncio
+import os
 from collections.abc import Callable
 from datetime import UTC
+from pathlib import Path
 from typing import Any, Literal
 
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.interval import IntervalTrigger
@@ -14,12 +17,47 @@ from ..utils.logging import get_logger
 
 logger = get_logger(__name__)
 
+# How long after a missed fire time a job may still run (seconds).
+_MISFIRE_GRACE_SECONDS = 3600
+
+
+def _persist_enabled() -> bool:
+    """True when LUMIRA_SCHEDULER_PERSIST is set to a truthy value."""
+    return (os.getenv("LUMIRA_SCHEDULER_PERSIST") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
+def _build_scheduler() -> AsyncIOScheduler:
+    """Build the AsyncIOScheduler with durable defaults.
+
+    ``coalesce`` collapses several missed runs of the same job into a single
+    catch-up, and ``misfire_grace_time`` lets a briefly-late run still fire;
+    both are always applied so restarts / clock skew don't drop or storm jobs.
+
+    A durable SQLAlchemyJobStore (sqlite ``data/scheduler.db``) is used only
+    when ``LUMIRA_SCHEDULER_PERSIST`` is enabled, so jobs survive a restart.
+    Persistence is opt-in because APScheduler must pickle persisted jobs, and
+    the current job callables (bound methods and local async closures) are not
+    serializable; enabling it requires those callables to be module-level
+    functions. The in-memory default keeps every existing caller working.
+    """
+    job_defaults = {"coalesce": True, "misfire_grace_time": _MISFIRE_GRACE_SECONDS}
+    if _persist_enabled():
+        Path("data").mkdir(parents=True, exist_ok=True)
+        jobstores = {"default": SQLAlchemyJobStore(url="sqlite:///data/scheduler.db")}
+        return AsyncIOScheduler(jobstores=jobstores, job_defaults=job_defaults)
+    return AsyncIOScheduler(job_defaults=job_defaults)
+
 
 class CreationScheduler:
     """Schedule automated artwork creation with full autonomy!"""
 
     def __init__(self, autonomous_mode: bool = True):
-        self.scheduler = AsyncIOScheduler()
+        self.scheduler = _build_scheduler()
         self.autonomous_mode = autonomous_mode
 
         # Traditional topic rotation (for legacy mode)

@@ -25,6 +25,15 @@ logger = get_logger(__name__)
 # traffic. Every module-level Limiter passes enabled=RATE_LIMIT_ENABLED.
 RATE_LIMIT_ENABLED = os.getenv("TESTING") != "1"
 
+if not RATE_LIMIT_ENABLED:
+    # Loud, observable signal — a prod deploy that accidentally has TESTING=1
+    # would otherwise disable all rate limiting app-wide with zero indication.
+    logger.warning(
+        "rate_limiting_disabled",
+        reason="TESTING=1",
+        impact="all app rate limits are OFF",
+    )
+
 
 # Rate limit constants for generation endpoints
 # These limits protect GPU resources and prevent abuse
@@ -63,7 +72,9 @@ def get_rate_limit_key(request: Request) -> str:
     return str(remote_addr) if remote_addr else "unknown"
 
 
-def create_rate_limit_error_response(exc: RateLimitExceeded) -> JSONResponse:
+def create_rate_limit_error_response(
+    request: Request, exc: RateLimitExceeded
+) -> JSONResponse:
     """Create a helpful 429 error response with rate limit headers.
 
     Returns:
@@ -83,11 +94,15 @@ def create_rate_limit_error_response(exc: RateLimitExceeded) -> JSONResponse:
         "GPU resources. Please wait before making another request."
     )
 
-    # Create response with helpful information
+    # Create response with helpful information. Base shape (error/status_code/
+    # path) matches every other handler in exception_handlers.py; the extra
+    # fields below are additive, not a replacement shape.
     response = JSONResponse(
         status_code=429,
         content={
             "error": "rate_limit_exceeded",
+            "status_code": 429,
+            "path": str(request.url.path),
             "message": error_message,
             "limit": limit_string,
             "retry_after_seconds": int(retry_after),
@@ -118,7 +133,7 @@ def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Res
         client=get_remote_address(request),
         limit=str(exc.detail) if hasattr(exc, "detail") else "unknown",
     )
-    return create_rate_limit_error_response(exc)
+    return create_rate_limit_error_response(request, exc)
 
 
 class RateLimitHeadersMiddleware(BaseHTTPMiddleware):

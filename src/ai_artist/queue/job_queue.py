@@ -22,11 +22,18 @@ try:
     from rq.job import Job
 
     RQ_AVAILABLE = True
+    # Retry policy is version-guarded: rq.Retry exists on rq>=1.5 but its
+    # signature has shifted across versions, so treat it as optional.
+    try:
+        from rq import Retry
+    except ImportError:  # pragma: no cover - very old RQ
+        Retry = None  # type: ignore[misc, assignment]
 except ImportError:
     RQ_AVAILABLE = False
     Redis = None  # type: ignore[misc, assignment]
     Queue = None  # type: ignore[misc, assignment]
     Job = None  # type: ignore[misc, assignment]
+    Retry = None  # type: ignore[misc, assignment]
 
 
 class JobPriority(str, Enum):
@@ -227,6 +234,19 @@ class GenerationQueue:
 
             if job_id:
                 job_kwargs["job_id"] = job_id
+
+            # Bounded retry with exponential backoff so a transient failure
+            # (model load blip, network) isn't silently dropped. Guarded because
+            # rq.Retry may be missing/differently-shaped on older RQ. Set
+            # LUMIRA_JOB_MAX_RETRIES=0 to disable.
+            if Retry is not None:
+                max_retries = int(os.getenv("LUMIRA_JOB_MAX_RETRIES", "3"))
+                if max_retries > 0:
+                    intervals = [min(10 * (2**i), 300) for i in range(max_retries)]
+                    try:
+                        job_kwargs["retry"] = Retry(max=max_retries, interval=intervals)
+                    except Exception as retry_err:  # pragma: no cover - version drift
+                        logger.warning("retry_policy_unavailable", error=str(retry_err))
 
             # Enqueue the job
             job = queue.enqueue(

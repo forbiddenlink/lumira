@@ -15,6 +15,11 @@ from ai_artist.web.rate_limit import (
 )
 
 
+def _mock_request(path: str = "/api/lumira/request") -> Request:
+    """Build a minimal Request for handlers that only read `request.url.path`."""
+    return Request(scope={"type": "http", "method": "GET", "path": path, "headers": []})
+
+
 class TestRateLimits:
     """Tests for rate limit constants."""
 
@@ -59,14 +64,14 @@ class TestRateLimitErrorResponse:
         """Should create a 429 status code response."""
         # Create a mock exception with the expected attributes
         exc = MockRateLimitExceeded("5 per 1 minute")
-        response = create_rate_limit_error_response(exc)
+        response = create_rate_limit_error_response(_mock_request(), exc)
 
         assert response.status_code == 429
 
     def test_response_has_retry_after_header(self):
         """Response should include Retry-After header."""
         exc = MockRateLimitExceeded("5 per 1 minute", retry_after=60)
-        response = create_rate_limit_error_response(exc)
+        response = create_rate_limit_error_response(_mock_request(), exc)
 
         assert "Retry-After" in response.headers
         assert response.headers["Retry-After"] == "60"
@@ -74,14 +79,14 @@ class TestRateLimitErrorResponse:
     def test_response_has_rate_limit_header(self):
         """Response should include X-RateLimit-Limit header."""
         exc = MockRateLimitExceeded("5 per 1 minute")
-        response = create_rate_limit_error_response(exc)
+        response = create_rate_limit_error_response(_mock_request(), exc)
 
         assert "X-RateLimit-Limit" in response.headers
 
     def test_response_body_has_error_message(self):
         """Response body should have helpful error message."""
         exc = MockRateLimitExceeded("5 per 1 minute")
-        response = create_rate_limit_error_response(exc)
+        response = create_rate_limit_error_response(_mock_request(), exc)
 
         # Decode the body
         import json
@@ -93,10 +98,24 @@ class TestRateLimitErrorResponse:
         assert "GPU" in body["message"] or "limit" in body["message"].lower()
         assert "retry_after_seconds" in body
 
+    def test_response_body_has_consistent_error_envelope(self):
+        """Response body should share the app-wide error/status_code/path envelope."""
+        exc = MockRateLimitExceeded("5 per 1 minute")
+        response = create_rate_limit_error_response(
+            _mock_request("/api/lumira/request"), exc
+        )
+
+        import json
+
+        body = json.loads(response.body.decode())
+
+        assert body["status_code"] == 429
+        assert body["path"] == "/api/lumira/request"
+
     def test_response_body_has_suggestion(self):
         """Response body should include helpful suggestions."""
         exc = MockRateLimitExceeded("5 per 1 minute")
-        response = create_rate_limit_error_response(exc)
+        response = create_rate_limit_error_response(_mock_request(), exc)
 
         import json
 

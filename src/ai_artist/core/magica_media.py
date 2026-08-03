@@ -42,6 +42,7 @@ import httpx
 
 from ..utils.logging import get_logger
 from .magica_client import MagicaClient
+from .spend_guard import check_and_record_images
 
 logger = get_logger(__name__)
 
@@ -110,55 +111,28 @@ def video_model_for_mood(mood: str) -> str:
     return MAGICA_VIDEO_MOOD_MODELS.get(mood.lower(), DEFAULT_VIDEO_MODEL)
 
 
-# Daily budget backstops (mirrors magica_generator's image budget), one
-# counter per media kind so audio and video don't share a cap. 0 disables.
-_spend_day: dict[str, str | None] = {"audio": None, "video": None}
-_spend_count: dict[str, int] = {"audio": 0, "video": 0}
-
-
-def _budget_cap(kind: str) -> int:
-    return int(os.getenv(f"LUMIRA_MAGICA_DAILY_MAX_{kind.upper()}", "20"))
-
-
-def _roll_budget_day(kind: str) -> None:
-    from datetime import UTC
-
-    today = datetime.now(UTC).strftime("%Y-%m-%d")
-    if today != _spend_day[kind]:
-        _spend_day[kind] = today
-        _spend_count[kind] = 0
+# Rough per-item cost estimates for the shared dollar budget (override per kind
+# as pricing shifts). Configure the item-count caps via
+# LUMIRA_MAGICA_DAILY_MAX_AUDIO / LUMIRA_MAGICA_DAILY_MAX_VIDEO.
+_DEFAULT_MEDIA_COST_USD = {"audio": "0.10", "video": "0.50"}
 
 
 def _check_budget(kind: str, count: int = 1) -> None:
-    """Raise if generating ``count`` more items of ``kind`` exceeds the daily cap.
+    """Enforce the per-day Magica budget for ``kind`` (audio/video) via the
+    shared spend guard: Redis-backed, cross-worker, kill-switch + dollar-cap
+    aware, one counter per kind so audio and video don't share a cap.
 
-    Does NOT record spend -- call :func:`_record_spend` only after a run
-    succeeds, so failed/unbilled runs don't burn the cap.
+    Routed through the shared spend guard (mirrors ReplicateGenerator /
+    MagicaGenerator); like those, the guard records on attempt.
     """
-    cap = _budget_cap(kind)
-    if cap <= 0:
-        return
-    _roll_budget_day(kind)
-    if _spend_count[kind] + count > cap:
-        logger.error(
-            "magica_media_budget_exceeded",
-            kind=kind,
-            used=_spend_count[kind],
-            requested=count,
-            daily_cap=cap,
+    cap = int(os.getenv(f"LUMIRA_MAGICA_DAILY_MAX_{kind.upper()}", "20"))
+    cost = float(
+        os.getenv(
+            f"LUMIRA_MAGICA_{kind.upper()}_COST_PER_ITEM_USD",
+            _DEFAULT_MEDIA_COST_USD.get(kind, "0.10"),
         )
-        raise RuntimeError(
-            f"Magica daily {kind} budget exceeded ({_spend_count[kind]}/{cap}). "
-            f"Raise LUMIRA_MAGICA_DAILY_MAX_{kind.upper()} or wait for the daily reset."
-        )
-
-
-def _record_spend(kind: str, count: int = 1) -> None:
-    """Record successful spend against the daily cap for ``kind``."""
-    if _budget_cap(kind) <= 0:
-        return
-    _roll_budget_day(kind)
-    _spend_count[kind] += count
+    )
+    check_and_record_images(f"magica_{kind}", count, cap, cost)
 
 
 def _infer_extension(url: str, default: str) -> str:
@@ -337,7 +311,6 @@ class MagicaAudioGenerator:
             },
         )
 
-        _record_spend("audio", 1)
         logger.info("magica_audio_generation_complete", path=str(audio_path))
         return audio_path
 
@@ -493,6 +466,5 @@ class MagicaVideoGenerator:
             },
         )
 
-        _record_spend("video", 1)
         logger.info("magica_video_generation_complete", path=str(video_path))
         return video_path

@@ -34,6 +34,7 @@ from ..utils.logging import get_logger
 from .magica_client import TERMINAL_FAIL, TERMINAL_OK, MagicaClient
 from .magica_client import download_bytes as _download_bytes
 from .magica_client import extract_urls as _client_extract_urls
+from .spend_guard import check_and_record_images
 
 logger = get_logger(__name__)
 
@@ -87,57 +88,24 @@ def model_for_mood(mood: str) -> str:
 _TERMINAL_OK = TERMINAL_OK
 _TERMINAL_FAIL = TERMINAL_FAIL
 
-# Daily image budget backstop (mirrors ReplicateGenerator). 0 disables.
-_spend_day: str | None = None
-_spend_count = 0
-
-
-def _budget_cap() -> int:
-    """Daily image cap from env (0 disables)."""
-    return int(os.getenv("LUMIRA_MAGICA_DAILY_MAX_IMAGES", "200"))
-
-
-def _roll_budget_day() -> None:
-    """Reset the counter when the UTC day changes."""
-    global _spend_day, _spend_count
-    from datetime import UTC, datetime
-
-    today = datetime.now(UTC).strftime("%Y-%m-%d")
-    if today != _spend_day:
-        _spend_day = today
-        _spend_count = 0
+# Rough per-image cost estimate for the shared dollar budget (override as
+# pricing shifts). Configure the image-count cap via
+# LUMIRA_MAGICA_DAILY_MAX_IMAGES.
+_MAGICA_COST_PER_IMAGE_USD = float(
+    os.getenv("LUMIRA_MAGICA_COST_PER_IMAGE_USD", "0.04")
+)
 
 
 def _check_magica_budget(num_images: int) -> None:
-    """Raise if generating this many images would exceed the daily cap.
+    """Enforce the per-day Magica image budget (Redis-backed, cross-worker,
+    survives restart) plus the global kill switch and dollar cap.
 
-    Does NOT record spend -- call :func:`_record_magica_spend` only after a run
-    succeeds, so failed/unbilled runs don't burn the cap.
+    Routed through the shared spend guard so Magica spend lands in the same
+    Redis-backed ledger as Replicate and the LLM calls (mirrors
+    ReplicateGenerator). Like the Replicate path, the guard records on attempt.
     """
-    cap = _budget_cap()
-    if cap <= 0:
-        return
-    _roll_budget_day()
-    if _spend_count + num_images > cap:
-        logger.error(
-            "magica_budget_exceeded",
-            used=_spend_count,
-            requested=num_images,
-            daily_cap=cap,
-        )
-        raise RuntimeError(
-            f"Magica daily image budget exceeded ({_spend_count}/{cap}). "
-            "Raise LUMIRA_MAGICA_DAILY_MAX_IMAGES or wait for the daily reset."
-        )
-
-
-def _record_magica_spend(num_images: int) -> None:
-    """Record successful image spend against the daily cap."""
-    global _spend_count
-    if _budget_cap() <= 0:
-        return
-    _roll_budget_day()
-    _spend_count += num_images
+    cap = int(os.getenv("LUMIRA_MAGICA_DAILY_MAX_IMAGES", "200"))
+    check_and_record_images("magica", num_images, cap, _MAGICA_COST_PER_IMAGE_USD)
 
 
 def _aspect_ratio(width: int, height: int) -> str:
@@ -373,8 +341,6 @@ class MagicaGenerator:
             for asset_url in urls:
                 images.append(Image.open(io.BytesIO(_download_bytes(asset_url))))
 
-            # Only count spend once the run has succeeded and assets are in hand.
-            _record_magica_spend(num_images)
             logger.info("magica_generation_complete", num_images=len(images))
             return images
         except httpx.HTTPStatusError as e:

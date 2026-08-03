@@ -64,7 +64,6 @@ from .helpers import (
 from .lumira_routes import router as lumira_router
 from .metrics_routes import router as metrics_router
 from .middleware import (
-    ErrorHandlingMiddleware,
     RequestLoggingMiddleware,
     SecurityHeadersMiddleware,
     add_cors_middleware,
@@ -219,7 +218,21 @@ async def lifespan(app: FastAPI):
     db_path = Path("data/ai_artist.db")
     db_path.parent.mkdir(parents=True, exist_ok=True)
     engine = create_db_engine(db_path)
-    Base.metadata.create_all(engine)
+    # Prefer versioned Alembic migrations; fall back to create_all only when
+    # migrations can't run (e.g. missing alembic.ini, or an unstamped legacy DB
+    # whose tables already exist) so tests and fresh installs keep working.
+    try:
+        from alembic.config import Config
+
+        from alembic import command
+
+        alembic_cfg = Config("alembic.ini")
+        alembic_cfg.set_main_option("sqlalchemy.url", f"sqlite:///{db_path}")
+        command.upgrade(alembic_cfg, "head")
+        logger.info("database_migrated", db_path=str(db_path))
+    except Exception as e:
+        logger.warning("alembic_upgrade_failed_using_create_all", error=str(e))
+        Base.metadata.create_all(engine)
     logger.info("database_initialized", db_path=str(db_path))
 
     # Only initialize if not already set (e.g., by tests)
@@ -441,7 +454,12 @@ app.add_exception_handler(
 add_cors_middleware(app)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(ErrorHandlingMiddleware)
+# NOTE: no ErrorHandlingMiddleware here — it was removed as dead code. The
+# app-level exception handlers registered above (exception_handlers.py +
+# rate_limit.py) are resolved by Starlette's ExceptionMiddleware, which sits
+# directly around the router and therefore catches every route exception
+# before it can reach a BaseHTTPMiddleware's try/except further out in the
+# stack. A middleware-based catch-all here would never fire.
 # Enforces limiter.default_limits on routes without an explicit decorator.
 app.add_middleware(SlowAPIMiddleware)
 

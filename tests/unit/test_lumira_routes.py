@@ -108,9 +108,42 @@ class TestLumiraState:
             assert 0.0 <= value <= 1.0, f"{trait} should be between 0 and 1"
 
 
+class _FakeStudioGenerator:
+    """Stand-in image generator that never hits the network or time.sleep.
+
+    Used to keep /create and /request tests off the real Magica poll loop
+    (magica_client.poll_run sleeps in a thread and would hang bare pytest).
+    """
+
+    node_type = "fake"
+    model_name = "fake"
+
+    def load_model(self, *args, **kwargs):
+        return None
+
+    def generate(self, *args, **kwargs):
+        # No images: the background task finishes cleanly with no disk writes.
+        return []
+
+    def clear_vram(self):
+        return None
+
+    def unload(self):
+        return None
+
+
 @pytest.mark.slow
 class TestLumiraCreate:
     """Tests for /api/lumira/create endpoint."""
+
+    @pytest.fixture(autouse=True)
+    def _mock_generation(self):
+        """Patch the generator boundary so background generation can't hang."""
+        with patch(
+            "ai_artist.web.lumira_routes._build_studio_generator",
+            return_value=("magica", _FakeStudioGenerator()),
+        ):
+            yield
 
     def test_create_returns_success(self, client):
         """Create endpoint should return success."""

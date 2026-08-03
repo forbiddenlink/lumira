@@ -151,7 +151,7 @@ Key env vars:
 MODEL_ID=stabilityai/stable-diffusion-xl-base-1.0
 DEVICE=cuda|mps|cpu
 HF_TOKEN=<for gated models>
-DATABASE_URL=sqlite:///./data/lumira.db
+DATABASE_URL=sqlite:///./data/ai_artist.db
 ```
 
 ## Testing

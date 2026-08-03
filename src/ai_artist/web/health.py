@@ -125,18 +125,23 @@ async def readiness_probe():
 
 
 async def _check_database() -> bool:
-    """Check database connectivity."""
-    try:
-        from pathlib import Path
+    """Check database connectivity.
 
+    Reuses the process-wide session factory (a single pooled engine) rather
+    than constructing a new engine per call, which previously leaked a
+    connection pool + WAL setup on every readiness poll.
+    """
+    try:
         from sqlalchemy import text
 
-        from ..db.session import create_db_engine
+        from ..db.session import get_session_factory
 
-        engine = create_db_engine(Path("data/ai_artist.db"))
-        with engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
-            conn.commit()
+        session_factory = get_session_factory()
+        session = session_factory()
+        try:
+            session.execute(text("SELECT 1"))
+        finally:
+            session.close()
         return True
     except Exception as e:
         logger.warning("database_check_failed", error=str(e))

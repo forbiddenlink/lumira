@@ -4,7 +4,6 @@ import time
 from collections.abc import Awaitable, Callable
 
 from fastapi import Request, Response
-from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
@@ -51,7 +50,11 @@ def build_content_security_policy() -> str:
     """Build Content-Security-Policy header value."""
     csp_directives = [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' https://unpkg.com",
+        # lucide is now self-hosted (static/js/lucide.min.js), so unpkg.com is
+        # gone from script-src. 'unsafe-inline' stays: the inline studio
+        # scripts in lumira.html still need it — a full nonce-based refactor
+        # of those inline scripts is out of scope here.
+        "script-src 'self' 'unsafe-inline'",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com",
         "font-src 'self' https://fonts.gstatic.com",
         "img-src 'self' data: blob:",
@@ -116,46 +119,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
         return response
-
-
-class ErrorHandlingMiddleware(BaseHTTPMiddleware):
-    """Global error handling middleware."""
-
-    async def dispatch(
-        self,
-        request: Request,
-        call_next: Callable[[Request], Awaitable[Response]],
-    ) -> Response:
-        """Handle all exceptions and return appropriate responses."""
-        try:
-            response = await call_next(request)
-            return response
-        except ValueError as e:
-            logger.warning("validation_error", error=str(e), path=request.url.path)
-            return JSONResponse(
-                status_code=400,
-                content={"error": "Validation error", "detail": str(e)},
-            )
-        except FileNotFoundError as e:
-            logger.warning("not_found", error=str(e), path=request.url.path)
-            return JSONResponse(
-                status_code=404,
-                content={"error": "Resource not found", "detail": str(e)},
-            )
-        except Exception as e:
-            logger.error(
-                "unhandled_exception",
-                error=str(e),
-                error_type=type(e).__name__,
-                path=request.url.path,
-            )
-            return JSONResponse(
-                status_code=500,
-                content={
-                    "error": "Internal server error",
-                    "message": "An unexpected error occurred",
-                },
-            )
 
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):

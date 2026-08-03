@@ -53,7 +53,7 @@
     <link rel="apple-touch-icon" href="/static/icons/icon-192x192.png" />
 
     <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@0.577.0/dist/umd/lucide.min.js"></script>
+    <script src="/static/js/lucide.min.js"></script>
 
     <style>
       :root {
@@ -2648,7 +2648,7 @@
 
       <!-- Stream of Consciousness -->
       <div class="section-header">Stream of Consciousness</div>
-      <div id="thought-stream" class="stream-container">
+      <div id="thought-stream" class="stream-container" role="log" aria-live="polite" aria-label="Stream of consciousness — Lumira's thoughts and generation errors">
         <div class="log-entry">
           <div class="log-meta">SYSTEM</div>
           <div class="log-content">Listening for the next impulse…</div>
@@ -2800,7 +2800,9 @@
             placeholder="Describe what you'd like Lumira to create..."
             aria-label="Describe what you'd like Lumira to create"
             maxlength="2000"
+            oninput="updatePromptCounter(this)"
           ></textarea>
+          <div id="request-prompt-counter" class="request-char-counter" aria-live="polite" style="text-align:right;font-size:0.75rem;opacity:0.6;margin-top:2px">0/2000</div>
           <div id="prompt-suggestion" class="prompt-suggestion" role="region" aria-live="polite" aria-label="Lumira's prompt suggestion"></div>
           <div id="prompt-trust" class="prompt-suggestion-trust" style="display:none">Lumira trusts your vision</div>
         </div>
@@ -3244,6 +3246,10 @@
       var _generationAvailable = true;
       var _pendingStudioGeneration = false;
 
+      // Client-side ceiling for a generation request; abort past this so the
+      // studio never locks up on a hung/never-returning backend.
+      var LUMIRA_GENERATION_TIMEOUT_MS = 120000;
+
       function lumiraApiHeaders(extra) {
         var headers = Object.assign({ "Content-Type": "application/json" }, extra || {});
         if (_authRequired) {
@@ -3253,11 +3259,18 @@
         return headers;
       }
 
+      function updatePromptCounter(el) {
+        var counter = document.getElementById("request-prompt-counter");
+        if (!counter) return;
+        var max = el.getAttribute("maxlength") || 2000;
+        counter.textContent = el.value.length + "/" + max;
+      }
+
       function ensureGenerationAvailable() {
         if (_generationAvailable) return true;
         addLog(
           "SYSTEM",
-          "Generation is locked. Set LUMIRA_DEV_MODE=1 locally or configure RAILWAY_API_KEY.",
+          "Lumira can't generate right now — image generation isn't configured for this deployment. Browse her existing gallery in the meantime.",
         );
         return false;
       }
@@ -4126,12 +4139,20 @@
           }
         }, 3000);
 
+        // Abort a hung generation instead of locking the button/overlay forever.
+        var controller = new AbortController();
+        var timeoutId = setTimeout(function () {
+          controller.abort();
+        }, LUMIRA_GENERATION_TIMEOUT_MS);
+
         fetch("/api/lumira/create", {
           method: "POST",
           headers: lumiraApiHeaders(),
+          signal: controller.signal,
         })
           .then(function (res) {
             clearInterval(progressInterval);
+            clearTimeout(timeoutId);
             if (!res.ok) {
               return res.json().then(function (err) {
                 throw new Error(err.detail || "Creation failed");
@@ -4164,8 +4185,14 @@
           })
           .catch(function (err) {
             clearInterval(progressInterval);
-            addLog("ERROR", err.message);
+            clearTimeout(timeoutId);
+            var msg =
+              err.name === "AbortError"
+                ? "This is taking longer than usual — Lumira may still be working. Try again in a moment."
+                : err.message;
+            addLog("ERROR", msg);
             finishStudioCreationOverlay();
+            btn.disabled = false;
           });
       }
 
@@ -5689,13 +5716,20 @@
           }
         }, 3000);
 
+        var controller = new AbortController();
+        var timeoutId = setTimeout(function () {
+          controller.abort();
+        }, LUMIRA_GENERATION_TIMEOUT_MS);
+
         fetch("/api/lumira/request", {
           method: "POST",
           headers: lumiraApiHeaders(),
           body: JSON.stringify(body),
+          signal: controller.signal,
         })
           .then(function (res) {
             clearInterval(progressInterval);
+            clearTimeout(timeoutId);
             if (!res.ok) {
               return res.json().then(function (err) {
                 throw new Error(err.detail || "Creation request failed");
@@ -5767,7 +5801,19 @@
           })
           .catch(function (err) {
             clearInterval(progressInterval);
-            addLog("ERROR", err.message);
+            clearTimeout(timeoutId);
+            var msg =
+              err.name === "AbortError"
+                ? "This is taking longer than usual — Lumira may still be working. Try again in a moment."
+                : err.message;
+            addLog("ERROR", msg);
+            // Surface the failure inline, next to the Commission button, not
+            // only in the sidebar log the user isn't looking at.
+            if (resultReasoning && resultEl) {
+              resultReasoning.textContent = msg;
+              resultImg.style.display = "none";
+              resultEl.classList.add("visible");
+            }
           })
           .finally(function () {
             stopProgressPreviewStudio();

@@ -202,25 +202,12 @@ class RedisCache:
                 logger.warning("redis_close_error", error=str(e))
 
 
-# Convenience functions for common cache patterns
-async def cache_generation(
-    cache: RedisCache,
-    prompt: str,
-    params: dict[str, Any],
-    ttl: int = 3600,
-) -> str:
-    """Generate cache key for image generation.
-
-    Args:
-        cache: Redis cache instance
-        prompt: Generation prompt
-        params: Generation parameters
-        ttl: Time to live in seconds
-
-    Returns:
-        Cache key
-    """
-    # Create deterministic key from prompt + params
+# Deterministic cache-key builders. These only compute keys; callers pair them
+# with RedisCache.get/set. (Previously named cache_generation/cache_curation
+# with unused cache/ttl params that implied they wrote to the cache — they never
+# did. Renamed to reflect what they actually do.)
+def generation_cache_key(prompt: str, params: dict[str, Any]) -> str:
+    """Build a deterministic cache key for an image-generation request."""
     import hashlib
 
     param_str = json.dumps(params, sort_keys=True)
@@ -229,19 +216,6 @@ async def cache_generation(
     return f"lumira:gen:{key_hash}"
 
 
-async def cache_curation(
-    cache: RedisCache,
-    image_hash: str,
-    ttl: int = 7200,
-) -> str:
-    """Generate cache key for curation results.
-
-    Args:
-        cache: Redis cache instance
-        image_hash: Hash of the image
-        ttl: Time to live in seconds
-
-    Returns:
-        Cache key
-    """
+def curation_cache_key(image_hash: str) -> str:
+    """Build a deterministic cache key for a curation result."""
     return f"lumira:curation:{image_hash}"

@@ -120,15 +120,18 @@ async def generate_matrix(request: Request, matrix_request: MatrixRequest):
         if not is_valid:
             raise HTTPException(status_code=400, detail=f"Invalid syntax: {error}")
 
-        # Generate combinations
-        combinations = prompt_matrix.parse_prompt(matrix_request.prompt)
-
-        # Check limit
-        if len(combinations) > matrix_request.max_combinations:
+        # Count combinations cheaply BEFORE expanding, to avoid a
+        # combinatorial-explosion DoS (parse_prompt materializes the full
+        # Cartesian product in memory).
+        combo_count = prompt_matrix.count_combinations(matrix_request.prompt)
+        if combo_count > matrix_request.max_combinations:
             raise HTTPException(
                 status_code=400,
-                detail=f"Too many combinations ({len(combinations)}). Maximum is {matrix_request.max_combinations}.",
+                detail=f"Too many combinations ({combo_count}). Maximum is {matrix_request.max_combinations}.",
             )
+
+        # Safe to expand now.
+        combinations = prompt_matrix.parse_prompt(matrix_request.prompt)
 
         return MatrixResponse(
             original=matrix_request.prompt,

@@ -27,9 +27,16 @@ def _png_bytes(color=(10, 20, 30)) -> bytes:
 
 @pytest.fixture(autouse=True)
 def _reset_budget(monkeypatch):
-    # Isolate the module-level daily counter between tests.
-    monkeypatch.setattr(mg, "_spend_day", None)
-    monkeypatch.setattr(mg, "_spend_count", 0)
+    # Isolate the shared spend-guard ledger between tests. A fresh fakeredis
+    # client per test gives real per-provider counters without a live Redis.
+    import fakeredis
+
+    from ai_artist.core import spend_guard
+
+    monkeypatch.setattr(spend_guard, "_redis_checked", True)
+    monkeypatch.setattr(spend_guard, "_redis_client", fakeredis.FakeStrictRedis())
+    monkeypatch.delenv("LUMIRA_AI_KILL_SWITCH", raising=False)
+    monkeypatch.delenv("LUMIRA_DAILY_SPEND_USD_MAX", raising=False)
     yield
 
 
@@ -199,29 +206,36 @@ def test_use_refiner_not_leaked_to_payload(monkeypatch):
     assert "num_inference_steps" not in body
 
 
-def test_budget_not_consumed_on_failed_run(monkeypatch):
+def test_budget_routed_through_spend_guard(monkeypatch):
+    # Spend is now tracked by the shared spend guard: generate() must call
+    # check_and_record_images with the provider, count, cap, and per-image cost.
     monkeypatch.setenv("MAGICA_API_KEY", "k")
     monkeypatch.setenv("LUMIRA_MAGICA_DAILY_MAX_IMAGES", "5")
     gen = MagicaGenerator(model_id="nano_banana_pro")
+    post_resp, poll_resp, dl_resp = _mock_ok_run(monkeypatch)
     with (
-        patch.object(mg.httpx, "post", side_effect=mg.httpx.HTTPError("boom")),
-        pytest.raises(RuntimeError),
+        patch.object(mg, "check_and_record_images") as guard,
+        patch.object(mg.httpx, "post", return_value=post_resp),
+        patch.object(mg.httpx, "get", side_effect=[poll_resp, dl_resp]),
     ):
-        gen.generate("x", num_images=2)
-    assert mg._spend_count == 0  # failed run must not burn the cap
+        gen.generate("x", num_images=1)
+    guard.assert_called_once_with("magica", 1, 5, mg._MAGICA_COST_PER_IMAGE_USD)
 
 
-def test_budget_recorded_on_success(monkeypatch):
+def test_budget_recorded_on_attempt(monkeypatch):
+    # The guard records on attempt (mirrors ReplicateGenerator), so a second
+    # call over the cap is blocked.
     monkeypatch.setenv("MAGICA_API_KEY", "k")
-    monkeypatch.setenv("LUMIRA_MAGICA_DAILY_MAX_IMAGES", "5")
+    monkeypatch.setenv("LUMIRA_MAGICA_DAILY_MAX_IMAGES", "1")
     gen = MagicaGenerator(model_id="nano_banana_pro")
     post_resp, poll_resp, dl_resp = _mock_ok_run(monkeypatch)
     with (
         patch.object(mg.httpx, "post", return_value=post_resp),
         patch.object(mg.httpx, "get", side_effect=[poll_resp, dl_resp]),
     ):
-        gen.generate("x", num_images=1)
-    assert mg._spend_count == 1
+        gen.generate("x", num_images=1)  # consumes the only slot
+    with pytest.raises(RuntimeError, match="budget exceeded"):
+        gen.generate("y", num_images=1)
 
 
 def test_clamp_dims_preserves_aspect():

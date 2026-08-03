@@ -5,13 +5,18 @@ Provides /metrics endpoint for Prometheus scraping.
 """
 
 import structlog
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Depends, Response
 
 from ai_artist.monitoring.metrics import get_metrics, is_metrics_available
 
+from .dependencies import require_api_key
+
 logger = structlog.get_logger(__name__)
 
-router = APIRouter(tags=["metrics"])
+# Metrics expose internal operational state (queue depth, error rates); gate
+# behind the same API key as admin. Fail-closed dependency 503s when no keys
+# are configured and dev_mode is off, so Prometheus must send X-API-Key.
+router = APIRouter(tags=["metrics"], dependencies=[Depends(require_api_key)])
 
 
 @router.get("/metrics")

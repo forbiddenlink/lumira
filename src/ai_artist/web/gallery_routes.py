@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-from sqlalchemy import String, and_, func, or_
+from sqlalchemy import String, and_, case, func, or_
 from sqlalchemy.orm import Session
 
 from ..db.models import (
@@ -154,6 +154,22 @@ def get_session_id(request: Request) -> str:
 def generate_share_id() -> str:
     """Generate a short unique share ID."""
     return secrets.token_urlsafe(8)[:12]
+
+
+def _sanitize_text(text: str) -> str:
+    """Escape user-supplied text so stored comments can't inject HTML/script.
+
+    Prefers ``markupsafe.escape`` when available (same engine Jinja uses),
+    falling back to the stdlib ``html.escape``.
+    """
+    try:
+        from markupsafe import escape  # noqa: PLC0415
+
+        return str(escape(text))
+    except ImportError:  # pragma: no cover - markupsafe ships with FastAPI/Jinja
+        import html  # noqa: PLC0415
+
+        return html.escape(text)
 
 
 def _resolve_image_for_publish(
@@ -358,10 +374,14 @@ async def get_image_by_share_id(
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
 
-    # Increment view count
+    # Increment view count atomically (avoids lost updates under concurrency)
     image_obj = cast(Any, image)
-    image_obj.view_count = int(image_obj.view_count or 0) + 1
+    db.query(GeneratedImage).filter(GeneratedImage.id == image_obj.id).update(
+        {GeneratedImage.view_count: func.coalesce(GeneratedImage.view_count, 0) + 1},
+        synchronize_session=False,
+    )
     db.commit()
+    db.refresh(image)
 
     return image_to_response(image_obj)
 
@@ -401,18 +421,30 @@ async def toggle_like(
     )
 
     if existing_like:
-        # Unlike
+        # Unlike (atomic decrement, floored at 0)
         db.delete(existing_like)
-        image_obj.like_count = max(0, int(image_obj.like_count or 0) - 1)
+        db.query(GeneratedImage).filter(GeneratedImage.id == image_obj.id).update(
+            {
+                GeneratedImage.like_count: case(
+                    (GeneratedImage.like_count > 0, GeneratedImage.like_count - 1),
+                    else_=0,
+                )
+            },
+            synchronize_session=False,
+        )
         liked = False
     else:
-        # Like
+        # Like (atomic increment)
         new_like = GalleryLike(image_id=image_obj.id, session_id=session_id)
         db.add(new_like)
-        image_obj.like_count = int(image_obj.like_count or 0) + 1
+        db.query(GeneratedImage).filter(GeneratedImage.id == image_obj.id).update(
+            {GeneratedImage.like_count: func.coalesce(GeneratedImage.like_count, 0) + 1},
+            synchronize_session=False,
+        )
         liked = True
 
     db.commit()
+    db.refresh(image)
 
     return LikeResponse(
         success=True,
@@ -485,8 +517,8 @@ async def add_comment(
     new_comment = GalleryComment(
         image_id=image_obj.id,
         session_id=session_id,
-        display_name=comment.display_name.strip() or "Anonymous",
-        text=comment.text.strip(),
+        display_name=_sanitize_text(comment.display_name.strip()) or "Anonymous",
+        text=_sanitize_text(comment.text.strip()),
     )
     db.add(new_comment)
     image_obj.comment_count = int(image_obj.comment_count or 0) + 1

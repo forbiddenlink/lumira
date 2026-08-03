@@ -21,6 +21,7 @@ from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
 from ..caching import get_generation_cache
+from ..core.spend_guard import guarded_messages_create
 from ..db.models import GeneratedImage
 from ..db.session import get_db
 from ..personality.enhanced_memory import EnhancedMemorySystem
@@ -140,6 +141,15 @@ def _start_generation_task(session_id: str, coro: Any) -> asyncio.Task:
     The work is wrapped in the shared generation semaphore so concurrent
     SDXL/FLUX pipeline calls are bounded regardless of which route started
     them (prevents GPU/VRAM exhaustion under load).
+
+    Durability note (deliberate): these interactive routes (/create, /request)
+    run generation as an in-process asyncio task, NOT through the durable Redis
+    queue. If the process restarts mid-generation the task is lost — acceptable
+    here because the studio UI aborts + offers retry after a client timeout, and
+    this is a single-operator app. Callers that need crash-durable, retryable
+    jobs should use /generate-async (queue.enqueue_generation), which persists to
+    RQ and survives restarts. Do not "fix" this into the queue without also
+    moving the studio UI to a job-id/polling flow.
     """
     task = asyncio.create_task(_guard_generation(coro))
     register_generation_task(session_id, task)
@@ -976,7 +986,8 @@ async def suggest_prompt(
             import anthropic
 
             client = anthropic.Anthropic(api_key=api_key)
-            response = client.messages.create(
+            response = guarded_messages_create(
+                client,
                 model="claude-sonnet-4-5",
                 max_tokens=150,
                 messages=[
@@ -1649,9 +1660,18 @@ async def user_request_creation(
     Lumira interprets the request through her current mood and artistic
     perspective. Set allow_interpretation=False for faithful execution.
     """
+    from ..core.moderation import check_prompt
     from ..intelligence.creative_mind import get_creative_mind
     from ..learning.adaptive_learner import get_adaptive_learner
     from ..web.websocket import manager as ws_manager
+
+    # Screen the user-supplied prompt before any LLM or generation call. Raised
+    # outside the try/except below on purpose: the broad handler there returns a
+    # 200 success=False body, but a blocked prompt must fail closed as a 400.
+    allowed, reason = check_prompt(body.prompt)
+    if not allowed:
+        logger.warning("user_request_blocked_by_moderation")
+        raise HTTPException(status_code=400, detail=reason)
 
     state = _get_lumira_state()
     mood_system = state["mood_system"]

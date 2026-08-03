@@ -18,6 +18,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from ..core.spend_guard import guarded_messages_create
 from ..utils.logging import get_logger
 from .desire_engine import DesireEngine, get_desire_engine
 from .narrative_engine import NarrativeEngine, get_narrative_engine
@@ -246,7 +247,8 @@ class CreativeMind:
             ]
 
             assert self._client is not None  # Guaranteed by has_llm check above
-            response = self._client.messages.create(
+            response = guarded_messages_create(
+                self._client,
                 model=self.model,
                 max_tokens=200,
                 messages=messages,
@@ -469,7 +471,8 @@ class CreativeMind:
             }
         ]
 
-        response = self._client.messages.create(
+        response = guarded_messages_create(
+            self._client,
             model=self.model,
             max_tokens=800,
             system=self._build_system_prompt(),
@@ -543,7 +546,8 @@ class CreativeMind:
             }
         ]
 
-        response = self._client.messages.create(
+        response = guarded_messages_create(
+            self._client,
             model=self.model,
             max_tokens=800,
             system=self._build_system_prompt(),

@@ -4,7 +4,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from ai_artist.caching.redis_cache import RedisCache, cache_curation, cache_generation
+from ai_artist.caching.redis_cache import (
+    RedisCache,
+    curation_cache_key,
+    generation_cache_key,
+)
 
 
 class TestRedisCache:
@@ -220,27 +224,20 @@ class TestRedisCache:
 class TestRedisCacheHelpers:
     """Tests for cache key helpers."""
 
-    @pytest.mark.asyncio
-    async def test_cache_generation_is_deterministic(self):
+    def test_generation_cache_key_is_deterministic(self):
         params = {"steps": 30, "width": 512}
-        key_one = await cache_generation(RedisCache(enabled=False), "sunrise", params)
-        key_two = await cache_generation(RedisCache(enabled=False), "sunrise", params)
+        key_one = generation_cache_key("sunrise", params)
+        key_two = generation_cache_key("sunrise", params)
 
         assert key_one == key_two
         assert key_one.startswith("lumira:gen:")
 
-    @pytest.mark.asyncio
-    async def test_cache_generation_changes_when_params_change(self):
-        key_one = await cache_generation(
-            RedisCache(enabled=False), "sunrise", {"steps": 30}
-        )
-        key_two = await cache_generation(
-            RedisCache(enabled=False), "sunrise", {"steps": 40}
-        )
+    def test_generation_cache_key_changes_when_params_change(self):
+        key_one = generation_cache_key("sunrise", {"steps": 30})
+        key_two = generation_cache_key("sunrise", {"steps": 40})
 
         assert key_one != key_two
 
-    @pytest.mark.asyncio
-    async def test_cache_curation_returns_expected_key(self):
-        key = await cache_curation(RedisCache(enabled=False), "abc123")
+    def test_curation_cache_key_returns_expected_key(self):
+        key = curation_cache_key("abc123")
         assert key == "lumira:curation:abc123"

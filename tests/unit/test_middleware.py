@@ -6,7 +6,6 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from ai_artist.web.middleware import (
-    ErrorHandlingMiddleware,
     RequestLoggingMiddleware,
     SecurityHeadersMiddleware,
     add_cors_middleware,
@@ -68,58 +67,6 @@ class TestSecurityHeadersMiddleware:
             {"ALLOWED_ORIGINS": "https://lumira.example.com"},
         ):
             assert resolve_allowed_origins() == ["https://lumira.example.com"]
-
-
-class TestErrorHandlingMiddleware:
-    """Tests for global error handling middleware."""
-
-    def test_value_error_returns_400(self):
-        app = FastAPI()
-        app.add_middleware(ErrorHandlingMiddleware)
-
-        @app.get("/boom")
-        def boom():
-            raise ValueError("bad input")
-
-        client = TestClient(app)
-        response = client.get("/boom")
-
-        assert response.status_code == 400
-        assert response.json() == {"error": "Validation error", "detail": "bad input"}
-
-    def test_file_not_found_returns_404(self):
-        app = FastAPI()
-        app.add_middleware(ErrorHandlingMiddleware)
-
-        @app.get("/missing")
-        def missing():
-            raise FileNotFoundError("not here")
-
-        client = TestClient(app)
-        response = client.get("/missing")
-
-        assert response.status_code == 404
-        assert response.json() == {
-            "error": "Resource not found",
-            "detail": "not here",
-        }
-
-    def test_unhandled_exception_returns_500(self):
-        app = FastAPI()
-        app.add_middleware(ErrorHandlingMiddleware)
-
-        @app.get("/error")
-        def error():
-            raise RuntimeError("unexpected")
-
-        client = TestClient(app)
-        response = client.get("/error")
-
-        assert response.status_code == 500
-        assert response.json() == {
-            "error": "Internal server error",
-            "message": "An unexpected error occurred",
-        }
 
 
 class TestRequestLoggingMiddleware:
