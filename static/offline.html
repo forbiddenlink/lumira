@@ -7,17 +7,49 @@
     <link rel="icon" type="image/png" sizes="512x512" href="/static/icons/icon-512x512.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,560;0,9..144,700;1,9..144,400&display=swap" rel="stylesheet">
     <style>
+        :root {
+            color-scheme: dark;
+            --bg: #12100e;
+            --panel: #1a1714;
+            --text: #ebe4d8;
+            --muted: #9a9084;
+            --accent: #c4a574;
+            --border: color-mix(in oklab, #ebe4d8 10%, transparent);
+            --font-display: "Fraunces", Georgia, serif;
+            --font-ui: "Figtree", system-ui, sans-serif;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        .skip-link {
+            position: absolute;
+            top: -100%;
+            left: 0;
+            background: var(--accent);
+            color: #12100e;
+            padding: 0.5rem 1rem;
+            z-index: 9999;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 0 0 8px 0;
+            font-family: var(--font-ui);
+        }
+        .skip-link:focus {
+            top: 0;
+        }
+
         :focus-visible {
-            outline: 2px solid #58a6ff;
+            outline: 2px solid var(--accent);
             outline-offset: 2px;
+        }
+        :focus:not(:focus-visible) {
+            outline: none;
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -29,9 +61,13 @@
         }
 
         @media (prefers-contrast: high) {
-            body { background: #000; }
-            h1 { background: none; -webkit-text-fill-color: #ffff00; }
-            .retry-button { background: #ffff00; color: #000; }
+            :root {
+                --bg: #000;
+                --panel: #0a0a0a;
+                --text: #fff;
+                --muted: #ccc;
+                --accent: #ffff00;
+            }
         }
 
         @media (forced-colors: active) {
@@ -39,9 +75,9 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0e17;
-            color: #e6edf3;
+            font-family: var(--font-ui);
+            background: var(--bg);
+            color: var(--text);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -49,120 +85,167 @@
             padding: 20px;
         }
 
-        .offline-container {
-            text-align: center;
-            max-width: 500px;
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background: radial-gradient(
+                ellipse 60% 45% at 50% 30%,
+                color-mix(in oklab, var(--accent) 8%, transparent),
+                transparent 70%
+            );
         }
 
-        .offline-icon {
-            font-size: 96px;
-            margin-bottom: 24px;
-            opacity: 0.7;
+        .offline-container {
+            position: relative;
+            text-align: center;
+            max-width: 480px;
+        }
+
+        .brand {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.875rem;
+            letter-spacing: 0.12em;
+            color: var(--muted);
+            margin-bottom: 2rem;
+        }
+
+        .offline-mark {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 1.5rem;
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--panel);
+        }
+
+        .offline-mark svg {
+            width: 22px;
+            height: 22px;
+            stroke: var(--accent);
+            fill: none;
+            stroke-width: 1.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
         }
 
         h1 {
-            font-size: 2rem;
-            font-weight: 800;
-            margin-bottom: 16px;
-            background: linear-gradient(135deg, #58a6ff, #a855f7);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-family: var(--font-display);
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            color: var(--text);
+            letter-spacing: -0.02em;
         }
 
         p {
             font-size: 1rem;
-            line-height: 1.6;
-            color: #8b949e;
-            margin-bottom: 28px;
+            line-height: 1.65;
+            color: var(--muted);
+            margin-bottom: 2rem;
         }
 
         .retry-button {
-            background: linear-gradient(135deg, #58a6ff, #a855f7);
+            background: var(--accent);
             border: none;
-            color: white;
-            padding: 14px 36px;
-            font-size: 1rem;
-            font-weight: 700;
-            border-radius: 12px;
+            color: #12100e;
+            padding: 0.75rem 2rem;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            font-family: var(--font-ui);
+            border-radius: 8px;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 16px rgba(88, 166, 255, 0.3);
+            transition: background 0.15s ease;
         }
 
         .retry-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 24px rgba(88, 166, 255, 0.4);
-        }
-
-        .retry-button:active {
-            transform: translateY(0);
+            background: color-mix(in oklab, var(--accent) 82%, white);
         }
 
         .cached-notice {
-            margin-top: 32px;
-            padding: 16px 20px;
-            background: rgba(88, 166, 255, 0.06);
-            border-radius: 12px;
-            border-left: 4px solid #58a6ff;
+            margin-top: 2rem;
+            padding: 1rem 1.25rem;
+            background: var(--panel);
+            border-radius: 8px;
+            border-left: 3px solid var(--accent);
+            text-align: left;
         }
 
         .cached-notice p {
-            font-size: 0.9rem;
+            font-size: 0.875rem;
             margin: 0;
+            color: var(--muted);
+        }
+
+        .cached-notice strong {
+            color: var(--text);
+            font-weight: 600;
         }
 
         .nav-links {
-            margin-top: 24px;
+            margin-top: 1.5rem;
             display: flex;
-            gap: 12px;
+            gap: 0.75rem;
             justify-content: center;
         }
 
         .nav-links a {
-            color: #8b949e;
+            color: var(--muted);
             text-decoration: none;
-            font-size: 14px;
-            font-weight: 600;
-            padding: 8px 16px;
-            border: 1px solid #21262d;
-            border-radius: 10px;
-            transition: all 0.3s;
+            font-size: 0.875rem;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            transition: color 0.15s ease, border-color 0.15s ease;
         }
 
         .nav-links a:hover {
-            color: #e6edf3;
-            border-color: #58a6ff;
+            color: var(--text);
+            border-color: color-mix(in oklab, var(--accent) 40%, var(--border));
         }
     </style>
 </head>
 <body>
-    <div class="offline-container">
-        <div class="offline-icon">📡</div>
+    <a href="#main-content" class="skip-link">Skip to content</a>
+
+    <div class="offline-container" id="main-content">
+        <div class="brand">LUMIRA</div>
+
+        <div class="offline-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7z"/>
+                <line x1="4" y1="4" x2="20" y2="20"/>
+            </svg>
+        </div>
+
         <h1>You're Offline</h1>
-        <p>It looks like you've lost your internet connection. Don't worry, Lumira's artwork is still here!</p>
+        <p>It looks like you've lost your internet connection. Don't worry, Lumira's artwork is still here.</p>
 
         <button class="retry-button" onclick="window.location.reload()">
             Try Again
         </button>
 
         <div class="cached-notice">
-            <p>💡 <strong>Tip:</strong> You can still browse previously viewed artwork while offline thanks to PWA caching.</p>
+            <p><strong>Tip:</strong> You can still browse previously viewed artwork while offline thanks to PWA caching.</p>
         </div>
 
-        <div class="nav-links">
+        <nav class="nav-links" aria-label="Site">
             <a href="/">Gallery</a>
             <a href="/lumira">Creative Studio</a>
-        </div>
+        </nav>
     </div>
 
     <script>
-        // Auto-retry when online
         window.addEventListener('online', () => {
             window.location.reload();
         });
 
-        // Check connection periodically
         setInterval(() => {
             if (navigator.onLine) {
                 window.location.reload();

@@ -111,8 +111,11 @@ class GenerationCache:
 
         # Round energy to reduce cache misses while maintaining variety
         energy_bucket = round(energy, 1)
+        # Fold recent subjects into the key so a stale intent cannot
+        # keep replaying the same subject after she has moved on.
+        recent_key = tuple(sorted({s.lower() for s in recent_subjects if s})[:8])
 
-        key = f"lumira:intent:{self._hash_key(mood, energy_bucket, time_of_day)}"
+        key = f"lumira:intent:{self._hash_key(mood, energy_bucket, time_of_day, recent_key)}"
 
         cached = await self.cache.get(key)
         if cached:
@@ -134,7 +137,8 @@ class GenerationCache:
         energy: float,
         time_of_day: str,
         intent: dict[str, Any],
-        ttl: int = 1800,  # 30 minutes
+        ttl: int = 900,  # 15 minutes — short enough to keep her restless
+        recent_subjects: list[str] | None = None,
     ) -> bool:
         """Cache a creative intent decision.
 
@@ -144,6 +148,7 @@ class GenerationCache:
             time_of_day: Time period
             intent: The creative intent dict
             ttl: Cache TTL in seconds
+            recent_subjects: Recent subjects used to diversify the cache key
 
         Returns:
             True if cached successfully
@@ -152,7 +157,10 @@ class GenerationCache:
             return False
 
         energy_bucket = round(energy, 1)
-        key = f"lumira:intent:{self._hash_key(mood, energy_bucket, time_of_day)}"
+        recent_key = tuple(
+            sorted({s.lower() for s in (recent_subjects or []) if s})[:8]
+        )
+        key = f"lumira:intent:{self._hash_key(mood, energy_bucket, time_of_day, recent_key)}"
 
         intent_data = {
             **intent,

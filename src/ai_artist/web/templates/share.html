@@ -31,18 +31,51 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@400;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,560;0,9..144,700;1,9..144,400&display=swap"
       rel="stylesheet"
     />
     <style>
+      :root {
+        color-scheme: dark;
+        --bg: #12100e;
+        --panel: #1a1714;
+        --text: #ebe4d8;
+        --muted: #9a9084;
+        --accent: #c4a574;
+        --border: color-mix(in oklab, #ebe4d8 10%, transparent);
+        --font-display: "Fraunces", Georgia, serif;
+        --font-ui: "Figtree", system-ui, sans-serif;
+      }
+
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
+
+      .skip-link {
+        position: absolute;
+        top: -100%;
+        left: 0;
+        background: var(--accent);
+        color: #12100e;
+        padding: 0.5rem 1rem;
+        z-index: 9999;
+        font-weight: 600;
+        text-decoration: none;
+        border-radius: 0 0 8px 0;
+        font-family: var(--font-ui);
+      }
+      .skip-link:focus {
+        top: 0;
+      }
+
       :focus-visible {
-        outline: 2px solid #58a6ff;
+        outline: 2px solid var(--accent);
         outline-offset: 2px;
+      }
+      :focus:not(:focus-visible) {
+        outline: none;
       }
       @media (prefers-reduced-motion: reduce) {
         *,
@@ -54,13 +87,12 @@
         }
       }
       @media (prefers-contrast: high) {
-        .brand-name,
-        .artwork-prompt {
-          color: #fff;
-        }
-        .btn-primary {
-          background: #ffff00;
-          color: #000;
+        :root {
+          --bg: #000;
+          --panel: #0a0a0a;
+          --text: #fff;
+          --muted: #ccc;
+          --accent: #ffff00;
         }
       }
       @media (forced-colors: active) {
@@ -71,32 +103,22 @@
       }
 
       body {
-        font-family:
-          "Inter",
-          -apple-system,
-          sans-serif;
-        background: #060810;
-        color: #e6edf3;
+        font-family: var(--font-ui);
+        background: var(--bg);
+        color: var(--text);
         min-height: 100vh;
         overflow-x: hidden;
       }
 
-      /* Ambient background */
       body::before {
         content: "";
         position: fixed;
         inset: 0;
-        background:
-          radial-gradient(
-            ellipse 70% 50% at 50% -10%,
-            rgba(88, 166, 255, 0.1) 0%,
-            transparent 60%
-          ),
-          radial-gradient(
-            ellipse 40% 50% at 90% 80%,
-            rgba(168, 85, 247, 0.08) 0%,
-            transparent 60%
-          );
+        background: radial-gradient(
+          ellipse 70% 50% at 50% -10%,
+          color-mix(in oklab, var(--accent) 8%, transparent),
+          transparent 60%
+        );
         z-index: 0;
         pointer-events: none;
       }
@@ -120,7 +142,7 @@
         background: transparent;
       }
       ::-webkit-scrollbar-thumb {
-        background: linear-gradient(180deg, #58a6ff, #a855f7);
+        background: var(--accent);
         border-radius: 4px;
       }
 
@@ -157,25 +179,25 @@
         align-items: center;
         gap: 12px;
         text-decoration: none;
-        color: #e6edf3;
-        font-family: "Space Grotesk", sans-serif;
+        color: var(--text);
+        font-family: var(--font-display);
         font-weight: 700;
         font-size: 20px;
-        letter-spacing: -0.5px;
+        letter-spacing: 0.04em;
         transition: opacity 0.2s;
       }
       .brand:hover {
-        opacity: 0.8;
+        opacity: 0.85;
       }
       .brand-icon {
         width: 40px;
         height: 40px;
-        background: linear-gradient(135deg, #58a6ff, #a855f7);
+        background: var(--panel);
+        border: 1px solid var(--border);
         border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 4px 16px rgba(88, 166, 255, 0.3);
       }
       .brand-icon img {
         width: 24px;
@@ -191,52 +213,48 @@
 
       .btn {
         padding: 10px 22px;
-        border-radius: 12px;
+        border-radius: 8px;
         font-weight: 600;
         font-size: 14px;
-        font-family: "Space Grotesk", sans-serif;
+        font-family: var(--font-ui);
         text-decoration: none;
-        transition:
-          transform 0.2s ease,
-          box-shadow 0.2s ease;
+        transition: background 0.15s ease, border-color 0.15s ease;
         display: inline-flex;
         align-items: center;
         gap: 6px;
-      }
-      .btn:hover {
-        transform: translateY(-2px);
+        cursor: pointer;
       }
       .btn-primary {
-        background: linear-gradient(135deg, #58a6ff, #a855f7);
-        color: #08111f;
-        box-shadow: 0 4px 16px rgba(88, 166, 255, 0.3);
+        background: var(--accent);
+        color: #12100e;
+        border: none;
       }
       .btn-primary:hover {
-        box-shadow: 0 8px 28px rgba(88, 166, 255, 0.45);
+        background: color-mix(in oklab, var(--accent) 82%, white);
       }
       .btn-ghost {
-        background: rgba(255, 255, 255, 0.05);
-        color: #8b949e;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: transparent;
+        color: var(--muted);
+        border: 1px solid var(--border);
       }
       .btn-ghost:hover {
-        background: rgba(255, 255, 255, 0.08);
-        color: #e6edf3;
+        color: var(--text);
+        border-color: color-mix(in oklab, var(--accent) 40%, var(--border));
       }
 
       .copy-status {
         min-height: 20px;
-        color: #8b949e;
+        color: var(--muted);
         font-size: 13px;
         text-align: right;
       }
 
       .copy-status[data-state="success"] {
-        color: #8df0c7;
+        color: #7dba8a;
       }
 
       .copy-status[data-state="error"] {
-        color: #ff9baf;
+        color: #d4646a;
       }
 
       /* Artwork showcase */
@@ -244,18 +262,16 @@
         display: grid;
         grid-template-columns: 1fr;
         gap: 0;
-        border-radius: 24px;
+        border-radius: 16px;
         overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        background: #111520;
-        box-shadow:
-          0 32px 80px rgba(0, 0, 0, 0.6),
-          0 0 0 1px rgba(88, 166, 255, 0.06);
+        border: 1px solid var(--border);
+        background: var(--panel);
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4);
       }
 
       .artwork-image-wrap {
         position: relative;
-        background: #0d1117;
+        background: var(--bg);
         overflow: hidden;
       }
       .artwork-image {
@@ -273,21 +289,22 @@
         left: 0;
         right: 0;
         height: 120px;
-        background: linear-gradient(transparent, rgba(17, 21, 32, 0.8));
+        background: linear-gradient(transparent, color-mix(in oklab, var(--panel) 90%, transparent));
         pointer-events: none;
       }
 
       .artwork-info {
         padding: 36px 40px;
-        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        border-top: 1px solid var(--border);
       }
 
       .artwork-eyebrow {
         font-size: 11px;
         letter-spacing: 3px;
         text-transform: uppercase;
-        color: rgba(88, 166, 255, 0.7);
-        font-family: "Space Grotesk", sans-serif;
+        color: var(--accent);
+        font-family: var(--font-ui);
+        font-weight: 600;
         margin-bottom: 16px;
         display: flex;
         align-items: center;
@@ -298,15 +315,16 @@
         display: inline-block;
         width: 24px;
         height: 1px;
-        background: rgba(88, 166, 255, 0.5);
+        background: color-mix(in oklab, var(--accent) 60%, transparent);
       }
 
       .artwork-prompt {
+        font-family: var(--font-display);
         font-size: clamp(16px, 2.5vw, 20px);
         line-height: 1.65;
-        color: #e6edf3;
+        color: var(--text);
         font-weight: 400;
-        letter-spacing: -0.2px;
+        letter-spacing: -0.01em;
         margin-bottom: 24px;
         font-style: italic;
       }
@@ -315,14 +333,14 @@
         display: flex;
         align-items: center;
         gap: 6px;
-        color: #8b949e;
+        color: var(--muted);
         font-size: 13px;
       }
       .artwork-meta-dot {
         width: 4px;
         height: 4px;
         border-radius: 50%;
-        background: rgba(88, 166, 255, 0.5);
+        background: var(--accent);
       }
 
       /* CTA section */
@@ -330,37 +348,20 @@
         text-align: center;
         margin-top: 48px;
         padding: 44px 32px;
-        background: rgba(88, 166, 255, 0.04);
-        border: 1px solid rgba(88, 166, 255, 0.1);
-        border-radius: 20px;
-        position: relative;
-        overflow: hidden;
-      }
-      .cta-section::before {
-        content: "";
-        position: absolute;
-        top: -40px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 200px;
-        height: 200px;
-        background: radial-gradient(
-          circle,
-          rgba(88, 166, 255, 0.08) 0%,
-          transparent 70%
-        );
-        pointer-events: none;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
       }
 
       .cta-section h2 {
-        font-family: "Space Grotesk", "Inter", sans-serif;
+        font-family: var(--font-display);
         font-size: clamp(20px, 3vw, 26px);
-        font-weight: 600;
-        letter-spacing: -0.5px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
         margin-bottom: 10px;
       }
       .cta-section p {
-        color: #8b949e;
+        color: var(--muted);
         margin-bottom: 28px;
         max-width: 400px;
         margin-left: auto;
@@ -370,13 +371,14 @@
     </style>
   </head>
   <body>
-    <div class="share-container">
+    <a href="#main-content" class="skip-link">Skip to content</a>
+    <div class="share-container" id="main-content">
       <header class="share-header">
         <a href="/" class="brand">
           <div class="brand-icon">
             <img src="/static/images/logo.png" alt="Lumira" />
           </div>
-          Lumira
+          LUMIRA
         </a>
         <div class="header-actions">
           <a href="/" class="btn btn-ghost">Gallery</a>

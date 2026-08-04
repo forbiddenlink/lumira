@@ -7,7 +7,7 @@ import json
 import random
 import time
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +30,7 @@ from ..personality.profile import ArtisticProfile
 from ..utils.config import load_config
 from ..utils.logging import get_logger
 from ..utils.negative_prompts import get_negative_prompt_library
+from ..utils.prompt_quality import is_trivial_prompt, normalize_prompt_key
 from .dependencies import GenerationAuthDep
 from .generation_registry import (
     generation_semaphore,
@@ -105,6 +106,90 @@ def _build_studio_generator(
         dtype=_web_dtype(config),
         require_img2img=require_img2img,
     )
+
+
+def _normalize_prompt_key(prompt: str) -> str:
+    """Normalize a prompt for duplicate comparison."""
+    return normalize_prompt_key(prompt)
+
+
+def _is_trivial_prompt(prompt: str | None) -> bool:
+    """Return True for junk / harness prompts that must never enter the gallery."""
+    return is_trivial_prompt(prompt)
+
+def _assert_meaningful_prompt(prompt: str | None, *, field: str = "prompt") -> str:
+    """Validate prompt quality for creation endpoints."""
+    cleaned = (prompt or "").strip()
+    if _is_trivial_prompt(cleaned):
+        raise ValueError(
+            f"{field} is too thin for Lumira — offer a real vision "
+            "(subject, mood, or scene), not a test stub."
+        )
+    return cleaned
+
+
+def _http_meaningful_prompt(prompt: str | None, *, field: str = "prompt") -> str:
+    """Validate prompt and raise HTTPException for route handlers."""
+    try:
+        return _assert_meaningful_prompt(prompt, field=field)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+def _recent_prompt_duplicate(
+    db: Session,
+    prompt: str,
+    *,
+    hours: int | None = 48,
+) -> GeneratedImage | None:
+    """Find an artwork with the same normalized prompt.
+
+    When ``hours`` is set, only consider works inside that window.
+    Exact prompt match is preferred; normalized equality is the fallback
+    for whitespace/case variants among recent rows.
+    """
+    key = _normalize_prompt_key(prompt)
+    if not key:
+        return None
+
+    query = db.query(GeneratedImage)
+    if hours is not None:
+        cutoff = datetime.now() - timedelta(hours=hours)
+        query = query.filter(GeneratedImage.created_at >= cutoff)
+
+    # Fast path: exact case-insensitive match in SQL (covers old originals)
+    exact = (
+        query.filter(GeneratedImage.prompt.ilike(prompt.strip()))
+        .order_by(GeneratedImage.created_at.desc())
+        .first()
+    )
+    if exact is not None:
+        return exact
+
+    # Fallback: normalized compare among a bounded set
+    rows = query.order_by(GeneratedImage.created_at.desc()).limit(500).all()
+    for row in rows:
+        if _normalize_prompt_key(str(row.prompt or "")) == key:
+            return row
+    return None
+
+
+def _recent_variation_count(db: Session, source_id: int, *, hours: int | None = 24) -> int:
+    """Count variations derived from a source artwork.
+
+    When ``hours`` is None, count all-time variations for that source.
+    """
+    query = db.query(GeneratedImage).filter(GeneratedImage.model_id == "sdxl-variation")
+    if hours is not None:
+        cutoff = datetime.now() - timedelta(hours=hours)
+        query = query.filter(GeneratedImage.created_at >= cutoff)
+    rows = query.all()
+    count = 0
+    for row in rows:
+        params = row.generation_params or {}
+        if params.get("variation_of") == source_id:
+            count += 1
+    return count
 
 
 def _maybe_pair_soundtrack(
@@ -259,6 +344,11 @@ class UserCreationRequest(BaseModel):
         default=False,
         description="Pair the artwork with a Magica-generated instrumental soundtrack",
     )
+
+    @model_validator(mode="after")
+    def _reject_trivial_prompt(self) -> "UserCreationRequest":
+        _assert_meaningful_prompt(self.prompt)
+        return self
 
 
 class PromptSuggestionRequest(BaseModel):
@@ -857,6 +947,9 @@ async def _load_portfolio_from_gallery() -> list[dict]:
                 image_path = json_file.with_suffix(".jpg")
 
             if image_path.exists():
+                prompt_text = str(metadata.get("prompt", "") or "")
+                if _is_trivial_prompt(prompt_text):
+                    continue
                 enriched = enrich_sidecar_metadata(metadata)
                 rel_path = image_path.relative_to(gallery_path)
                 portfolio.append(
@@ -865,14 +958,14 @@ async def _load_portfolio_from_gallery() -> list[dict]:
                         "path": str(rel_path),
                         "subject": enriched.get(
                             "subject",
-                            metadata.get("prompt", "").split(",")[0][:50],
+                            prompt_text.split(",")[0][:50],
                         ),
-                        "prompt": metadata.get("prompt", ""),
+                        "prompt": prompt_text,
                         "image_url": f"/api/images/file/{rel_path}",
                         "mood": extract_mood_from_sidecar(metadata) or "contemplative",
                         "style": enriched.get("style", "digital art"),
                         "reflection": metadata.get(
-                            "reflection", metadata.get("prompt", "")
+                            "reflection", prompt_text
                         ),
                         "created_at": metadata.get("created_at", ""),
                         "thinking": metadata.get("thinking")
@@ -1162,6 +1255,7 @@ async def create_artwork(
                 mood=mood.value,
                 energy=getattr(mood_system, "mood_intensity", 0.7),
                 time_of_day=time_of_day,
+                recent_subjects=recent_subjects,
                 intent={
                     "subject": intent.subject,
                     "style": intent.style,
@@ -3607,6 +3701,25 @@ async def img2img_generation(
     prompt: str = str(img2img_request.prompt or original_prompt)
     if not prompt:
         prompt = "artistic interpretation, high quality"
+    # Reject harness stubs and near-duplicate spam
+    if img2img_request.prompt:
+        prompt = _http_meaningful_prompt(img2img_request.prompt)
+    elif _is_trivial_prompt(prompt):
+        prompt = _http_meaningful_prompt(
+            f"{original_prompt}, artistic reinterpretation"
+            if original_prompt and not _is_trivial_prompt(original_prompt)
+            else "artistic reinterpretation of a remembered work, high quality"
+        )
+
+    dup = _recent_prompt_duplicate(db, prompt, hours=24 * 365)
+    if dup is not None:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Lumira already explored this vision "
+                f"(artwork #{dup.id}). Offer a different subject or wait."
+            ),
+        )
 
     # Get Lumira's current state for the generation
     state = _get_lumira_state()
@@ -3744,6 +3857,53 @@ async def generate_variations(
     if not source_img:
         raise HTTPException(status_code=404, detail="Source image not found")
 
+    # Prevent variation farms on the same piece (test loops / accidental spam)
+    lifetime_vars = _recent_variation_count(db, var_request.image_id, hours=None)
+    if lifetime_vars >= 12:
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                "This piece already has a full set of variations in the archive. "
+                "Choose another work, or let Lumira create something new."
+            ),
+        )
+    # Also refuse if the gallery is already thick with near-copies of this prompt
+    base_prompt = (source_img.prompt or "").strip()
+    if base_prompt and len(base_prompt) >= 12:
+        similar = (
+            db.query(GeneratedImage)
+            .filter(GeneratedImage.prompt.ilike(f"{base_prompt}%"))
+            .count()
+        )
+        if similar >= 10:
+            raise HTTPException(
+                status_code=429,
+                detail=(
+                    "Lumira has already explored this vision thoroughly. "
+                    "Commission something new instead of another variation."
+                ),
+            )
+    existing_vars = _recent_variation_count(db, var_request.image_id, hours=48)
+    if existing_vars >= 4:
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                "Lumira has already spun enough variations of this piece recently. "
+                "Choose another work, or let her create something new."
+            ),
+        )
+    remaining = max(0, min(4 - existing_vars, 12 - lifetime_vars))
+    if remaining <= 0:
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                "Lumira has already spun enough variations of this piece recently. "
+                "Choose another work, or let her create something new."
+            ),
+        )
+    if var_request.count > remaining:
+        var_request = var_request.model_copy(update={"count": remaining})
+
     gallery_path = Path("gallery") / source_img.filename
     if not gallery_path.exists():
         gallery_path = Path(source_img.filename)
@@ -3796,7 +3956,21 @@ async def generate_variations(
     prompts = variation_prompts.get(
         var_request.variation_type, variation_prompts["style"]
     )
-    selected_prompts = random.sample(prompts, min(var_request.count, len(prompts)))
+    # Drop variation prompts that already exist recently (stop same-style spam)
+    fresh_prompts = [
+        p for p in prompts if _recent_prompt_duplicate(db, p, hours=72) is None
+    ]
+    if not fresh_prompts:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Every variation angle of this piece was already tried recently. "
+                "Pick another artwork or commission something new."
+            ),
+        )
+    selected_prompts = random.sample(
+        fresh_prompts, min(var_request.count, len(fresh_prompts))
+    )
 
     try:
         config_path = Path("config/config.yaml")

@@ -13,18 +13,51 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@400;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,560;0,9..144,700;1,9..144,400&display=swap"
       rel="stylesheet"
     />
     <style>
+      :root {
+        color-scheme: dark;
+        --bg: #12100e;
+        --panel: #1a1714;
+        --text: #ebe4d8;
+        --muted: #9a9084;
+        --accent: #c4a574;
+        --border: color-mix(in oklab, #ebe4d8 10%, transparent);
+        --font-display: "Fraunces", Georgia, serif;
+        --font-ui: "Figtree", system-ui, sans-serif;
+      }
+
       * {
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
+
+      .skip-link {
+        position: absolute;
+        top: -100%;
+        left: 0;
+        background: var(--accent);
+        color: #12100e;
+        padding: 0.5rem 1rem;
+        z-index: 9999;
+        font-weight: 600;
+        text-decoration: none;
+        border-radius: 0 0 8px 0;
+        font-family: var(--font-ui);
+      }
+      .skip-link:focus {
+        top: 0;
+      }
+
       :focus-visible {
-        outline: 2px solid #58a6ff;
+        outline: 2px solid var(--accent);
         outline-offset: 2px;
+      }
+      :focus:not(:focus-visible) {
+        outline: none;
       }
       @media (prefers-reduced-motion: reduce) {
         *,
@@ -36,15 +69,12 @@
         }
       }
       @media (prefers-contrast: high) {
-        body {
-          background: #000;
-        }
-        .code {
-          -webkit-text-fill-color: #ffff00;
-        }
-        .btn {
-          background: #ffff00;
-          color: #000;
+        :root {
+          --bg: #000;
+          --panel: #0a0a0a;
+          --text: #fff;
+          --muted: #ccc;
+          --accent: #ffff00;
         }
       }
       @media (forced-colors: active) {
@@ -55,12 +85,9 @@
       }
 
       body {
-        font-family:
-          "Inter",
-          -apple-system,
-          sans-serif;
-        background: #050810;
-        color: #e6edf3;
+        font-family: var(--font-ui);
+        background: var(--bg);
+        color: var(--text);
         display: flex;
         justify-content: center;
         align-items: center;
@@ -94,37 +121,16 @@
         }
       }
 
-      /* Nebula glow */
+      /* Warm ambient wash */
       .nebula {
         position: fixed;
         inset: 0;
         z-index: 0;
-        background:
-          radial-gradient(
-            ellipse 60% 40% at 50% 50%,
-            rgba(88, 166, 255, 0.07) 0%,
-            transparent 70%
-          ),
-          radial-gradient(
-            ellipse 40% 60% at 20% 80%,
-            rgba(168, 85, 247, 0.08) 0%,
-            transparent 70%
-          ),
-          radial-gradient(
-            ellipse 50% 30% at 80% 20%,
-            rgba(86, 212, 221, 0.06) 0%,
-            transparent 70%
-          );
-        animation: nebulaDrift 20s ease-in-out infinite;
-      }
-      @keyframes nebulaDrift {
-        0%,
-        100% {
-          transform: scale(1) translate(0, 0);
-        }
-        50% {
-          transform: scale(1.08) translate(-10px, 8px);
-        }
+        background: radial-gradient(
+          ellipse 60% 40% at 50% 50%,
+          color-mix(in oklab, var(--accent) 6%, transparent),
+          transparent 70%
+        );
       }
 
       /* Noise overlay */
@@ -160,52 +166,35 @@
       .error-glyph {
         font-size: clamp(96px, 18vw, 160px);
         font-weight: 700;
-        font-family: "Space Grotesk", "Inter", sans-serif;
+        font-family: var(--font-display);
         letter-spacing: -8px;
         line-height: 1;
-        background: linear-gradient(
-          135deg,
-          #58a6ff 0%,
-          #a855f7 50%,
-          #56d4dd 100%
-        );
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        animation: glypPulse 4s ease-in-out infinite;
+        color: var(--accent);
         display: block;
         margin-bottom: 4px;
-      }
-      @keyframes glypPulse {
-        0%,
-        100% {
-          filter: brightness(1) blur(0);
-        }
-        50% {
-          filter: brightness(1.15) blur(0.3px);
-        }
       }
 
       .error-eyebrow {
         font-size: 11px;
         letter-spacing: 4px;
         text-transform: uppercase;
-        color: rgba(88, 166, 255, 0.7);
-        font-family: "Space Grotesk", sans-serif;
+        color: var(--accent);
+        font-family: var(--font-ui);
+        font-weight: 600;
         margin-bottom: 20px;
       }
 
       h1 {
-        font-family: "Space Grotesk", "Inter", sans-serif;
+        font-family: var(--font-display);
         font-size: clamp(22px, 4vw, 30px);
-        font-weight: 600;
-        letter-spacing: -0.5px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
         margin-bottom: 14px;
-        color: #e6edf3;
+        color: var(--text);
       }
 
       p {
-        color: #8b949e;
+        color: var(--muted);
         font-size: 16px;
         line-height: 1.7;
         margin-bottom: 40px;
@@ -225,10 +214,10 @@
         margin: -20px auto 28px;
         max-width: 460px;
         padding: 14px 16px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 16px;
-        background: rgba(11, 18, 32, 0.82);
-        color: #dbe6f1;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--panel);
+        color: var(--text);
         font-size: 14px;
         line-height: 1.6;
       }
@@ -243,50 +232,43 @@
         align-items: center;
         gap: 8px;
         padding: 13px 28px;
-        background: linear-gradient(135deg, #58a6ff, #a855f7);
-        color: #08111f;
+        background: var(--accent);
+        color: #12100e;
         text-decoration: none;
-        border-radius: 14px;
+        border-radius: 8px;
         font-weight: 600;
         font-size: 15px;
-        font-family: "Space Grotesk", sans-serif;
-        transition:
-          transform 0.2s ease,
-          box-shadow 0.2s ease;
-        box-shadow: 0 4px 20px rgba(88, 166, 255, 0.3);
+        font-family: var(--font-ui);
+        transition: background 0.15s ease;
+        border: none;
       }
       .btn:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 32px rgba(88, 166, 255, 0.45);
+        background: color-mix(in oklab, var(--accent) 82%, white);
       }
 
       .btn-ghost {
         background: transparent;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        color: #8b949e;
-        box-shadow: none;
+        border: 1px solid var(--border);
+        color: var(--muted);
       }
       .btn-ghost:hover {
-        border-color: rgba(88, 166, 255, 0.4);
-        color: #e6edf3;
-        box-shadow: none;
+        border-color: color-mix(in oklab, var(--accent) 40%, var(--border));
+        color: var(--text);
       }
 
-      ::-webkit-scrollbar {
-        width: 5px;
-      }
       ::-webkit-scrollbar-thumb {
-        background: linear-gradient(180deg, #58a6ff, #a855f7);
+        background: var(--accent);
         border-radius: 4px;
       }
     </style>
   </head>
   <body>
+    <a href="#main-content" class="skip-link">Skip to content</a>
     <div class="stars" id="stars" aria-hidden="true"></div>
     <div class="nebula" aria-hidden="true"></div>
     <div class="noise" aria-hidden="true"></div>
 
-    <main class="error-box" role="main" aria-labelledby="error-title">
+    <main class="error-box" id="main-content" role="main" aria-labelledby="error-title">
       <div class="error-eyebrow">
         Lumira &nbsp;/&nbsp; {% if status_code == 404 %} Missing Route {% elif
         status_code == 429 %} Rate Limited {% elif status_code >= 500 %} Runtime

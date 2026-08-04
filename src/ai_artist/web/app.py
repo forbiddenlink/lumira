@@ -801,6 +801,12 @@ async def list_images(
                     row_path = Path(row.filename)
                     if not row_path.exists():
                         continue
+                    prompt_text = row.prompt or ""
+                    # Hide harness junk from the public gallery
+                    from ..utils.prompt_quality import is_trivial_prompt
+
+                    if is_trivial_prompt(prompt_text):
+                        continue
                     is_featured = "featured" in row.filename.replace("\\", "/")
                     if featured is False and is_featured:
                         continue
@@ -821,7 +827,7 @@ async def list_images(
                         ImageMetadata(
                             path=str(rel),
                             filename=row_path.name,
-                            prompt=row.prompt or "",
+                            prompt=prompt_text,
                             created_at=(
                                 row.created_at.isoformat() if row.created_at else ""
                             ),
