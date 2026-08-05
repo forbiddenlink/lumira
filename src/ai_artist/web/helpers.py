@@ -191,3 +191,63 @@ def calculate_gallery_stats(gallery_manager: GalleryManager) -> dict:
         "total_prompts": len(prompts),
         "date_range": date_range,
     }
+
+
+def calculate_gallery_stats_from_db() -> dict | None:
+    """Return gallery stats from the DB inventory, or None if unavailable.
+
+    Aligns with the DB-first `/api/images` listing so the header count matches
+    what the gallery actually renders.
+    """
+    try:
+        from ..db.models import GeneratedImage
+        from ..db.session import get_db
+        from ..utils.prompt_quality import is_trivial_prompt
+
+        db_gen = get_db()
+        db = next(db_gen)
+        try:
+            rows = db.query(GeneratedImage).all()
+        finally:
+            db_gen.close()
+
+        if not rows:
+            return None
+
+        prompts: set[str] = set()
+        dates: list[str] = []
+        featured_count = 0
+        valid_count = 0
+
+        for row in rows:
+            prompt_text = row.prompt or ""
+            if is_trivial_prompt(prompt_text):
+                continue
+            row_path = Path(row.filename)
+            if not row_path.exists():
+                continue
+            valid_count += 1
+            if prompt_text:
+                prompts.add(prompt_text)
+            if row.created_at:
+                dates.append(row.created_at.isoformat())
+            path_featured = "featured" in row.filename.replace("\\", "/")
+            if bool(row.is_featured) or path_featured:
+                featured_count += 1
+
+        date_range: dict[str, str] = {}
+        if dates:
+            date_range = {
+                "earliest": min(dates),
+                "latest": max(dates),
+            }
+
+        return {
+            "total_images": valid_count,
+            "featured_images": featured_count,
+            "total_prompts": len(prompts),
+            "date_range": date_range,
+        }
+    except Exception as e:
+        logger.debug("gallery_stats_db_unavailable", error=str(e))
+        return None

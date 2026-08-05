@@ -197,6 +197,9 @@
       .stats {
         display: flex;
         gap: 20px;
+        align-items: center;
+        flex-wrap: wrap;
+        min-width: 0;
       }
 
       .stat {
@@ -220,6 +223,8 @@
         line-height: 1;
         margin-bottom: 2px;
         letter-spacing: 0.02em;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
       }
 
       .stat-label {
@@ -549,14 +554,15 @@
         align-items: center;
         justify-content: center;
         padding: 100px 20px;
-        color: var(--text-secondary);
+        color: var(--text-primary);
         font-size: 16px;
+        opacity: 0.85;
       }
 
       .spinner {
         width: 56px;
         height: 56px;
-        border: 4px solid var(--border);
+        border: 4px solid color-mix(in oklab, var(--text-primary) 18%, transparent);
         border-top-color: var(--accent);
         border-radius: 50%;
         animation: spin 1s linear infinite;
@@ -2143,11 +2149,11 @@
         margin-left: 2px;
       }
 
-      /* Welcome hero for first-time visitors */
+      /* Welcome hero for first-time visitors — compact so art stays above the fold */
       .welcome-hero {
         max-width: 1800px;
         margin: 0 auto;
-        padding: 40px 48px 0;
+        padding: 20px 48px 0;
       }
 
       .welcome-hero-inner {
@@ -2155,27 +2161,42 @@
         border: 1px solid var(--border);
         border-left: 2px solid var(--accent);
         border-radius: 4px;
-        padding: 28px 36px;
+        padding: 18px 28px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 24px;
+        gap: 20px;
       }
 
       .welcome-hero-text h2 {
         font-family: var(--font-display);
-        font-size: 1.75rem;
+        font-size: 1.45rem;
         font-weight: 560;
         letter-spacing: -0.02em;
-        margin-bottom: 8px;
+        margin-bottom: 4px;
         color: var(--text-primary);
       }
 
       .welcome-hero-text p {
-        font-size: 15px;
+        font-size: 14px;
         color: var(--text-secondary);
         margin: 0;
+        line-height: 1.5;
+      }
+
+      .welcome-hero-text .hero-body {
+        display: none;
+        margin-top: 4px;
+        font-size: 14px;
+        color: var(--text-secondary);
         line-height: 1.6;
+        opacity: 0.9;
+      }
+
+      @media (min-width: 900px) {
+        .welcome-hero-text .hero-body {
+          display: block;
+        }
       }
 
       .welcome-hero-actions {
@@ -2234,14 +2255,6 @@
         letter-spacing: 0.03em;
         margin-bottom: 10px;
         color: #fff;
-      }
-
-      .welcome-hero-text .hero-body {
-        margin-top: 6px;
-        font-size: 14px;
-        color: var(--text-secondary);
-        line-height: 1.7;
-        opacity: 0.85;
       }
 
       .welcome-hero-cta-secondary {
@@ -2477,6 +2490,9 @@
         opacity: 0;
         visibility: hidden;
         pointer-events: none;
+      }
+      .page-loader.loaded-done {
+        display: none;
       }
       .loader-wordmark {
         font-family: var(--font-display);
@@ -3325,8 +3341,8 @@
           />
         </div>
         <div class="comparison-container" id="comparison-container">
-          <img class="comparison-image comparison-image-top" id="comparison-img-left" src="" alt="Current artwork" />
-          <img class="comparison-image" id="comparison-img-right" src="" alt="Comparison artwork" />
+          <img class="comparison-image comparison-image-top" id="comparison-img-left" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Current artwork" />
+          <img class="comparison-image" id="comparison-img-right" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Comparison artwork" />
           <div class="comparison-divider" id="comparison-divider"></div>
           <span class="comparison-label comparison-label-left" id="comparison-label-left"></span>
           <span class="comparison-label comparison-label-right" id="comparison-label-right"></span>
@@ -4723,13 +4739,38 @@
           _t: Date.now(),
         });
         if (currentSearch) params.append("search", currentSearch);
-        if (currentViewMode === 'picks') params.append("sort_by", "score");
+        if (currentViewMode === 'picks') {
+          params.append("sort_by", "score");
+          params.append("featured", "true");
+        }
         if (currentMoodFilter) params.append("mood", currentMoodFilter);
 
         try {
           const response = await fetch(`/api/images?${params}`);
           allImages = await response.json();
-          sortImages();
+          // Picks: prefer featured; if none, fall back to score-ranked recent
+          if (currentViewMode === "picks" && (!allImages || allImages.length === 0)) {
+            const fallback = new URLSearchParams({
+              limit: "500",
+              _t: String(Date.now()),
+              sort_by: "score",
+            });
+            if (currentSearch) fallback.append("search", currentSearch);
+            const fbRes = await fetch(`/api/images?${fallback}`);
+            allImages = await fbRes.json();
+          }
+          if (currentViewMode === "picks") {
+            allImages.sort((a, b) => {
+              const scoreA = Number(a.metadata?.final_score ?? a.final_score ?? 0);
+              const scoreB = Number(b.metadata?.final_score ?? b.final_score ?? 0);
+              if (scoreB !== scoreA) return scoreB - scoreA;
+              const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
+              const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+              return dateB - dateA;
+            });
+          } else {
+            sortImages();
+          }
           renderGallery();
         } catch (error) {
           console.error("Failed to load images:", error);
@@ -4769,6 +4810,14 @@
         });
         // Show/hide mood pills
         document.getElementById('mood-pills').style.display = mode === 'mood' ? 'flex' : 'none';
+        // Sort control is misleading on Picks (score-ranked) and Evolution
+        const sortSelect = document.getElementById('sort-select');
+        if (sortSelect) {
+          sortSelect.disabled = mode === 'picks' || mode === 'evolution';
+          sortSelect.title = mode === 'picks'
+            ? "Picks are ranked by Lumira's quality score"
+            : '';
+        }
         // Show/hide evolution timeline vs gallery
         const evoTimeline = document.getElementById('evolution-timeline');
         const galleryControls = document.querySelector('.controls');
@@ -4816,11 +4865,16 @@
 
       // Evolution Timeline
       const MOOD_HEX = {
-        contemplative: '#6a4c93', playful: '#f8a5c2', melancholic: '#7f8fa6',
-        contemplative: '#6a4c93', chaotic: '#ff6b6b', melancholic: '#7f8fa6',
-        energized: '#f5af19', serene: '#81ecec', restless: '#dfe6e9',
-        playful: '#f8a5c2', introspective: '#74b9ff', rebellious: '#e17055',
-        bold: '#d4a5ff'
+        contemplative: '#6a4c93',
+        playful: '#f8a5c2',
+        melancholic: '#7f8fa6',
+        chaotic: '#ff6b6b',
+        energized: '#f5af19',
+        serene: '#81ecec',
+        restless: '#dfe6e9',
+        introspective: '#74b9ff',
+        rebellious: '#e17055',
+        bold: '#d4a5ff',
       };
 
       async function loadEvolutionTimeline() {
@@ -6283,7 +6337,11 @@
       (function () {
         function dismissPageLoader() {
           var loader = document.getElementById("page-loader");
-          if (loader) loader.classList.add("loaded");
+          if (!loader || loader.classList.contains("loaded")) return;
+          loader.classList.add("loaded");
+          setTimeout(function () {
+            loader.classList.add("loaded-done");
+          }, 750);
         }
         window.addEventListener("load", function () {
           setTimeout(dismissPageLoader, 600);
@@ -6339,7 +6397,7 @@
       class="ai-disclosure"
       role="contentinfo"
       aria-label="AI transparency notice"
-      style="text-align:center;padding:1.25rem 1rem;color:var(--text-muted, #888);font-size:0.75rem;border-top:1px solid var(--border, rgba(255,255,255,0.08));margin-top:2rem"
+      style="text-align:center;padding:1.25rem 1rem 5.5rem;color:var(--text-muted, #888);font-size:0.75rem;border-top:1px solid var(--border, rgba(255,255,255,0.08));margin-top:2rem"
     >
       Artwork on this gallery is created by Lumira, an autonomous AI artist.
       <a href="/privacy" style="color: inherit; margin-left: 0.75rem">Privacy</a>

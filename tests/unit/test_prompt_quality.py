@@ -11,6 +11,8 @@ def test_trivial_prompts_rejected():
     assert is_trivial_prompt("ab")  # too short
     assert is_trivial_prompt("")
     assert is_trivial_prompt(None)
+    assert is_trivial_prompt("E2E test artwork")
+    assert is_trivial_prompt("playwright smoke check")
 
 
 def test_real_prompts_accepted():

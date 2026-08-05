@@ -62,10 +62,63 @@ class PreviewConfig:
     height: int = 1024
     width: int = 1024
     guidance_scale: float = 0.0  # Schnell doesn't use guidance
-    device: str = "mps"  # M4 Pro uses Metal
+    device: str = "auto"  # auto | mps | cuda | cpu
     dtype: str = "bfloat16"
     enable_attention_slicing: bool = True
     auto_approve_threshold: float = 0.7
+
+
+def _detect_device(preferred: str = "auto") -> str:
+    """Pick a usable torch device, falling back when MPS/CUDA are unavailable."""
+    if preferred and preferred != "auto":
+        # Honor explicit choice only if that backend is actually usable
+        try:
+            import torch
+
+            if preferred == "cuda" and torch.cuda.is_available():
+                return "cuda"
+            if preferred == "mps" and getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
+                return "mps"
+            if preferred == "cpu":
+                return "cpu"
+        except Exception:
+            if preferred == "cpu":
+                return "cpu"
+        # Fall through to auto if preferred isn't available
+    try:
+        import torch
+
+        if torch.cuda.is_available():
+            return "cuda"
+        if getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
+            return "mps"
+    except Exception:
+        pass
+    return "cpu"
+
+
+def _hf_token() -> str | None:
+    """Return a real HF token, or None if missing/placeholder."""
+    import os
+
+    for key in ("HF_TOKEN", "HUGGING_FACE_HUB_TOKEN", "HUGGINGFACE_HUB_TOKEN"):
+        raw = (os.getenv(key) or "").strip()
+        if not raw:
+            continue
+        lowered = raw.lower()
+        if (
+            "your_" in lowered
+            or lowered.endswith("_here")
+            or lowered in {"changeme", "xxx", "hf_xxx"}
+            or "huggingface_token" in lowered
+        ):
+            continue
+        return raw
+    return None
+
+
+# Process-wide singleton so we don't reload FLUX on every preview request
+# (defined after PreviewGenerator class below)
 
 
 class PreviewGenerator:
@@ -92,12 +145,14 @@ class PreviewGenerator:
             mood_blender: Optional MoodBlender for mood colors
         """
         self.config = config or PreviewConfig()
+        self.config.device = _detect_device(self.config.device)
         self.style_interpolator = style_interpolator
         self.mood_blender = mood_blender
 
         self._pipeline: FluxPipeline | None = None
         self._loaded = False
         self._load_time: float = 0.0
+        self._last_error: str | None = None
 
         logger.info(
             "preview_generator_initialized",
@@ -120,13 +175,35 @@ class PreviewGenerator:
             return True
 
         try:
+            import os
+
             import torch
             from diffusers import FluxPipeline
 
             start = time.time()
+            self.config.device = _detect_device(self.config.device)
 
-            # Determine dtype
-            dtype = torch.bfloat16 if self.config.dtype == "bfloat16" else torch.float16
+            # FLUX.1-schnell is gated — fail with a clear message when unauthenticated
+            token = _hf_token()
+            if not token:
+                self._last_error = (
+                    "Preview needs Hugging Face auth for FLUX.1-schnell. "
+                    "Set a real HF_TOKEN in .env (https://huggingface.co/settings/tokens), "
+                    "accept the model license, then restart the server."
+                )
+                logger.error("schnell_load_failed", error=self._last_error)
+                return False
+
+            # Pass token to huggingface hub
+            os.environ.setdefault("HF_TOKEN", token)
+            os.environ.setdefault("HUGGING_FACE_HUB_TOKEN", token)
+            # Determine dtype — bfloat16 is unreliable on CPU
+            if self.config.device == "cpu":
+                dtype = torch.float32
+            elif self.config.dtype == "bfloat16":
+                dtype = torch.bfloat16
+            else:
+                dtype = torch.float16
 
             # Load pipeline
             self._pipeline = FluxPipeline.from_pretrained(
@@ -143,6 +220,7 @@ class PreviewGenerator:
 
             self._load_time = time.time() - start
             self._loaded = True
+            self._last_error = None
 
             logger.info(
                 "schnell_pipeline_loaded",
@@ -152,10 +230,24 @@ class PreviewGenerator:
             return True
 
         except ImportError as e:
+            self._last_error = (
+                f"Preview dependencies missing ({e}). "
+                "Install with: pip install '.[flux]'"
+            )
             logger.error("diffusers_import_failed", error=str(e))
             return False
         except Exception as e:
-            logger.error("schnell_load_failed", error=str(e))
+            err = str(e)
+            if "401" in err or "gated" in err.lower() or "authorized" in err.lower():
+                self._last_error = (
+                    "Preview needs Hugging Face auth for FLUX.1-schnell. "
+                    "Set HF_TOKEN in .env, accept the model license at "
+                    "https://huggingface.co/black-forest-labs/FLUX.1-schnell, "
+                    "then restart the server."
+                )
+            else:
+                self._last_error = f"Failed to load preview pipeline: {e}"
+            logger.error("schnell_load_failed", error=err)
             return False
 
     async def preview(
@@ -186,7 +278,7 @@ class PreviewGenerator:
 
         # Ensure pipeline is loaded
         if not await self.ensure_loaded():
-            result.error = "Failed to load preview pipeline"
+            result.error = self._last_error or "Failed to load preview pipeline"
             return result
 
         start = time.time()
@@ -466,3 +558,27 @@ class TwoStageGenerator:
         )
 
         return result
+
+
+# Process-wide singleton so we don't reload FLUX on every preview request
+_preview_singleton: PreviewGenerator | None = None
+
+
+def get_preview_generator(
+    config: PreviewConfig | None = None,
+    style_interpolator: Any = None,
+    mood_blender: Any = None,
+) -> PreviewGenerator:
+    """Return a cached PreviewGenerator instance."""
+    global _preview_singleton
+    if _preview_singleton is None:
+        cfg = config or PreviewConfig()
+        cfg.device = _detect_device(cfg.device)
+        _preview_singleton = PreviewGenerator(
+            config=cfg,
+            style_interpolator=style_interpolator,
+            mood_blender=mood_blender,
+        )
+    elif mood_blender is not None:
+        _preview_singleton.mood_blender = mood_blender
+    return _preview_singleton

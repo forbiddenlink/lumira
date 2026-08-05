@@ -32,4 +32,7 @@ def is_trivial_prompt(prompt: str | None) -> bool:
         return True
     if key.startswith("test,") or key.startswith("test "):
         return True
+    # CI / Playwright harness leftovers
+    if key.startswith("e2e ") or "e2e test" in key or key.startswith("playwright "):
+        return True
     return len(key) < 3

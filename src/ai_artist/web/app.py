@@ -57,6 +57,7 @@ from .gallery_routes import router as gallery_router
 from .health import router as health_router
 from .helpers import (
     calculate_gallery_stats,
+    calculate_gallery_stats_from_db,
     filter_by_search,
     is_valid_image,
     load_image_metadata,
@@ -770,104 +771,110 @@ async def list_images(
     response.headers["Expires"] = "0"
 
     # --- DB-first path (faster than full filesystem glob + stat per file) ---
-    # Only used when not filtering by featured=True (featured not stored in DB)
-    if featured is not True:
+    # Featured filter uses GeneratedImage.is_featured (and path fallback).
+    try:
+        from ..db.models import GeneratedImage
+        from ..db.session import get_db
+
+        db_gen = get_db()
+        db = next(db_gen)
         try:
-            from ..db.models import GeneratedImage
-            from ..db.session import get_db
-
-            db_gen = get_db()
-            db = next(db_gen)
-            try:
-                if sort_by == "score":
-                    query = db.query(GeneratedImage).order_by(
-                        GeneratedImage.final_score.desc().nulls_last()
-                    )
-                else:
-                    query = db.query(GeneratedImage).order_by(
-                        GeneratedImage.created_at.desc()
-                    )
-                if search:
-                    query = query.filter(GeneratedImage.prompt.ilike(f"%{search}%"))
-                db_rows = query.all()
-            finally:
-                db_gen.close()
-
-            if db_rows:
-                gallery_base = Path(gallery_path)
-                base_url = str(request.base_url).rstrip("/")
-                results: list[ImageMetadata] = []
-                for row in db_rows:
-                    row_path = Path(row.filename)
-                    if not row_path.exists():
-                        continue
-                    prompt_text = row.prompt or ""
-                    # Hide harness junk from the public gallery
-                    from ..utils.prompt_quality import is_trivial_prompt
-
-                    if is_trivial_prompt(prompt_text):
-                        continue
-                    is_featured = "featured" in row.filename.replace("\\", "/")
-                    if featured is False and is_featured:
-                        continue
-                    try:
-                        rel = row_path.relative_to(gallery_base)
-                    except ValueError:
-                        rel = row_path
-                    gen_params = row.generation_params or {}
-                    from ..utils.metadata_helpers import enrich_generation_metadata
-
-                    enriched = enrich_generation_metadata(
-                        gen_params,
-                        status=str(row.status) if row.status else None,
-                    )
-                    share_id = str(row.share_id) if row.share_id else None
-                    is_public = bool(row.is_public)
-                    results.append(
-                        ImageMetadata(
-                            path=str(rel),
-                            filename=row_path.name,
-                            prompt=prompt_text,
-                            created_at=(
-                                row.created_at.isoformat() if row.created_at else ""
-                            ),
-                            featured=is_featured,
-                            metadata={
-                                **enriched,
-                                "model": row.model_id or "",
-                                "final_score": row.final_score,
-                            },
-                            thumbnail_url=f"/api/images/file/{rel}",
-                            full_url=f"/api/images/file/{rel}",
-                            id=int(row.id),
-                            share_id=share_id,
-                            is_public=is_public,
-                            share_url=(
-                                f"{base_url}/share/{share_id}"
-                                if share_id and is_public
-                                else None
-                            ),
-                        )
-                    )
-                if mood:
-                    results = [
-                        r
-                        for r in results
-                        if (r.metadata.get("mood", "").lower() == mood.lower())
-                    ]
-                total_valid = len(results)
-                paginated = results[offset : offset + limit]
-                logger.info(
-                    "images_listed_via_db",
-                    total=len(db_rows),
-                    valid=total_valid,
-                    returned=len(paginated),
-                    featured=featured,
-                    search=search,
+            if sort_by == "score":
+                query = db.query(GeneratedImage).order_by(
+                    GeneratedImage.final_score.desc().nulls_last()
                 )
-                return paginated
-        except Exception as db_err:
-            logger.warning("db_list_images_failed_using_filesystem", error=str(db_err))
+            else:
+                query = db.query(GeneratedImage).order_by(
+                    GeneratedImage.created_at.desc()
+                )
+            if search:
+                query = query.filter(GeneratedImage.prompt.ilike(f"%{search}%"))
+            if featured is True:
+                query = query.filter(GeneratedImage.is_featured.is_(True))
+            db_rows = query.all()
+        finally:
+            db_gen.close()
+
+        if db_rows:
+            gallery_base = Path(gallery_path)
+            base_url = str(request.base_url).rstrip("/")
+            results: list[ImageMetadata] = []
+            for row in db_rows:
+                row_path = Path(row.filename)
+                if not row_path.exists():
+                    continue
+                prompt_text = row.prompt or ""
+                # Hide harness junk from the public gallery
+                from ..utils.prompt_quality import is_trivial_prompt
+
+                if is_trivial_prompt(prompt_text):
+                    continue
+                path_featured = "featured" in row.filename.replace("\\", "/")
+                is_featured = bool(row.is_featured) or path_featured
+                if featured is True and not is_featured:
+                    continue
+                if featured is False and is_featured:
+                    continue
+                try:
+                    rel = row_path.relative_to(gallery_base)
+                except ValueError:
+                    rel = row_path
+                gen_params = row.generation_params or {}
+                from ..utils.metadata_helpers import enrich_generation_metadata
+
+                enriched = enrich_generation_metadata(
+                    gen_params,
+                    status=str(row.status) if row.status else None,
+                )
+                share_id = str(row.share_id) if row.share_id else None
+                is_public = bool(row.is_public)
+                results.append(
+                    ImageMetadata(
+                        path=str(rel),
+                        filename=row_path.name,
+                        prompt=prompt_text,
+                        created_at=(
+                            row.created_at.isoformat() if row.created_at else ""
+                        ),
+                        featured=is_featured,
+                        metadata={
+                            **enriched,
+                            "model": row.model_id or "",
+                            "final_score": row.final_score,
+                            "mood": enriched.get("mood")
+                            or (gen_params or {}).get("mood"),
+                        },
+                        thumbnail_url=f"/api/images/file/{rel}",
+                        full_url=f"/api/images/file/{rel}",
+                        id=int(row.id),
+                        share_id=share_id,
+                        is_public=is_public,
+                        share_url=(
+                            f"{base_url}/share/{share_id}"
+                            if share_id and is_public
+                            else None
+                        ),
+                    )
+                )
+            if mood:
+                results = [
+                    r
+                    for r in results
+                    if (r.metadata.get("mood", "").lower() == mood.lower())
+                ]
+            total_valid = len(results)
+            paginated = results[offset : offset + limit]
+            logger.info(
+                "images_listed_via_db",
+                total=len(db_rows),
+                valid=total_valid,
+                returned=len(paginated),
+                featured=featured,
+                search=search,
+            )
+            return paginated
+    except Exception as db_err:
+        logger.warning("db_list_images_failed_using_filesystem", error=str(db_err))
     # --- Filesystem fallback ---
 
     # Get image paths
@@ -995,14 +1002,18 @@ async def get_stats(
     gallery_manager: GalleryManagerDep,
 ):
     """Get gallery statistics."""
-    featured_images = gallery_manager.list_images(featured_only=True)
-
-    # Calculate stats using helper function
-    stats = calculate_gallery_stats(gallery_manager)
+    # Prefer DB inventory so the count matches the DB-first /api/images gallery.
+    stats = calculate_gallery_stats_from_db()
+    if stats is None:
+        featured_images = gallery_manager.list_images(featured_only=True)
+        stats = calculate_gallery_stats(gallery_manager)
+        featured_count = len(featured_images)
+    else:
+        featured_count = stats["featured_images"]
 
     return GalleryStats(
         total_images=stats["total_images"],
-        featured_images=len(featured_images),
+        featured_images=featured_count,
         total_prompts=stats["total_prompts"],
         date_range=stats["date_range"],
     )
@@ -1078,12 +1089,45 @@ async def toggle_featured(
             "created_at": full_image_path.stat().st_mtime,
         }
 
-    # Update featured status
+    # Update featured status in sidecar
     metadata["featured"] = featured
 
     # Save metadata (async file I/O)
     async with aiofiles.open(metadata_path, "w") as f:
         await f.write(json.dumps(metadata, indent=2))
+
+    # Keep DB in sync so /api/images?featured=true and community sort work
+    try:
+        from ..db.models import GeneratedImage
+        from ..db.session import get_db
+
+        db_gen = get_db()
+        db = next(db_gen)
+        try:
+            candidates = {
+                str(full_image_path.resolve()),
+                str(full_image_path),
+                file_path,
+                full_image_path.name,
+            }
+            row = (
+                db.query(GeneratedImage)
+                .filter(GeneratedImage.filename.in_(list(candidates)))
+                .first()
+            )
+            if row is None:
+                row = (
+                    db.query(GeneratedImage)
+                    .filter(GeneratedImage.filename.like(f"%{full_image_path.name}"))
+                    .first()
+                )
+            if row is not None:
+                row.is_featured = featured
+                db.commit()
+        finally:
+            db_gen.close()
+    except Exception as e:
+        logger.warning("featured_db_sync_failed", path=str(file_path), error=str(e))
 
     logger.info("image_featured_toggled", path=str(file_path), featured=featured)
 

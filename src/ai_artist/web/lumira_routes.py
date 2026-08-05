@@ -4544,66 +4544,119 @@ async def generate_preview(
     body: PreviewRequest,
     _auth: GenerationAuthDep,
 ):
-    """Generate a fast preview using FLUX.1 Schnell (~2 seconds).
+    """Generate a fast preview for concept validation.
 
-    Returns a low-step preview image for concept validation before
-    committing to a full render.
+    Uses Magica (when ``MAGICA_API_KEY`` / studio backend is magica) for a
+    quick hosted preview; otherwise falls back to local FLUX.1 Schnell.
     """
-    from ..core.mood_blender import MoodBlender
-    from ..core.preview_generator import PreviewGenerator
+    import asyncio
+    import base64
+    import io
+    import os
+    import time
+
     from ..web.websocket import manager as ws_manager
 
     session_id = str(uuid.uuid4())
+    prompt = _http_meaningful_prompt(body.prompt)
 
     try:
         state = _get_lumira_state()
         mood_system = state["mood_system"]
+        mood_name = mood_system.current_mood.value
+        mood_blend = body.mood_blend or {mood_name: 1.0}
 
-        # Get or create preview generator
-        preview_gen = PreviewGenerator(
-            mood_blender=MoodBlender(),
-        )
+        # Enhance prompt lightly with mood atmosphere when available
+        enhanced = prompt
+        try:
+            from ..core.mood_blender import MoodBlender
 
-        # Generate preview
-        result = await preview_gen.preview(
-            prompt=body.prompt,
-            style_weights=body.style_weights,
-            mood_blend=body.mood_blend or {mood_system.current_mood.value: 1.0},
-            seed=body.seed,
-        )
+            blended = MoodBlender().blend(mood_blend)
+            if blended.colors:
+                enhanced = f"{prompt}, {', '.join(blended.colors[:3])} color palette"
+            if blended.atmosphere:
+                enhanced = f"{enhanced}, {blended.atmosphere}"
+        except Exception:
+            enhanced = prompt
 
-        if result.error:
-            return PreviewResponse(
-                success=False,
-                session_id=session_id,
-                error=result.error,
+        start = time.time()
+        image_base64: str | None = None
+        seed = body.seed or 0
+        used_backend = "local-flux"
+
+        magica_key = os.getenv("MAGICA_API_KEY", "").strip()
+        use_magica = bool(magica_key) and "your_" not in magica_key.lower()
+
+        if use_magica:
+            used_backend = "magica"
+            from ..core.magica_generator import MagicaGenerator, model_for_mood
+
+            # Cheaper/faster Nano Banana for previews (1K square)
+            node = model_for_mood(mood_name)
+            if node.startswith("flux") or "grok" in node or "gpt" in node:
+                node = "nano_banana_2"
+
+            def _run_magica() -> tuple[str, int]:
+                gen = MagicaGenerator(model_id=node)
+                images = gen.generate(
+                    prompt=enhanced,
+                    width=1024,
+                    height=1024,
+                    num_images=1,
+                    seed=body.seed,
+                )
+                buf = io.BytesIO()
+                images[0].save(buf, format="PNG")
+                b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+                return b64, body.seed or 0
+
+            image_base64, seed = await asyncio.to_thread(_run_magica)
+        else:
+            from ..core.mood_blender import MoodBlender
+            from ..core.preview_generator import get_preview_generator
+
+            preview_gen = get_preview_generator(mood_blender=MoodBlender())
+            result = await preview_gen.preview(
+                prompt=prompt,
+                style_weights=body.style_weights,
+                mood_blend=mood_blend,
+                seed=body.seed,
             )
+            if result.error:
+                return PreviewResponse(
+                    success=False,
+                    session_id=session_id,
+                    error=result.error,
+                )
+            image_base64 = result.get_image_base64()
+            seed = result.seed
+            enhanced = result.prompt or enhanced
 
-        # Encode image
-        image_base64 = result.get_image_base64()
+        generation_time = time.time() - start
 
         await ws_manager.broadcast_preview_ready(
             session_id=session_id,
             image_base64=image_base64,
             score=0.0,
             approved=False,
-            prompt=result.prompt,
-            generation_time=result.generation_time,
+            prompt=enhanced,
+            generation_time=generation_time,
         )
 
         logger.info(
             "preview_generated",
             session_id=session_id,
-            generation_time=round(result.generation_time, 2),
+            backend=used_backend,
+            generation_time=round(generation_time, 2),
         )
 
         return PreviewResponse(
             success=True,
             session_id=session_id,
             image_base64=image_base64,
-            generation_time=result.generation_time,
-            prompt=result.prompt,
-            seed=result.seed,
+            generation_time=generation_time,
+            prompt=enhanced,
+            seed=seed,
         )
 
     except Exception as e:
