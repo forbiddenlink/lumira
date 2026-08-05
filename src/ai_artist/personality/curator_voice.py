@@ -37,18 +37,18 @@ def compose_curator_voice(
         if artwork_id:
             ctx = graph.get_artwork_context(str(artwork_id))
             if ctx:
-                styles = [
-                    s.get("name")
+                styles: list[str] = [
+                    str(s.get("name"))
                     for s in (ctx.get("styles") or [])
                     if isinstance(s, dict) and s.get("name")
                 ]
-                subjects = [
-                    s.get("name")
+                subjects: list[str] = [
+                    str(s.get("name"))
                     for s in (ctx.get("subjects") or [])
                     if isinstance(s, dict) and s.get("name")
                 ]
                 if styles or subjects:
-                    bits = []
+                    bits: list[str] = []
                     if subjects:
                         bits.append(", ".join(subjects[:2]))
                     if styles:
@@ -60,16 +60,16 @@ def compose_curator_voice(
                     )
         if mood_l and not parts:
             sug = graph.get_creative_suggestions(mood_l)
-            sug_subjects = [
-                s.get("name") if isinstance(s, dict) else str(s)
+            sug_subjects: list[str] = [
+                str(s.get("name") if isinstance(s, dict) else s)
                 for s in (sug.get("suggested_subjects") or [])[:2]
+                if (s.get("name") if isinstance(s, dict) else s)
             ]
-            sug_styles = [
-                s.get("name") if isinstance(s, dict) else str(s)
+            sug_styles: list[str] = [
+                str(s.get("name") if isinstance(s, dict) else s)
                 for s in (sug.get("suggested_styles") or [])[:2]
+                if (s.get("name") if isinstance(s, dict) else s)
             ]
-            sug_subjects = [s for s in sug_subjects if s]
-            sug_styles = [s for s in sug_styles if s]
             if sug_subjects or sug_styles:
                 line = f"For {mood_l}, she often returns to"
                 if sug_subjects:
@@ -119,8 +119,8 @@ def compose_curator_voice(
         from ..learning import get_adaptive_learner
 
         taste = get_adaptive_learner().get_taste_summary()
-        motifs = [
-            m.get("motif")
+        motifs: list[str] = [
+            str(m.get("motif"))
             for m in (taste.get("top_motifs") or [])
             if isinstance(m, dict) and m.get("motif")
         ][:3]
