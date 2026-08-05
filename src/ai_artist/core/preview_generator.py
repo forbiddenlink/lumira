@@ -77,7 +77,11 @@ def _detect_device(preferred: str = "auto") -> str:
 
             if preferred == "cuda" and torch.cuda.is_available():
                 return "cuda"
-            if preferred == "mps" and getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
+            if (
+                preferred == "mps"
+                and getattr(torch.backends, "mps", None)
+                and torch.backends.mps.is_available()
+            ):
                 return "mps"
             if preferred == "cpu":
                 return "cpu"
