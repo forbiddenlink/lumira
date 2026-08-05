@@ -438,7 +438,10 @@ async def toggle_like(
         new_like = GalleryLike(image_id=image_obj.id, session_id=session_id)
         db.add(new_like)
         db.query(GeneratedImage).filter(GeneratedImage.id == image_obj.id).update(
-            {GeneratedImage.like_count: func.coalesce(GeneratedImage.like_count, 0) + 1},
+            {
+                GeneratedImage.like_count: func.coalesce(GeneratedImage.like_count, 0)
+                + 1
+            },
             synchronize_session=False,
         )
         liked = True

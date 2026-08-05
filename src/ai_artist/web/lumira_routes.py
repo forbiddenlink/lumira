@@ -117,6 +117,7 @@ def _is_trivial_prompt(prompt: str | None) -> bool:
     """Return True for junk / harness prompts that must never enter the gallery."""
     return is_trivial_prompt(prompt)
 
+
 def _assert_meaningful_prompt(prompt: str | None, *, field: str = "prompt") -> str:
     """Validate prompt quality for creation endpoints."""
     cleaned = (prompt or "").strip()
@@ -174,7 +175,9 @@ def _recent_prompt_duplicate(
     return None
 
 
-def _recent_variation_count(db: Session, source_id: int, *, hours: int | None = 24) -> int:
+def _recent_variation_count(
+    db: Session, source_id: int, *, hours: int | None = 24
+) -> int:
     """Count variations derived from a source artwork.
 
     When ``hours`` is None, count all-time variations for that source.
@@ -964,9 +967,7 @@ async def _load_portfolio_from_gallery() -> list[dict]:
                         "image_url": f"/api/images/file/{rel_path}",
                         "mood": extract_mood_from_sidecar(metadata) or "contemplative",
                         "style": enriched.get("style", "digital art"),
-                        "reflection": metadata.get(
-                            "reflection", prompt_text
-                        ),
+                        "reflection": metadata.get("reflection", prompt_text),
                         "created_at": metadata.get("created_at", ""),
                         "thinking": metadata.get("thinking")
                         or enriched.get("thinking"),
