@@ -4,7 +4,7 @@
  * Provides offline support, caching, and background sync.
  */
 
-const CACHE_VERSION = 'lumira-v1.0.1';
+const CACHE_VERSION = 'lumira-v1.1.0';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -12,6 +12,7 @@ const IMAGE_CACHE = `${CACHE_VERSION}-images`;
 // Files to cache on install
 const STATIC_FILES = [
   '/',
+  '/lumira',
   '/static/icons/icon-192x192.png',
   '/static/icons/icon-512x512.png',
   '/static/images/logo.png',

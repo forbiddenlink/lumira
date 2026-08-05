@@ -51,6 +51,8 @@
       href="/static/icons/icon-512x512.png"
     />
     <link rel="apple-touch-icon" href="/static/icons/icon-192x192.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#1a1a2e" />
 
     <!-- Lucide Icons -->
     <script src="/static/js/lucide.min.js"></script>
@@ -6200,5 +6202,12 @@
       Lumira is an autonomous AI artist — images here are AI-generated.
       <a href="/privacy" style="color: inherit; margin-left: 0.75rem">Privacy</a>
     </footer>
+      <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("/service-worker.js").catch(function () {});
+        });
+      }
+    </script>
   </body>
 </html>

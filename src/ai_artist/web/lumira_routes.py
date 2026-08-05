@@ -1477,10 +1477,10 @@ async def create_artwork(
                     )
                 if preferred_model:
                     with contextlib.suppress(Exception):
+                        mood_bit = f" for {mood.value}" if mood else ""
+                        model_short = str(preferred_model).split("/")[-1]
                         await ws_manager.broadcast_memory_insight(
-                            f"Choosing with learned taste"
-                            + (f" for {mood.value}" if mood else "")
-                            + f" — considering {str(preferred_model).split('/')[-1]}.",
+                            f"Choosing with learned taste{mood_bit} — considering {model_short}.",
                             "preference",
                         )
 
@@ -1524,6 +1524,17 @@ async def create_artwork(
 
                     # Save metadata JSON for gallery API
                     metadata_path = save_path.with_suffix(".json")
+                    curator_note = None
+                    with contextlib.suppress(Exception):
+                        from ..personality.curator_voice import compose_curator_voice
+
+                        curator_note = compose_curator_voice(
+                            mood=mood.value,
+                            prompt=prompt,
+                            artwork_id=filename,
+                            subject=subject,
+                            style=style,
+                        )
                     metadata_json = {
                         "prompt": prompt,
                         "metadata": {
@@ -1537,9 +1548,11 @@ async def create_artwork(
                             "reasoning": intent.reasoning,
                             "artistic_goals": intent.artistic_goals,
                             "has_llm": creative_mind.has_llm,
+                            "curator_note": curator_note,
                         },
                         "created_at": now.isoformat(),
                         "featured": False,
+                        "curator_note": curator_note,
                     }
                     metadata_path.write_text(json.dumps(metadata_json, indent=2))
                     try:
@@ -1979,10 +1992,10 @@ async def user_request_creation(
                     )
                 if preferred_model:
                     with contextlib.suppress(Exception):
+                        mood_bit = f" for {mood.value}" if mood else ""
+                        model_short = str(preferred_model).split("/")[-1]
                         await ws_manager.broadcast_memory_insight(
-                            "Choosing with learned taste"
-                            + (f" for {mood.value}" if mood else "")
-                            + f" — considering {str(preferred_model).split('/')[-1]}.",
+                            f"Choosing with learned taste{mood_bit} — considering {model_short}.",
                             "preference",
                         )
 
@@ -4411,6 +4424,42 @@ async def get_artwork_context(request: Request, artwork_id: str):
         styles=context.get("styles", []),
         moods=context.get("moods", []),
     )
+
+
+class CuratorVoiceResponse(BaseModel):
+    """Curator note explaining portfolio fit."""
+
+    curator_note: str
+    mood: str | None = None
+    artwork_id: str | None = None
+    subject: str | None = None
+    style: str | None = None
+
+
+@router.get("/curator-voice", response_model=CuratorVoiceResponse)
+@limiter.limit("60/minute")
+async def get_curator_voice(
+    request: Request,
+    mood: str | None = None,
+    prompt: str | None = None,
+    artwork_id: str | None = None,
+    subject: str | None = None,
+    style: str | None = None,
+):
+    """Compose a short curator voice line for gallery / studio.
+
+    Uses knowledge graph when available, else series + taste fallbacks.
+    """
+    from ..personality.curator_voice import curator_voice_payload
+
+    payload = curator_voice_payload(
+        mood=mood,
+        prompt=prompt,
+        artwork_id=artwork_id,
+        subject=subject,
+        style=style,
+    )
+    return CuratorVoiceResponse(**payload)
 
 
 # =============================================================================

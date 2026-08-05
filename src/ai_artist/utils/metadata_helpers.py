@@ -110,7 +110,13 @@ def enrich_sidecar_metadata(sidecar: dict[str, Any]) -> dict[str, Any]:
     if style:
         result["style"] = style
 
-    for field in ("reflection", "thinking", "critique_history", "reasoning"):
+    for field in (
+        "reflection",
+        "thinking",
+        "critique_history",
+        "reasoning",
+        "curator_note",
+    ):
         if sidecar.get(field) is not None:
             result[field] = sidecar[field]
 

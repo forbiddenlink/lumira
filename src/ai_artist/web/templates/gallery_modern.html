@@ -44,6 +44,9 @@
       href="/static/icons/icon-512x512.png"
     />
     <link rel="apple-touch-icon" href="/static/icons/icon-192x192.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#1a1a2e" />
+    <meta name="mobile-web-app-capable" content="yes" />
 
     <!-- Fonts: Fraunces (display) + Figtree (UI) — atelier, not Inter/AI-default -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -4113,6 +4116,35 @@
       }
 
       // ===== Gallery helpers for creation narrative =====
+
+      var _curatorQueued = {};
+      function queueCuratorNote(image) {
+        var key = image.filename || image.path;
+        if (!key || _curatorQueued[key]) return;
+        _curatorQueued[key] = true;
+        var params = new URLSearchParams();
+        if (image.metadata && image.metadata.mood) params.set('mood', image.metadata.mood);
+        if (image.prompt) params.set('prompt', image.prompt.slice(0, 400));
+        if (image.metadata && image.metadata.subject) params.set('subject', image.metadata.subject);
+        if (image.metadata && image.metadata.style) params.set('style', image.metadata.style);
+        if (image.filename) params.set('artwork_id', image.filename);
+        fetch('/api/lumira/curator-voice?' + params.toString())
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (data) {
+            if (!data || !data.curator_note) return;
+            if (!image.metadata) image.metadata = {};
+            image.metadata.curator_note = data.curator_note;
+            var pending = document.querySelector('.curator-pending[data-curator-for="' + CSS.escape(key) + '"]');
+            if (pending) {
+              pending.classList.remove('curator-pending');
+              pending.innerHTML = '<span class="thinking-step-label">Curator</span>' + escapeHTML(data.curator_note);
+            } else if (typeof updateModalContent === 'function' && modalImages[currentModalIndex] === image) {
+              updateModalContent();
+            }
+          })
+          .catch(function () {});
+      }
+
       function getCreationStoryHTML(image) {
         if (!image.metadata) return '';
         const meta = image.metadata;
@@ -4120,15 +4152,18 @@
         const thinking = meta.thinking;
         const criticScore = meta.critic_score;
         const criticNote = meta.critic_note;
+        const curatorNote = meta.curator_note || image.curator_note;
 
         // Only show if there's meaningful narrative data
-        if (!mood && !thinking && criticScore == null) {
+        if (!mood && !thinking && criticScore == null && !curatorNote) {
           if (image.prompt) {
+            queueCuratorNote(image);
             return `
               <div class="creation-story">
                 <button class="creation-story-toggle" onclick="this.nextElementSibling.classList.toggle('expanded'); this.textContent = this.nextElementSibling.classList.contains('expanded') ? 'Hide creation story' : 'Read creation story';">Read creation story</button>
                 <div class="creation-story-content">
                   <p class="thinking-step"><span class="thinking-step-label">Prompt</span>${escapeHTML(image.prompt)}</p>
+                  <p class="thinking-step curator-pending" data-curator-for="${escapeHTML(image.filename || image.path || '')}"><span class="thinking-step-label">Curator</span>Listening to the archive…</p>
                 </div>
               </div>`;
           }
@@ -4158,6 +4193,13 @@
             scoreText += ` — "${escapeHTML(criticNote)}"`;
           }
           storyParts.push(`<div class="critic-note">${scoreText}</div>`);
+        }
+
+        if (curatorNote) {
+          storyParts.push(`<p class="thinking-step"><span class="thinking-step-label">Curator</span>${escapeHTML(curatorNote)}</p>`);
+        } else if (image.filename || image.path) {
+          storyParts.push(`<p class="thinking-step curator-pending" data-curator-for="${escapeHTML(image.filename || image.path)}"><span class="thinking-step-label">Curator</span>Listening to the archive…</p>`);
+          queueCuratorNote(image);
         }
 
         if (storyParts.length === 0) return '';
@@ -6830,5 +6872,12 @@
       Artwork on this gallery is created by Lumira, an autonomous AI artist.
       <a href="/privacy" style="color: inherit; margin-left: 0.75rem">Privacy</a>
     </footer>
+      <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("/service-worker.js").catch(function () {});
+        });
+      }
+    </script>
   </body>
 </html>
