@@ -2,7 +2,7 @@
 # Includes all dependencies for local development with ML capabilities
 
 # Web server + API
-fastapi>=0.115.0,<0.141.0
+fastapi>=0.115.0,<0.142.0
 uvicorn[standard]>=0.32.0,<0.53.0
 python-multipart>=0.0.31,<0.1.0
 pydantic>=2.10.0,<3.0.0
