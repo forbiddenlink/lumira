@@ -225,12 +225,11 @@ async def lifespan(app: FastAPI):
     # whose tables already exist) so tests and fresh installs keep working.
     try:
         from alembic.config import Config
-
-        from alembic import command
+        from alembic.command import upgrade as alembic_upgrade
 
         alembic_cfg = Config("alembic.ini")
         alembic_cfg.set_main_option("sqlalchemy.url", f"sqlite:///{db_path}")
-        command.upgrade(alembic_cfg, "head")
+        alembic_upgrade(alembic_cfg, "head")
         logger.info("database_migrated", db_path=str(db_path))
     except Exception as e:
         logger.warning("alembic_upgrade_failed_using_create_all", error=str(e))
@@ -598,11 +597,8 @@ async def share_page(request: Request, share_id: str, gallery_path: GalleryPathD
         gen_params = image.generation_params or {}
         if not isinstance(gen_params, dict):
             gen_params = {}
-        nested = (
-            gen_params.get("metadata")
-            if isinstance(gen_params.get("metadata"), dict)
-            else {}
-        )
+        metadata_raw = gen_params.get("metadata")
+        nested: dict = metadata_raw if isinstance(metadata_raw, dict) else {}
         soundtrack_url = (
             gen_params.get("soundtrack_url") or nested.get("soundtrack_url") or None
         )

@@ -63,7 +63,8 @@ def assert_ai_enabled(context: str = "ai") -> None:
 def estimate_llm_cost_usd(
     input_tokens: int, output_tokens: int, model: str = "default"
 ) -> float:
-    in_rate, out_rate = _LLM_COST_PER_MTOK.get("default")
+    rates = _LLM_COST_PER_MTOK.get(model) or _LLM_COST_PER_MTOK["default"]
+    in_rate, out_rate = rates
     return (input_tokens / 1_000_000) * in_rate + (output_tokens / 1_000_000) * out_rate
 
 
@@ -177,7 +178,7 @@ def record_spend(amount_usd: float, context: str = "ai") -> float:
         key = f"lumira:spend:micros:{today}"
         new_micros = client.incrby(key, micros)
         client.expire(key, 172800)
-        new_total = new_micros / 1_000_000
+        new_total = float(new_micros) / 1_000_000
         # Mirror a dollar view for reads.
         client.set(f"lumira:spend:{today}", f"{new_total:.6f}", ex=172800)
         return new_total
