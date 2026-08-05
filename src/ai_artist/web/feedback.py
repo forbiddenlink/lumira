@@ -142,6 +142,7 @@ async def submit_feedback(
 
         # Get updated stats
         stats = learner.get_learning_stats()
+        taste = learner.get_taste_summary()
 
         logger.info(
             "feedback_submitted",
@@ -150,10 +151,21 @@ async def submit_feedback(
             total_feedback=stats.get("total_feedback", 0),
         )
 
+        # Surface preference shift live to gallery / studio listeners
+        try:
+            from ai_artist.web.websocket import broadcast_memory_insight
+
+            narrative = taste.get("narrative") or (
+                f"Noted your {feedback.action} — adjusting my taste."
+            )
+            await broadcast_memory_insight(str(narrative), "preference")
+        except Exception as ws_err:
+            logger.debug("feedback_insight_broadcast_failed", error=str(ws_err))
+
         return FeedbackResponse(
             success=True,
             message="Feedback recorded successfully. Lumira is learning!",
-            learning_stats=stats,
+            learning_stats={**stats, "taste": taste},
         )
 
     except HTTPException:
@@ -163,6 +175,20 @@ async def submit_feedback(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to record feedback",
+        ) from e
+
+
+@router.get("/taste")
+async def get_taste_summary() -> dict:
+    """Return a human-readable taste summary for gallery evolution / atelier."""
+    try:
+        learner = get_adaptive_learner()
+        return learner.get_taste_summary()
+    except Exception as e:
+        logger.error("taste_summary_failed", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve taste summary",
         ) from e
 
 

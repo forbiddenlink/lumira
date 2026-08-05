@@ -123,7 +123,11 @@ def _web_dtype(config: Any) -> Any:
 
 
 def _build_studio_generator(
-    config: Any, *, mood: str | None = None, require_img2img: bool = False
+    config: Any,
+    *,
+    mood: str | None = None,
+    require_img2img: bool = False,
+    preferred_model_id: str | None = None,
 ) -> tuple[str, Any]:
     """Construct the studio image generator via the shared backend factory."""
     from ..core.generator_factory import build_web_image_generator
@@ -133,6 +137,7 @@ def _build_studio_generator(
         mood=mood,
         dtype=_web_dtype(config),
         require_img2img=require_img2img,
+        preferred_model_id=preferred_model_id,
     )
 
 
@@ -1465,8 +1470,24 @@ async def create_artwork(
                     model=config.model.base_model,
                 )
 
+                preferred_model = None
+                with contextlib.suppress(Exception):
+                    preferred_model = learner.suggest_model(
+                        mood=mood.value if mood else None
+                    )
+                if preferred_model:
+                    with contextlib.suppress(Exception):
+                        await ws_manager.broadcast_memory_insight(
+                            f"Choosing with learned taste"
+                            + (f" for {mood.value}" if mood else "")
+                            + f" — considering {str(preferred_model).split('/')[-1]}.",
+                            "preference",
+                        )
+
                 backend, generator = _build_studio_generator(
-                    config, mood=mood.value if mood else None
+                    config,
+                    mood=mood.value if mood else None,
+                    preferred_model_id=preferred_model,
                 )
                 await _run_in_thread(generator.load_model)
 
@@ -1951,8 +1972,24 @@ async def user_request_creation(
                     content=f"Bringing your vision to life... '{body.prompt}'",
                 )
 
+                preferred_model = None
+                with contextlib.suppress(Exception):
+                    preferred_model = learner.suggest_model(
+                        mood=mood.value if mood else None
+                    )
+                if preferred_model:
+                    with contextlib.suppress(Exception):
+                        await ws_manager.broadcast_memory_insight(
+                            "Choosing with learned taste"
+                            + (f" for {mood.value}" if mood else "")
+                            + f" — considering {str(preferred_model).split('/')[-1]}.",
+                            "preference",
+                        )
+
                 backend, generator = _build_studio_generator(
-                    config, mood=mood.value if mood else None
+                    config,
+                    mood=mood.value if mood else None,
+                    preferred_model_id=preferred_model,
                 )
                 await _run_in_thread(generator.load_model)
 
@@ -4503,13 +4540,14 @@ async def post_to_social(
             status_code=400, detail="Either artwork_id or image_path required"
         )
 
-    # Post to platforms
+    # Post to platforms — honor caller caption (Lumira's voice) when provided
     results = poster.post_artwork(
         image=image,
         title=post_request.title,
         mood=post_request.mood,
         style=post_request.style,
         platforms=post_request.platforms,
+        caption=post_request.caption,
     )
 
     # Build response

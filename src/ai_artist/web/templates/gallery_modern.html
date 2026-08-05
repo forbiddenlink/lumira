@@ -2201,6 +2201,28 @@
         font-size: 0.72rem;
         letter-spacing: 0.04em;
       }
+      .evolution-prefs {
+        max-width: 1100px;
+        margin: 0 auto 1rem;
+        padding: 0.85rem 1.25rem;
+        border: 1px solid rgba(212,175,120,0.25);
+        font-size: 0.92rem;
+        line-height: 1.45;
+      }
+      .evolution-prefs strong { font-weight: 600; }
+      .card-mood-badge {
+        position: absolute;
+        left: 0.55rem;
+        bottom: 0.55rem;
+        z-index: 2;
+        font-size: 0.65rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 0.2rem 0.45rem;
+        border-radius: 2px;
+        color: #fff;
+        background: rgba(0,0,0,0.55);
+      }
       .series-panel { max-width: 1100px; margin: 0 auto 1.5rem; padding: 0 1.25rem; }
       .series-card {
         border-top: 1px solid rgba(255,255,255,0.08);
@@ -3038,6 +3060,7 @@
 
       <!-- Evolution Timeline (shown only in "Evolution" view) -->
       <div class="evolution-timeline" id="evolution-timeline" style="display:none">
+        <div class="evolution-prefs" id="evolution-prefs" aria-live="polite"></div>
         <div class="evolution-scroll" id="evolution-scroll">
           <!-- Populated by JS -->
         </div>
@@ -3906,6 +3929,74 @@
       // Fire mood fetch on load
       fetchLumiraMoodAndStatement();
 
+
+
+      async function shareAsLumira(image, ev) {
+        if (ev) ev.stopPropagation();
+        if (!image) return;
+        var mood = (image.metadata && image.metadata.mood) || window._lumiraMood || '';
+        var title = (image.prompt || image.filename || 'Untitled').slice(0, 80);
+        var feeling = '';
+        try {
+          var st = await fetch('/api/lumira/state');
+          if (st.ok) {
+            var sj = await st.json();
+            feeling = sj.feeling || '';
+            mood = mood || sj.mood || '';
+          }
+        } catch (e) {}
+        var caption = '"' + title + '"';
+        if (mood) caption += ' — made while ' + mood;
+        if (feeling) caption += '. ' + feeling;
+        caption += '\n\n— Lumira';
+
+        // Prefer posting API when configured; else open intent / clipboard
+        try {
+          var plats = await fetch('/api/lumira/social/platforms');
+          var avail = plats.ok ? await plats.json() : {};
+          var configured = Array.isArray(avail.available) ? avail.available.slice() : [];
+          if (!configured.length && avail.configured) {
+            configured = Object.keys(avail.configured).filter(function(k){ return !!avail.configured[k]; });
+          }
+          if (configured.length) {
+            var res = await fetch('/api/lumira/social/post', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                artwork_id: image.filename,
+                image_path: image.path,
+                title: title,
+                caption: caption,
+                mood: mood || null,
+                platforms: configured
+              })
+            });
+            var data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Post failed');
+            var ok = (data.successful_platforms || []).join(', ') || 'posted';
+            alert('Shared as Lumira: ' + ok);
+            return;
+          }
+        } catch (e) {
+          console.warn('social post', e);
+        }
+
+        var shareUrl = image.share_url || (image.share_id ? (window.location.origin + '/share/' + image.share_id) : '');
+        var tweet = caption + (shareUrl ? ('\n' + shareUrl) : '');
+        if (navigator.share) {
+          try {
+            await navigator.share({ title: 'Lumira', text: caption, url: shareUrl || undefined });
+            return;
+          } catch (e) {}
+        }
+        var intent = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(tweet.slice(0, 260));
+        window.open(intent, '_blank', 'noopener');
+        try {
+          await navigator.clipboard.writeText(tweet);
+          var thought = document.getElementById('atelier-thought');
+          if (thought) thought.textContent = 'Caption copied — share in her voice.';
+        } catch (e) {}
+      }
 
       async function loadSeriesPanel() {
         const list = document.getElementById('series-list');
@@ -5149,8 +5240,20 @@
         if (!scroll) return;
 
         scroll.innerHTML = '<div style="color:var(--text-secondary);padding:40px;text-align:center;">Loading evolution...</div>';
+        const prefsEl = document.getElementById('evolution-prefs');
+        if (prefsEl) prefsEl.textContent = 'Reading taste…';
 
         try {
+          fetch('/api/feedback/taste').then(async function(r) {
+            if (!r.ok || !prefsEl) return;
+            const taste = await r.json();
+            const moods = (taste.top_moods || []).map(function(m){ return m.mood; }).filter(Boolean).slice(0,3).join(', ');
+            const motifs = (taste.top_motifs || []).map(function(m){ return m.motif; }).filter(Boolean).slice(0,3).join(', ');
+            prefsEl.innerHTML = '<strong>Preferences</strong> — ' + escapeHTML(taste.narrative || 'Still learning.') +
+              (moods ? '<br><span style="opacity:0.75">Moods: ' + escapeHTML(moods) + '</span>' : '') +
+              (motifs ? '<br><span style="opacity:0.75">Motifs: ' + escapeHTML(motifs) + '</span>' : '');
+          }).catch(function(){ if (prefsEl) prefsEl.textContent = ''; });
+
           const res = await fetch('/api/images?limit=500&_t=' + Date.now());
           if (!res.ok) throw new Error();
           const images = await res.json();
@@ -5539,6 +5642,18 @@
             imageContainer.appendChild(badge);
           }
 
+          // Mood badge
+          const cardMood = ((image.metadata && image.metadata.mood) || '').toLowerCase();
+          if (cardMood) {
+            const moodBadge = document.createElement("div");
+            moodBadge.className = "card-mood-badge";
+            moodBadge.textContent = cardMood;
+            if (MOOD_COLORS[cardMood]) {
+              moodBadge.style.backgroundColor = MOOD_COLORS[cardMood].badge || MOOD_COLORS[cardMood].accent;
+            }
+            imageContainer.appendChild(moodBadge);
+          }
+
           // Action buttons
           const actions = document.createElement("div");
           actions.className = "gallery-item-actions";
@@ -5726,6 +5841,9 @@
                 </button>
                 <button class="modal-btn" onclick="shareArtwork(event)" style="width: 100%;">
                     <span>↗</span> Share
+                </button>
+                <button class="modal-btn" onclick="shareAsLumira(getModalImage(), event)" style="width: 100%;">
+                    <span>✦</span> Share as Lumira
                 </button>
                 <button class="modal-btn" onclick="animateArtwork(getModalImage(), event)" style="width: 100%;">
                     <span>▶</span> Animate
@@ -6479,6 +6597,17 @@
             if (thought) {
               const voice = data.voice ? data.voice + ': ' : '';
               thought.textContent = voice + (data.content || data.message || '');
+            }
+            break;
+          }
+          case "memory_insight": {
+            const thought = document.getElementById('atelier-thought');
+            const chip = document.getElementById('taste-shift-chip');
+            const insight = data.insight || data.content || data.message || '';
+            if (thought && insight) thought.textContent = insight;
+            if (chip && insight) {
+              chip.style.display = '';
+              chip.textContent = (data.insight_type === 'preference' ? 'Taste · ' : '') + insight.slice(0, 72);
             }
             break;
           }

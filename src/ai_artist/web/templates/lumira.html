@@ -2937,6 +2937,15 @@
             Animate Latest
           </button>
           <button
+            type="button"
+            class="btn-preview"
+            id="share-as-lumira-btn"
+            onclick="shareLatestAsLumira()"
+            aria-label="Share the latest piece in Lumira's voice"
+          >
+            Share as Lumira
+          </button>
+          <button
             class="btn-autonomous"
             onclick="triggerCreate()"
             aria-label="Let Lumira create autonomously"
@@ -5603,6 +5612,72 @@
           .finally(function () {
             btn.disabled = false;
             if (overlay) overlay.classList.remove("active");
+          });
+      }
+
+      function shareLatestAsLumira() {
+        var keys = Object.keys(paintingsData || {});
+        if (!keys.length) {
+          addLog("SYSTEM", "Create a piece first, then share it");
+          return;
+        }
+        var latest = paintingsData[keys[0]];
+        var title = ((latest && (latest.prompt || latest.title)) || "Untitled").slice(0, 80);
+        var mood = (latest && latest.mood) || window._lumiraMood || "";
+        var feeling = "";
+        fetch("/api/lumira/state")
+          .then(function (r) { return r.ok ? r.json() : {}; })
+          .then(function (sj) {
+            feeling = sj.feeling || "";
+            mood = mood || sj.mood || "";
+            var caption = '"' + title + '"';
+            if (mood) caption += " — made while " + mood;
+            if (feeling) caption += ". " + feeling;
+            caption += "\n\n— Lumira";
+            return fetch("/api/lumira/social/platforms")
+              .then(function (r) { return r.ok ? r.json() : {}; })
+              .then(function (avail) {
+                var configured = Array.isArray(avail.available) ? avail.available.slice() : [];
+                if (!configured.length && avail.configured) {
+                  configured = Object.keys(avail.configured).filter(function (p) {
+                    return !!avail.configured[p];
+                  });
+                }
+                if (!configured.length) {
+                  var url = latest.path
+                    ? window.location.origin + "/api/images/file/" + latest.path
+                    : window.location.origin + "/lumira";
+                  var intent =
+                    "https://twitter.com/intent/tweet?text=" +
+                    encodeURIComponent((caption + "\n" + url).slice(0, 260));
+                  window.open(intent, "_blank", "noopener");
+                  addLog("LUMIRA", "Opened share intent with her voice");
+                  return null;
+                }
+                return fetch("/api/lumira/social/post", {
+                  method: "POST",
+                  headers: lumiraApiHeaders(),
+                  body: JSON.stringify({
+                    artwork_id: latest.filename || latest.id,
+                    image_path: latest.path,
+                    title: title,
+                    caption: caption,
+                    mood: mood || null,
+                    platforms: configured,
+                  }),
+                }).then(function (res) {
+                  return res.json().then(function (data) {
+                    if (!res.ok) throw new Error(data.detail || "Post failed");
+                    addLog(
+                      "LUMIRA",
+                      "Shared: " + (data.successful_platforms || []).join(", "),
+                    );
+                  });
+                });
+              });
+          })
+          .catch(function (err) {
+            addLog("ERROR", "Share as Lumira failed: " + err.message);
           });
       }
 

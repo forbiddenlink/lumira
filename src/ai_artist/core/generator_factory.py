@@ -103,12 +103,16 @@ def build_web_image_generator(
     mood: str | None = None,
     dtype: Any = None,
     require_img2img: bool = False,
+    preferred_model_id: str | None = None,
 ) -> tuple[str, ImageBackend]:
     """Build the studio/cloud image generator from config + env keys.
 
     Returns ``(backend, generator)``. When ``require_img2img`` is True and the
     resolved backend is Magica (no img2img yet), fall back to Replicate if a
     token is present; otherwise raise ``RuntimeError``.
+
+    ``preferred_model_id`` (from the adaptive learner) is honored for local and
+    Replicate backends only — Magica keeps mood-routed Nano Banana / Flux ids.
     """
     backend = resolve_web_image_backend(getattr(config.model, "backend", None))
 
@@ -127,6 +131,26 @@ def build_web_image_generator(
             )
 
     model_id = _model_id_for_backend(backend, config, mood)
+    if preferred_model_id and backend != BACKEND_MAGICA:
+        # Accept learner suggestion when it looks usable for this backend
+        if backend == BACKEND_REPLICATE:
+            from .replicate_generator import REPLICATE_MODELS
+
+            if (
+                preferred_model_id in REPLICATE_MODELS
+                or "/" in preferred_model_id
+                and ":" in preferred_model_id
+            ):
+                model_id = preferred_model_id
+        else:
+            model_id = preferred_model_id
+        logger.info(
+            "learner_model_suggestion_applied",
+            backend=backend,
+            model_id=model_id,
+            mood=mood,
+        )
+
     device = getattr(config.model, "device", "cpu")
     generator = get_image_generator(
         backend, model_id=model_id, device=device, dtype=dtype

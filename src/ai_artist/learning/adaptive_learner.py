@@ -254,6 +254,66 @@ class AdaptiveLearner:
             "alignment_samples": len(self.alignment_history),
         }
 
+    def get_taste_summary(self, *, limit: int = 5) -> dict[str, Any]:
+        """Human-readable taste summary for UI (evolution / atelier).
+
+        Surfaces top moods, preferred prompt motifs, and a short narrative
+        so learning feels visible — not just JSON counters.
+        """
+        stats = self.get_learning_stats()
+        if stats.get("status") == "no_data":
+            return {
+                "status": "no_data",
+                "narrative": "Still gathering taste — love a few pieces to teach me.",
+                "top_moods": [],
+                "top_motifs": [],
+                "preferred_model": None,
+            }
+
+        # mood_preferences[mood][model_or_key] = score — aggregate per mood
+        mood_totals: dict[str, float] = {}
+        for mood, prefs in self.mood_preferences.items():
+            if isinstance(prefs, dict) and prefs:
+                mood_totals[mood] = float(sum(prefs.values()))
+            else:
+                mood_totals[mood] = 0.0
+        top_moods = sorted(mood_totals.items(), key=lambda x: x[1], reverse=True)[
+            :limit
+        ]
+
+        top_motifs = sorted(
+            self.prompt_patterns.items(), key=lambda x: x[1], reverse=True
+        )[:limit]
+
+        preferred = stats.get("best_model") or {}
+        preferred_id = preferred.get("id")
+        mood_names = [m for m, _ in top_moods if m]
+        motif_names = [p for p, _ in top_motifs if p]
+
+        parts: list[str] = []
+        if mood_names:
+            parts.append("leaning " + ", ".join(mood_names[:3]))
+        if motif_names:
+            parts.append("revisiting " + ", ".join(motif_names[:3]))
+        if preferred_id:
+            short = str(preferred_id).split("/")[-1]
+            parts.append(f"favoring {short}")
+        narrative = (
+            "Taste shift: " + " · ".join(parts)
+            if parts
+            else "Learning from your loves — keep teaching me."
+        )
+
+        return {
+            "status": "learning",
+            "narrative": narrative,
+            "top_moods": [{"mood": m, "weight": round(w, 3)} for m, w in top_moods],
+            "top_motifs": [{"motif": m, "weight": round(w, 3)} for m, w in top_motifs],
+            "preferred_model": preferred,
+            "total_feedback": stats.get("total_feedback", 0),
+            "moods_learned": stats.get("moods_learned", 0),
+        }
+
     # ------------------------------------------------------------------
     # RLAIF: Critic-Informed Learning
     # ------------------------------------------------------------------
