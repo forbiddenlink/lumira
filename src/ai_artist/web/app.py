@@ -224,8 +224,8 @@ async def lifespan(app: FastAPI):
     # migrations can't run (e.g. missing alembic.ini, or an unstamped legacy DB
     # whose tables already exist) so tests and fresh installs keep working.
     try:
-        from alembic.config import Config
         from alembic.command import upgrade as alembic_upgrade
+        from alembic.config import Config
 
         alembic_cfg = Config("alembic.ini")
         alembic_cfg.set_main_option("sqlalchemy.url", f"sqlite:///{db_path}")
