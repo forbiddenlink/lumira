@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**Design system:** before editing any UI/template, read `design-system.txt` (token index; flags the two-template token drift). Tokens live in the Jinja `<style>` blocks; philosophy = `.impeccable.md`.
+
 ## Project Overview
 
 Lumira is an autonomous AI artist system - not a tool, but an artist with personality, moods, memory, and creative independence. Built with Python 3.11+, FastAPI, and Stable Diffusion XL, it creates artwork based on emotional states, learns from experience, and evolves its artistic style.

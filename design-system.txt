@@ -1,0 +1,42 @@
+# Lumira — Design System (AI-readable index)
+
+> Machine-readable token index for AI coding agents editing Lumira's templates.
+> Brand: "intimate, cinematic, alive." Gallery-first atelier — artwork owns the viewport; mood tints atmosphere (not a purple glow).
+> Stack is Python/FastAPI + Jinja2 templates + plain CSS custom properties (NOT Next.js/Tailwind). Tokens live in <style> blocks inside templates, not a token pipeline.
+> Philosophy = .impeccable.md. When editing UI: reuse the named CSS vars below; never introduce ad-hoc hex.
+
+## ⚠️ Known drift (fix before trusting either as SoT)
+1. Two templates define OVERLAPPING but DIFFERENTLY-NAMED token sets for the same palette:
+   - src/ai_artist/web/templates/gallery_modern.html (:root) — uses --bg-primary/-secondary/-card/-elevated, --text-primary/-secondary, --accent*
+   - src/ai_artist/web/templates/lumira.html (:root) — uses --bg-dark/-panel/-elevated, --text-main/-muted/-faint, + --radius-* and --ease-out
+   TREAT lumira.html's names as the intended direction; consolidate gallery_modern.html onto them.
+2. templates/admin/dashboard.html still uses a purple gradient (#667eea → #764ba2) SaaS look — the EXACT aesthetic .impeccable.md bans. Un-migrated; do not copy it.
+
+## Color tokens (hex + color-mix(in oklab,...); dark-only, no light mode)
+Backgrounds (warm charcoal ink, never pure black): #12100e (base), #1a1714 (panel/secondary), #221e1a (card/elevated), #2a251f (elevated)
+Text: #ebe4d8 (primary/main), #9a9084 (secondary/muted), #6e665c (faint)
+Accent (gallery brass, shifts with mood): --accent #c4a574, --accent-hover #d4bd94, --accent-light #d9c39f, --accent-secondary #b98a72, --accent-tertiary #d4b483, --accent-ink #1a1510
+Status: --success #7dba8a, --danger #d4646a, --warning #d4a84b
+Effects: --shadow rgba(0,0,0,.6), --glow / --glow-mint / --glow-gold / --glow-pink / --glow-purple, --mood-wash (color-mix)
+High-contrast override (forced-colors): --bg-dark #000000, --accent #ffff00
+
+## Radius / motion (defined in lumira.html)
+- --radius-sm 6px, --radius-md 10px, --radius-lg 16px
+- --ease-out cubic-bezier(0.16,1,0.3,1); --xp-bar gradient
+
+## Fonts (Google Fonts <link> — "atelier, not Inter/AI-default")
+- Display: Fraunces — --font-display ("Fraunces","Times New Roman",serif)
+- UI: Figtree — --font-ui ("Figtree",system-ui,sans-serif)
+
+## Components
+No component library (no shadcn/cva). Styling is hand-written CSS in per-template <style> blocks (.header, .logo, .stat, etc.).
+
+## Hard rules (.impeccable.md — 5 principles)
+- Art first. Presence over telemetry (stats collapse behind "About Lumira"). Atmosphere from emotion. Quiet instruments. Kill generic AI aesthetics.
+- Dark warm-ink charcoal, never pure black. Accent = gallery brass / ink-rose, shifts with mood.
+- Anti-references (banned): Material purple AI dashboards, Inter + gradient headings, RPG skill trees, glassmorphism kits, metric-card grids.
+- References to steal from: A24, Are.na/Cargo, Botto.
+
+## Deep references
+- src/ai_artist/web/templates/lumira.html + gallery_modern.html — token :root blocks (canonical = lumira.html names)
+- .impeccable.md — philosophy + anti-references
