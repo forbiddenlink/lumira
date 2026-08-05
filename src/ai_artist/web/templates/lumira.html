@@ -2898,6 +2898,11 @@
           </div>
         </div>
 
+        <div id="studio-media-player" class="studio-media-player" style="display:none;margin:0.75rem 0 0.25rem;">
+          <audio id="studio-audio" controls preload="metadata" style="width:100%;"></audio>
+          <video id="studio-video" controls preload="metadata" style="width:100%;margin-top:0.5rem;display:none;"></video>
+        </div>
+
         <div class="request-actions">
           <button
             id="request-create-btn"
@@ -2921,6 +2926,15 @@
             aria-label="Explore latent space between concepts"
           >
             Explore
+          </button>
+          <button
+            type="button"
+            class="btn-preview"
+            id="animate-last-btn"
+            onclick="animateLastPiece()"
+            aria-label="Animate the latest piece with Magica video"
+          >
+            Animate Latest
           </button>
           <button
             class="btn-autonomous"
@@ -5590,6 +5604,71 @@
             btn.disabled = false;
             if (overlay) overlay.classList.remove("active");
           });
+      }
+
+      function animateLastPiece() {
+        var keys = Object.keys(paintingsData || {});
+        if (!keys.length) {
+          addLog("SYSTEM", "Create a piece first, then animate it");
+          return;
+        }
+        var latest = paintingsData[keys[0]];
+        var prompt =
+          (latest && (latest.prompt || latest.title)) ||
+          document.getElementById("request-prompt").value.trim();
+        if (!prompt) {
+          addLog("SYSTEM", "Need a prompt to animate");
+          return;
+        }
+        var btn = document.getElementById("animate-last-btn");
+        if (btn) btn.disabled = true;
+        addLog("LUMIRA", "Animating latest piece…");
+        fetch("/api/lumira/video", {
+          method: "POST",
+          headers: lumiraApiHeaders(),
+          body: JSON.stringify({
+            prompt: prompt,
+            mood: window._lumiraMood || null,
+            duration_seconds: 5,
+            artwork_path: latest && (latest.path || latest.filename) || null,
+          }),
+        })
+          .then(function (res) {
+            return res.json().then(function (data) {
+              if (!res.ok) throw new Error(data.detail || "Video failed");
+              return data;
+            });
+          })
+          .then(function (data) {
+            addLog("LUMIRA", "Video ready");
+            playStudioMedia({ videoUrl: data.url });
+          })
+          .catch(function (err) {
+            addLog("ERROR", "Animate failed: " + err.message);
+          })
+          .finally(function () {
+            if (btn) btn.disabled = false;
+          });
+      }
+
+      function playStudioMedia(opts) {
+        opts = opts || {};
+        var wrap = document.getElementById("studio-media-player");
+        var audio = document.getElementById("studio-audio");
+        var video = document.getElementById("studio-video");
+        if (!wrap) return;
+        var show = false;
+        if (opts.audioUrl && audio) {
+          audio.src = opts.audioUrl;
+          audio.style.display = "";
+          show = true;
+        }
+        if (opts.videoUrl && video) {
+          video.src = opts.videoUrl;
+          video.style.display = "";
+          show = true;
+        }
+        wrap.style.display = show ? "block" : "none";
       }
 
       function openExploreModal() {

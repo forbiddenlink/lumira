@@ -62,15 +62,43 @@ def _progress_callback(
     session_id: str,
     ws_manager: Any,
 ) -> Any:
-    """Thread-safe progress reporter for generators running in a worker thread."""
+    """Thread-safe progress reporter for generators running in a worker thread.
+
+    When ``latents`` is a PIL Image (or bytes-like preview), encodes a JPEG
+    thumbnail and attaches it so the studio can show real paint-as-you-watch.
+    """
     loop = asyncio.get_running_loop()
 
     def on_progress(step: int, total: int, latents: Any = None) -> None:
+        preview_b64: str | None = None
+        try:
+            from PIL import Image as PILImage
+
+            preview_img = None
+            if isinstance(latents, PILImage.Image):
+                preview_img = latents
+            elif hasattr(latents, "convert"):
+                preview_img = latents  # duck-typed PIL
+            if preview_img is not None:
+                import base64
+                import io
+
+                thumb = preview_img.copy()
+                thumb.thumbnail((512, 512))
+                if thumb.mode not in ("RGB", "L"):
+                    thumb = thumb.convert("RGB")
+                buf = io.BytesIO()
+                thumb.save(buf, format="JPEG", quality=70)
+                preview_b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+        except Exception:
+            preview_b64 = None
+
         fut = asyncio.run_coroutine_threadsafe(
             ws_manager.send_generation_progress(
                 session_id=session_id,
                 step=step,
                 total_steps=total,
+                preview_base64=preview_b64,
             ),
             loop,
         )
@@ -258,6 +286,69 @@ _lumira_state: dict[str, Any] | None = None
 # In-process autonomy counters (reset on server restart; used by /autonomy-status)
 _autonomy_creation_count: int = 0
 _autonomy_failure_count: int = 0
+_autonomy_enabled: bool = False
+_autonomy_interval_minutes: int = 0
+_autonomy_next_run: str | None = None
+_autonomy_busy: bool = False
+
+
+def configure_autonomy_scheduler(
+    *,
+    enabled: bool,
+    interval_minutes: int | None = None,
+    next_run_iso: str | None = None,
+) -> None:
+    """Update autonomy scheduler status surfaced by /autonomy-status."""
+    global _autonomy_enabled, _autonomy_interval_minutes, _autonomy_next_run
+    _autonomy_enabled = enabled
+    if interval_minutes is not None:
+        _autonomy_interval_minutes = interval_minutes
+    if next_run_iso is not None:
+        _autonomy_next_run = next_run_iso
+
+
+async def run_scheduled_autonomous_create() -> None:
+    """Create one autonomous artwork via the studio create path (HTTP loopback).
+
+    Uses Magica/local backends already configured for the web app, and
+    broadcasts WS progress like a normal studio create.
+    """
+    global _autonomy_creation_count, _autonomy_failure_count, _autonomy_busy
+    global _autonomy_next_run
+
+    if _autonomy_busy:
+        logger.info("autonomous_create_skipped_busy")
+        return
+
+    _autonomy_busy = True
+    try:
+        import os
+        from datetime import UTC, datetime, timedelta
+
+        import httpx
+
+        port = os.getenv("PORT") or os.getenv("LUMIRA_PORT") or "8780"
+        base = f"http://127.0.0.1:{port}"
+        async with httpx.AsyncClient(timeout=600.0) as client:
+            resp = await client.post(f"{base}/api/lumira/create", json={})
+            if resp.status_code >= 400:
+                raise RuntimeError(
+                    f"create failed: {resp.status_code} {resp.text[:200]}"
+                )
+        _autonomy_creation_count += 1
+        logger.info("autonomous_web_create_complete")
+    except Exception as e:
+        _autonomy_failure_count += 1
+        logger.error("autonomous_web_create_failed", error=str(e))
+    finally:
+        _autonomy_busy = False
+        if _autonomy_interval_minutes > 0:
+            from datetime import UTC, datetime, timedelta
+
+            _autonomy_next_run = (
+                datetime.now(UTC) + timedelta(minutes=_autonomy_interval_minutes)
+            ).isoformat()
+
 
 # Lazy curator singleton (CLIP model loaded on first scoring call)
 _image_curator = None
@@ -1509,27 +1600,8 @@ async def create_artwork(
                     except Exception as db_error:
                         logger.error("database_save_failed", error=str(db_error))
 
-                    # Record feedback for learning system
-                    from ..learning.adaptive_learner import FeedbackSignal
-
-                    try:
-                        learner.record_feedback(
-                            FeedbackSignal(
-                                artwork_id=filename,
-                                user_action="like",
-                                generation_params={
-                                    "num_inference_steps": num_steps,
-                                    "guidance_scale": guidance,
-                                    "width": 768,
-                                    "height": 768,
-                                },
-                                prompt=prompt,
-                                model_id=config.model.base_model,
-                                mood=mood.value,
-                            )
-                        )
-                    except Exception as learn_err:
-                        logger.debug("learning_record_failed", error=str(learn_err))
+                    # Do NOT auto-like creations — that pollutes the taste bandit.
+                    # Real likes come from gallery /api/feedback/submit.
 
                     # RLAIF: Record critic evaluation for self-improvement
                     critic_score = 0.75  # Default; overwritten if critique available
@@ -2012,27 +2084,7 @@ async def user_request_creation(
                     except Exception as db_error:
                         logger.error("database_save_failed", error=str(db_error))
 
-                    # Record for learning
-                    import contextlib
-
-                    from ..learning.adaptive_learner import FeedbackSignal
-
-                    with contextlib.suppress(Exception):
-                        learner.record_feedback(
-                            FeedbackSignal(
-                                artwork_id=filename,
-                                user_action="like",
-                                generation_params={
-                                    "num_inference_steps": num_steps,
-                                    "guidance_scale": guidance,
-                                    "width": 768,
-                                    "height": 768,
-                                },
-                                prompt=prompt,
-                                model_id=config.model.base_model,
-                                mood=mood.value,
-                            )
-                        )
+                    # Taste learning waits for real user feedback (gallery love/like).
 
                     # Grow + series + presence (same continuity as /create)
                     creation_record = {
@@ -2588,6 +2640,10 @@ class AutonomyStatusResponse(BaseModel):
     drives: dict[str, dict[str, Any]]
     last_backup: str | None
     active_series_count: int
+    autonomous_create_enabled: bool = False
+    interval_minutes: int = 0
+    next_run: str | None = None
+    busy: bool = False
 
 
 @router.get("/autonomy-status", response_model=AutonomyStatusResponse)
@@ -2630,17 +2686,22 @@ async def get_autonomy_status(request: Request):
         active_series=len(series_status["active"]),
         creation_count=_autonomy_creation_count,
         failure_count=_autonomy_failure_count,
+        enabled=_autonomy_enabled,
     )
 
     return AutonomyStatusResponse(
-        running=True,  # If we're responding, we're running
+        running=_autonomy_enabled or _autonomy_busy,
         creation_count=_autonomy_creation_count,
         failure_count=_autonomy_failure_count,
         success_rate=round(success_rate, 3),
-        circuits={},  # Circuit breakers not yet instantiated globally
+        circuits={},
         drives=drive_status,
         last_backup=latest_backup.timestamp.isoformat() if latest_backup else None,
         active_series_count=len(series_status["active"]),
+        autonomous_create_enabled=_autonomy_enabled,
+        interval_minutes=_autonomy_interval_minutes,
+        next_run=_autonomy_next_run,
+        busy=_autonomy_busy,
     )
 
 
@@ -2714,6 +2775,11 @@ class MagicaVideoRequest(BaseModel):
     duration_seconds: int = Field(default=5, ge=2, le=20)
     aspect_ratio: str = Field(default="16:9", max_length=16)
     model_id: str | None = Field(default=None, max_length=100)
+    artwork_path: str | None = Field(
+        default=None,
+        max_length=512,
+        description="Optional gallery-relative image path to attach video_url metadata",
+    )
 
 
 class MagicaMediaResponse(BaseModel):
@@ -2782,6 +2848,7 @@ async def create_video(
     body: MagicaVideoRequest,
 ):
     """Generate a short Magica video from a prompt/mood."""
+    import json
     import os
 
     if not os.environ.get("MAGICA_API_KEY"):
@@ -2806,9 +2873,35 @@ async def create_video(
         logger.error("video_generation_failed", error=str(e))
         raise HTTPException(status_code=502, detail=f"Magica video failed: {e}") from e
 
+    url = _media_public_url(path)
+
+    # Optionally attach video_url onto the source artwork sidecar
+    if body.artwork_path:
+        try:
+            gallery_root = Path("gallery")
+            img_path = gallery_root / body.artwork_path.lstrip("/")
+            sidecar = img_path.with_suffix(".json")
+            if not sidecar.exists():
+                sidecar = Path(str(img_path) + ".json")
+            meta: dict[str, Any] = {}
+            if sidecar.exists():
+                meta = json.loads(sidecar.read_text(encoding="utf-8"))
+            meta["video_url"] = url
+            meta["video_path"] = str(path)
+            nested = meta.get("metadata")
+            if isinstance(nested, dict):
+                nested["video_url"] = url
+            sidecar.write_text(json.dumps(meta, indent=2), encoding="utf-8")
+        except Exception as attach_err:
+            logger.warning(
+                "video_metadata_attach_failed",
+                path=body.artwork_path,
+                error=str(attach_err),
+            )
+
     return MagicaMediaResponse(
         path=str(path),
-        url=_media_public_url(path),
+        url=url,
         kind="video",
         prompt=body.prompt,
         mood=mood,

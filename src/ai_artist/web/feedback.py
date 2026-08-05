@@ -176,7 +176,16 @@ async def get_learning_stats() -> LearningStatsResponse:
     try:
         learner = get_adaptive_learner()
         stats = learner.get_learning_stats()
-
+        if stats.get("status") == "no_data" or "models_tracked" not in stats:
+            return LearningStatsResponse(
+                status=str(stats.get("status") or "no_data"),
+                total_feedback=int(stats.get("total_feedback") or 0),
+                models_tracked=int(stats.get("models_tracked") or 0),
+                param_combinations=int(stats.get("param_combinations") or 0),
+                moods_learned=int(stats.get("moods_learned") or 0),
+                best_model=stats.get("best_model"),
+                exploration_rate=float(stats.get("exploration_rate") or 0.0),
+            )
         return LearningStatsResponse(**stats)
 
     except Exception as e:

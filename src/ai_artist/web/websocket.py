@@ -166,18 +166,25 @@ class ConnectionManager:
         await self.broadcast(start)
 
     async def send_generation_progress(
-        self, session_id: str, step: int, total_steps: int, message: str = ""
+        self,
+        session_id: str,
+        step: int,
+        total_steps: int,
+        message: str = "",
+        preview_base64: str | None = None,
     ):
-        """Send generation progress update."""
+        """Send generation progress update (optional JPEG preview thumbnail)."""
         progress = {
             "type": "generation_progress",
             "session_id": session_id,
             "step": step,
             "total_steps": total_steps,
-            "progress_percent": int((step / total_steps) * 100),
+            "progress_percent": int((step / total_steps) * 100) if total_steps else 0,
             "message": message,
             "timestamp": datetime.now().isoformat(),
         }
+        if preview_base64:
+            progress["preview"] = preview_base64
         await self.broadcast(progress)
 
     async def send_generation_complete(

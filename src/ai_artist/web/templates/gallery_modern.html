@@ -2150,6 +2150,73 @@
       }
 
       /* Welcome hero for first-time visitors — compact so art stays above the fold */
+      .live-atelier {
+        margin: 0 auto 1.5rem;
+        max-width: 1100px;
+        padding: 0 1.25rem;
+      }
+      .live-atelier-inner {
+        border-top: 1px solid rgba(212, 175, 120, 0.25);
+        border-bottom: 1px solid rgba(212, 175, 120, 0.15);
+        padding: 1rem 0 1.15rem;
+        display: grid;
+        gap: 0.45rem;
+      }
+      .live-atelier-label {
+        font-size: 0.7rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        opacity: 0.55;
+        margin-right: 0.55rem;
+      }
+      .live-atelier-mood #atelier-mood {
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 1.15rem;
+        text-transform: capitalize;
+      }
+      .live-atelier-desire, .live-atelier-thought {
+        font-size: 0.95rem;
+        line-height: 1.45;
+        opacity: 0.88;
+        max-width: 52rem;
+      }
+      .live-atelier-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem 1.25rem;
+        align-items: center;
+        font-size: 0.8rem;
+        opacity: 0.75;
+        margin-top: 0.25rem;
+      }
+      .live-atelier-link {
+        color: inherit;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+      .taste-chip {
+        border: 1px solid rgba(212, 175, 120, 0.45);
+        padding: 0.15rem 0.55rem;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        letter-spacing: 0.04em;
+      }
+      .series-panel { max-width: 1100px; margin: 0 auto 1.5rem; padding: 0 1.25rem; }
+      .series-card {
+        border-top: 1px solid rgba(255,255,255,0.08);
+        padding: 1.1rem 0;
+      }
+      .series-card h3 { margin: 0 0 0.35rem; font-family: Georgia, serif; font-weight: 500; }
+      .series-card p { margin: 0.2rem 0; opacity: 0.8; font-size: 0.9rem; }
+      .series-progress {
+        height: 3px; background: rgba(255,255,255,0.08); margin-top: 0.7rem;
+      }
+      .series-progress > span {
+        display: block; height: 100%; background: rgba(212,175,120,0.75);
+      }
+      .modal-media audio, .modal-media video { width: 100%; margin-top: 0.75rem; }
+      .action-btn.liked { color: #d4af78; }
+
       .welcome-hero {
         max-width: 1800px;
         margin: 0 auto;
@@ -2925,6 +2992,24 @@
       </div>
     </div>
 
+    <!-- Always-on atelier presence -->
+    <section class="live-atelier" id="live-atelier" aria-label="Lumira right now">
+      <div class="live-atelier-inner">
+        <div class="live-atelier-mood">
+          <span class="live-atelier-label">Now</span>
+          <span id="atelier-mood">listening</span>
+        </div>
+        <div class="live-atelier-desire" id="atelier-desire">Checking what Lumira wants to make…</div>
+        <div class="live-atelier-thought" id="atelier-thought" aria-live="polite"></div>
+        <div class="live-atelier-meta">
+          <span id="atelier-series"></span>
+          <span id="atelier-next"></span>
+          <span id="taste-shift-chip" class="taste-chip" style="display:none"></span>
+          <a href="/lumira" class="live-atelier-link">Enter the studio</a>
+        </div>
+      </div>
+    </section>
+
     <!-- Main Content -->
     <main id="main-content">
       <!-- Gallery View Tabs -->
@@ -2933,6 +3018,7 @@
         <button class="view-tab" role="tab" aria-selected="false" data-view-mode="picks" onclick="switchViewMode('picks')">Lumira's Picks</button>
         <button class="view-tab" role="tab" aria-selected="false" data-view-mode="mood" onclick="switchViewMode('mood')">By Mood</button>
         <button class="view-tab" role="tab" aria-selected="false" data-view-mode="evolution" onclick="switchViewMode('evolution')">Evolution</button>
+        <button class="view-tab" role="tab" aria-selected="false" data-view-mode="series" onclick="switchViewMode('series')">Series</button>
       </div>
 
       <!-- Mood Filter Pills (shown only in "By Mood" view) -->
@@ -2956,6 +3042,11 @@
           <!-- Populated by JS -->
         </div>
         <div class="evolution-legend" id="evolution-legend"></div>
+      </div>
+
+      <!-- Series arcs (shown only in Series view) -->
+      <div class="series-panel" id="series-panel" style="display:none">
+        <div class="series-list" id="series-list"></div>
       </div>
 
       <!-- Controls -->
@@ -3714,20 +3805,25 @@
       // Global mood cache for empty states and other features
       window._lumiraMood = null;
 
-      // Fetch Lumira's current mood and statement, apply to hero
+      // Fetch Lumira's mood, desire, autonomy, taste — drive atelier strip + hero
       async function fetchLumiraMoodAndStatement() {
         try {
-          const [stateRes, statementRes] = await Promise.allSettled([
+          const [stateRes, statementRes, autoRes, seriesRes, tasteRes] = await Promise.allSettled([
             fetch('/api/lumira/state'),
-            fetch('/api/lumira/statement')
+            fetch('/api/lumira/statement'),
+            fetch('/api/lumira/autonomy-status'),
+            fetch('/api/lumira/series'),
+            fetch('/api/feedback/stats')
           ]);
 
           let mood = null;
           let statement = null;
+          let feeling = null;
 
           if (stateRes.status === 'fulfilled' && stateRes.value.ok) {
             const stateData = await stateRes.value.json();
             mood = (stateData.mood || stateData.current_mood || '').toLowerCase();
+            feeling = stateData.feeling || null;
           }
 
           if (statementRes.status === 'fulfilled' && statementRes.value.ok) {
@@ -3737,11 +3833,57 @@
 
           if (mood) {
             window._lumiraMood = mood;
-            // Ambient mood: set data-mood on body to activate CSS overrides
             document.body.setAttribute('data-mood', mood);
+            const atelierMood = document.getElementById('atelier-mood');
+            if (atelierMood) atelierMood.textContent = mood;
           }
 
-          // Apply to hero if visible
+          const desireEl = document.getElementById('atelier-desire');
+          if (desireEl) {
+            if (feeling) desireEl.textContent = feeling;
+            else if (statement) desireEl.textContent = statement;
+          }
+
+          if (autoRes.status === 'fulfilled' && autoRes.value.ok) {
+            const auto = await autoRes.value.json();
+            const drives = auto.drives || {};
+            const driveNames = Object.keys(drives);
+            if (driveNames.length && desireEl && !feeling) {
+              const top = driveNames
+                .map(function(n) { return { n: n, v: (drives[n] && (drives[n].intensity || drives[n].value || 0)) || 0 }; })
+                .sort(function(a,b){ return b.v - a.v; })[0];
+              if (top) desireEl.textContent = 'Drawn toward ' + top.n.replace(/_/g, ' ');
+            }
+            const nextEl = document.getElementById('atelier-next');
+            if (nextEl) {
+              if (auto.autonomous_create_enabled && auto.next_run) {
+                nextEl.textContent = 'Next autonomous piece ~ ' + new Date(auto.next_run).toLocaleString();
+              } else if (auto.autonomous_create_enabled) {
+                nextEl.textContent = 'Autonomous create on (every ' + (auto.interval_minutes || '?') + 'm)';
+              } else {
+                nextEl.textContent = 'Studio creates on request';
+              }
+            }
+            const seriesEl = document.getElementById('atelier-series');
+            if (seriesEl && auto.active_series_count) {
+              seriesEl.textContent = auto.active_series_count + ' active series';
+            }
+          }
+
+          if (seriesRes.status === 'fulfilled' && seriesRes.value.ok) {
+            window._lumiraSeries = await seriesRes.value.json();
+          }
+
+          if (tasteRes.status === 'fulfilled' && tasteRes.value.ok) {
+            const taste = await tasteRes.value.json();
+            const chip = document.getElementById('taste-shift-chip');
+            if (chip && taste.total_feedback > 0) {
+              chip.style.display = '';
+              const best = taste.best_model && taste.best_model.id ? taste.best_model.id.split('/').pop() : null;
+              chip.textContent = taste.total_feedback + ' tastes learned' + (best ? ' · leaning ' + best : '');
+            }
+          }
+
           const heroInner = document.getElementById('welcome-hero-inner');
           const heroBadge = document.getElementById('hero-mood-badge');
           const heroSubhead = document.getElementById('hero-subhead');
@@ -3763,6 +3905,121 @@
 
       // Fire mood fetch on load
       fetchLumiraMoodAndStatement();
+
+
+      async function loadSeriesPanel() {
+        const list = document.getElementById('series-list');
+        if (!list) return;
+        list.innerHTML = '<p style="opacity:0.7">Loading series…</p>';
+        try {
+          const res = await fetch('/api/lumira/series');
+          const data = await res.json();
+          const active = data.active || [];
+          if (!active.length) {
+            list.innerHTML = '<div class="empty-state"><h2>No active series yet</h2><p>When Lumira finds a thread worth following, it will appear here.</p></div>';
+            return;
+          }
+          list.innerHTML = active.map(function(s) {
+            var pct = 0;
+            if (typeof s.progress === 'number') {
+              pct = Math.round(s.progress <= 1 ? s.progress * 100 : s.progress);
+            } else if (typeof s.progress === 'string' && s.progress.indexOf('/') !== -1) {
+              var parts = s.progress.split('/');
+              var a = parseFloat(parts[0]), b = parseFloat(parts[1]);
+              pct = b ? Math.round((a / b) * 100) : 0;
+            }
+            const threads = (s.visual_threads || []).slice(0, 4).join(' · ');
+            const arc = (s.mood_arc || []).join(' → ');
+            return '<article class="series-card">' +
+              '<h3>' + escapeHTML(s.title || 'Untitled series') + '</h3>' +
+              '<p>' + escapeHTML(s.theme || '') + '</p>' +
+              (arc ? '<p><strong>Mood arc:</strong> ' + escapeHTML(arc) + '</p>' : '') +
+              (threads ? '<p><strong>Threads:</strong> ' + escapeHTML(threads) + '</p>' : '') +
+              '<p>Status: ' + escapeHTML(s.status || 'active') + ' · ' + escapeHTML(String(s.progress || pct + '%')) + '</p>' +
+              '<div class="series-progress"><span style="width:' + pct + '%"></span></div>' +
+              '</article>';
+          }).join('');
+        } catch (e) {
+          list.innerHTML = '<p>Could not load series.</p>';
+        }
+      }
+
+      async function loveArtwork(image, ev) {
+        if (ev) ev.stopPropagation();
+        if (!image) return;
+        const artworkId = image.filename || image.path;
+        const body = {
+          artwork_id: artworkId,
+          action: 'love',
+          prompt: image.prompt || '',
+          model_id: (image.metadata && image.metadata.model) || '',
+          mood: (image.metadata && image.metadata.mood) || window._lumiraMood || null,
+          generation_params: image.metadata || {}
+        };
+        try {
+          // Prefer share_id gallery like (counts) + feedback submit (taste)
+          const jobs = [
+            fetch('/api/feedback/submit', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body)
+            })
+          ];
+          if (image.share_id && image.is_public !== false) {
+            jobs.push(fetch('/api/gallery/image/' + image.share_id + '/like', { method: 'POST' }));
+          }
+          const results = await Promise.allSettled(jobs);
+          const feedbackRes = results[0].status === 'fulfilled' ? results[0].value : null;
+          if (feedbackRes && feedbackRes.ok) {
+            const data = await feedbackRes.json();
+            image._loved = true;
+            image.like_count = (image.like_count || 0) + 1;
+            const chip = document.getElementById('taste-shift-chip');
+            if (chip && data.learning_stats) {
+              chip.style.display = '';
+              const n = data.learning_stats.total_feedback || 0;
+              chip.textContent = 'Taste shift · ' + n + ' signals';
+            }
+            const thought = document.getElementById('atelier-thought');
+            if (thought) thought.textContent = 'She noticed your love for this piece.';
+            if (typeof updateModalContent === 'function' && modalImages[currentModalIndex] === image) {
+              updateModalContent();
+            }
+          } else {
+            alert('Could not record love — try again.');
+          }
+        } catch (e) {
+          console.warn('love failed', e);
+        }
+      }
+
+      async function animateArtwork(image, ev) {
+        if (ev) ev.stopPropagation();
+        if (!image) return;
+        const btn = ev && ev.currentTarget;
+        if (btn) { btn.disabled = true; btn.textContent = 'Animating…'; }
+        try {
+          const res = await fetch('/api/lumira/video', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              prompt: image.prompt || 'cinematic motion of the artwork',
+              mood: (image.metadata && image.metadata.mood) || window._lumiraMood || null,
+              duration_seconds: 5,
+              artwork_path: image.path
+            })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || 'Video failed');
+          if (!image.metadata) image.metadata = {};
+          image.metadata.video_url = data.url;
+          if (typeof updateModalContent === 'function') updateModalContent();
+        } catch (e) {
+          alert('Animate failed: ' + e.message);
+        } finally {
+          if (btn) { btn.disabled = false; btn.innerHTML = '<span>▶</span> Animate'; }
+        }
+      }
 
       // ===== Gallery helpers for creation narrative =====
       function getCreationStoryHTML(image) {
@@ -4813,22 +5070,31 @@
         // Sort control is misleading on Picks (score-ranked) and Evolution
         const sortSelect = document.getElementById('sort-select');
         if (sortSelect) {
-          sortSelect.disabled = mode === 'picks' || mode === 'evolution';
+          sortSelect.disabled = mode === 'picks' || mode === 'evolution' || mode === 'series';
           sortSelect.title = mode === 'picks'
             ? "Picks are ranked by Lumira's quality score"
             : '';
         }
-        // Show/hide evolution timeline vs gallery
+        // Show/hide evolution / series vs gallery
         const evoTimeline = document.getElementById('evolution-timeline');
+        const seriesPanel = document.getElementById('series-panel');
         const galleryControls = document.querySelector('.controls');
         const galleryContainer = document.querySelector('.gallery-container');
         if (mode === 'evolution') {
           evoTimeline.style.display = 'block';
+          if (seriesPanel) seriesPanel.style.display = 'none';
           if (galleryControls) galleryControls.style.display = 'none';
           if (galleryContainer) galleryContainer.style.display = 'none';
           loadEvolutionTimeline();
+        } else if (mode === 'series') {
+          evoTimeline.style.display = 'none';
+          if (seriesPanel) seriesPanel.style.display = 'block';
+          if (galleryControls) galleryControls.style.display = 'none';
+          if (galleryContainer) galleryContainer.style.display = 'none';
+          loadSeriesPanel();
         } else {
           evoTimeline.style.display = 'none';
+          if (seriesPanel) seriesPanel.style.display = 'none';
           if (galleryControls) galleryControls.style.display = '';
           if (galleryContainer) galleryContainer.style.display = '';
         }
@@ -4845,7 +5111,7 @@
         }
         history.replaceState(null, '', url);
         // Reload gallery for non-evolution views
-        if (mode !== 'evolution') {
+        if (mode !== 'evolution' && mode !== 'series') {
           loadImages();
         }
       }
@@ -5316,6 +5582,14 @@
             shareArtwork(e);
           };
 
+          const loveBtn = document.createElement("button");
+          loveBtn.className = image._loved ? "action-btn liked" : "action-btn";
+          loveBtn.innerHTML =
+            '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>';
+          loveBtn.title = "Love this — teach Lumira";
+          loveBtn.onclick = (e) => loveArtwork(image, e);
+
+          actions.appendChild(loveBtn);
           actions.appendChild(featuredBtn);
           actions.appendChild(shareBtn);
           actions.appendChild(downloadBtn);
@@ -5444,9 +5718,17 @@
         modalNext.disabled = currentModalIndex === modalImages.length - 1;
 
         // Create action buttons
+        const soundtrackUrl = image.metadata && image.metadata.soundtrack_url;
+        const videoUrl = image.metadata && image.metadata.video_url;
         modalActions.innerHTML = `
+                <button class="modal-btn" onclick="loveArtwork(getModalImage(), event)" style="width: 100%;">
+                    <span>♥</span> ${image._loved ? "Loved" : "Love — teach Lumira"}
+                </button>
                 <button class="modal-btn" onclick="shareArtwork(event)" style="width: 100%;">
                     <span>↗</span> Share
+                </button>
+                <button class="modal-btn" onclick="animateArtwork(getModalImage(), event)" style="width: 100%;">
+                    <span>▶</span> Animate
                 </button>
                 <button class="modal-btn" onclick="toggleFeaturedInModal(event)" style="width: 100%;">
                     <span>${image.featured ? "⭐" : "☆"}</span> ${image.featured ? "Unfeature" : "Feature"}
@@ -5457,6 +5739,10 @@
                 <button class="modal-btn" onclick="deleteImageFromModal(event)" style="width: 100%; background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #ef4444;">
                     <span>🗑</span> Delete
                 </button>
+                <div class="modal-media">
+                  ${soundtrackUrl ? `<audio controls preload="metadata" src="${soundtrackUrl}"></audio>` : ""}
+                  ${videoUrl ? `<video controls preload="metadata" src="${videoUrl}"></video>` : ""}
+                </div>
             `;
 
         modalInfoContent.innerHTML = `
@@ -5874,7 +6160,7 @@
       // Restore view mode from URL params
       const urlParams = new URLSearchParams(window.location.search);
       const urlView = urlParams.get('view');
-      if (urlView && ['recent', 'picks', 'mood', 'evolution'].includes(urlView)) {
+      if (urlView && ['recent', 'picks', 'mood', 'evolution', 'series'].includes(urlView)) {
         currentViewMode = urlView;
         document.querySelectorAll('.view-tab').forEach(t => {
           t.classList.toggle('active', t.dataset.viewMode === urlView);
@@ -6188,6 +6474,14 @@
           case "thinking_update":
             updateThinkingProgress(data);
             break;
+          case "inner_dialogue": {
+            const thought = document.getElementById('atelier-thought');
+            if (thought) {
+              const voice = data.voice ? data.voice + ': ' : '';
+              thought.textContent = voice + (data.content || data.message || '');
+            }
+            break;
+          }
           case "pong":
             // Keep alive response
             break;
@@ -6196,6 +6490,8 @@
             if (newMood) {
               document.body.setAttribute('data-mood', newMood);
               window._lumiraMood = newMood;
+              const atelierMood = document.getElementById('atelier-mood');
+              if (atelierMood) atelierMood.textContent = newMood;
             }
             break;
           }
@@ -6236,6 +6532,9 @@
         stepText.textContent = `Step ${data.step} of ${data.total_steps}`;
         percentText.textContent = `${percent}%`;
         message.textContent = data.message || "Generating...";
+        if (data.preview) {
+          updateProgressPreview(percent, data.preview);
+        }
 
         // Update denoising preview
         updateProgressPreview(percent, data.preview_image);

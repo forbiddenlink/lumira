@@ -122,6 +122,7 @@ class ImageMetadata(BaseModel):
     share_id: str | None = None
     is_public: bool = False
     share_url: str | None = None
+    like_count: int = 0
 
 
 class GalleryStats(BaseModel):
@@ -331,10 +332,65 @@ async def lifespan(app: FastAPI):
             job_id="lumira_weekly_synthesis",
         )
 
+        # Optional: true autonomous creation from the web process
+        # LUMIRA_AUTONOMOUS_CREATE=1 and interval minutes (default 120).
+        import os as _os
+
+        auto_create = _os.getenv("LUMIRA_AUTONOMOUS_CREATE", "").lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+        try:
+            auto_interval = max(
+                15, int(_os.getenv("LUMIRA_AUTONOMOUS_INTERVAL_MIN", "120"))
+            )
+        except ValueError:
+            auto_interval = 120
+
+        if auto_create:
+            from ..web import lumira_routes as _lumira_routes
+
+            async def autonomous_web_create_task():
+                await _lumira_routes.run_scheduled_autonomous_create()
+
+            reflection_scheduler.add_interval_job(
+                autonomous_web_create_task,
+                minutes=auto_interval,
+                job_id="lumira_autonomous_create",
+            )
+            _lumira_routes.configure_autonomy_scheduler(
+                enabled=True,
+                interval_minutes=auto_interval,
+                next_run_iso=None,
+            )
+            logger.info(
+                "autonomous_web_create_scheduled",
+                interval_minutes=auto_interval,
+            )
+        else:
+            from ..web import lumira_routes as _lumira_routes
+
+            _lumira_routes.configure_autonomy_scheduler(enabled=False)
+
         reflection_scheduler.start()
+        # After start, capture next run time for status API
+        if auto_create:
+            from ..web import lumira_routes as _lumira_routes
+
+            for job in reflection_scheduler.list_jobs():
+                if job.get("id") == "lumira_autonomous_create":
+                    _lumira_routes.configure_autonomy_scheduler(
+                        enabled=True,
+                        interval_minutes=auto_interval,
+                        next_run_iso=job.get("next_run"),
+                    )
+                    break
+
         logger.info(
             "reflection_scheduling_initialized",
             jobs=len(reflection_scheduler.list_jobs()),
+            autonomous_create=auto_create,
         )
     except Exception as e:
         logger.warning("reflection_scheduling_failed", error=str(e))
@@ -539,6 +595,27 @@ async def share_page(request: Request, share_id: str, gallery_path: GalleryPathD
         rel_path = resolve_gallery_file_path(image.filename, gallery_path)
         image_url = f"{base_url}/api/images/file/{rel_path}"
         share_url = f"{base_url}/share/{share_id}"
+        gen_params = image.generation_params or {}
+        if not isinstance(gen_params, dict):
+            gen_params = {}
+        nested = (
+            gen_params.get("metadata")
+            if isinstance(gen_params.get("metadata"), dict)
+            else {}
+        )
+        soundtrack_url = (
+            gen_params.get("soundtrack_url") or nested.get("soundtrack_url") or None
+        )
+        mood = gen_params.get("mood") or nested.get("mood")
+        thinking = gen_params.get("thinking") or nested.get("thinking")
+        thought_line = None
+        if isinstance(thinking, dict):
+            for key in ("express", "decide", "reflect", "observe"):
+                if thinking.get(key):
+                    thought_line = str(thinking[key])[:240]
+                    break
+        elif isinstance(thinking, str) and thinking.strip():
+            thought_line = thinking.strip()[:240]
         return templates.TemplateResponse(
             request,
             "share.html",
@@ -549,6 +626,9 @@ async def share_page(request: Request, share_id: str, gallery_path: GalleryPathD
                 "share_id": share_id,
                 "base_url": base_url,
                 "share_url": share_url,
+                "soundtrack_url": soundtrack_url,
+                "mood": mood,
+                "thought_line": thought_line,
             },
         )
 
@@ -828,6 +908,16 @@ async def list_images(
                 )
                 share_id = str(row.share_id) if row.share_id else None
                 is_public = bool(row.is_public)
+                soundtrack_url = (
+                    enriched.get("soundtrack_url")
+                    or (gen_params or {}).get("soundtrack_url")
+                    or None
+                )
+                video_url = (
+                    enriched.get("video_url")
+                    or (gen_params or {}).get("video_url")
+                    or None
+                )
                 results.append(
                     ImageMetadata(
                         path=str(rel),
@@ -843,6 +933,9 @@ async def list_images(
                             "final_score": row.final_score,
                             "mood": enriched.get("mood")
                             or (gen_params or {}).get("mood"),
+                            "soundtrack_url": soundtrack_url,
+                            "video_url": video_url,
+                            "like_count": int(row.like_count or 0),
                         },
                         thumbnail_url=f"/api/images/file/{rel}",
                         full_url=f"/api/images/file/{rel}",
@@ -854,6 +947,7 @@ async def list_images(
                             if share_id and is_public
                             else None
                         ),
+                        like_count=int(row.like_count or 0),
                     )
                 )
             if mood:

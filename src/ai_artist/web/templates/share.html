@@ -425,8 +425,23 @@
           />
         </div>
         <div class="artwork-info">
-          <div class="artwork-eyebrow">Created by Lumira</div>
+          <div class="artwork-eyebrow">Created by Lumira{% if mood %} · {{ mood }}{% endif %}</div>
           <p class="artwork-prompt">"{{ prompt }}"</p>
+          {% if thought_line %}
+          <p class="artwork-thought" style="margin:0.75rem 0 0;opacity:0.8;font-style:italic;line-height:1.5;">
+            {{ thought_line }}
+          </p>
+          {% endif %}
+          {% if soundtrack_url %}
+          <div class="artwork-audio" style="margin-top:1.25rem;">
+            <div style="font-size:0.75rem;letter-spacing:0.08em;text-transform:uppercase;opacity:0.65;margin-bottom:0.4rem;">
+              Paired soundtrack{% if mood %} · {{ mood }}{% endif %}
+            </div>
+            <audio controls preload="metadata" style="width:100%;max-width:28rem;">
+              <source src="{{ soundtrack_url }}" />
+            </audio>
+          </div>
+          {% endif %}
           <div class="artwork-meta">
             <span>Autonomous AI Artist</span>
             <div class="artwork-meta-dot"></div>

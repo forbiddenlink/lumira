@@ -567,10 +567,42 @@ class ImageGenerator:
                 total=num_inference_steps,
                 percent=progress_pct,
             )
-            # Call external progress callback if provided (for WebSocket updates)
+            # Call external progress callback if provided (for WebSocket updates).
+            # Every 5 steps (and final), try to decode latents into a preview image
+            # so the studio can show real paint-as-you-watch frames.
             if on_progress is not None:
-                message = f"Generating: step {step}/{num_inference_steps}"
-                on_progress(step, num_inference_steps, message)
+                preview: Any = f"Generating: step {step}/{num_inference_steps}"
+                try:
+                    if step % 5 == 0 or step == num_inference_steps:
+                        latents = callback_kwargs.get("latents")
+                        if latents is not None and hasattr(pipeline, "vae"):
+                            import torch
+
+                            with torch.no_grad():
+                                scaled = latents / getattr(
+                                    pipeline.vae.config, "scaling_factor", 0.18215
+                                )
+                                decoded = pipeline.vae.decode(
+                                    scaled[:1].to(dtype=pipeline.vae.dtype),
+                                    return_dict=False,
+                                )[0]
+                                decoded = (decoded / 2 + 0.5).clamp(0, 1)
+                                arr = (
+                                    decoded[0]
+                                    .detach()
+                                    .cpu()
+                                    .permute(1, 2, 0)
+                                    .float()
+                                    .numpy()
+                                )
+                                from PIL import Image as PILImage
+
+                                preview = PILImage.fromarray(
+                                    (arr * 255).round().astype("uint8")
+                                )
+                except Exception:
+                    pass
+                on_progress(step, num_inference_steps, preview)
             return callback_kwargs
 
         # If using refiner, we need to output latents from base

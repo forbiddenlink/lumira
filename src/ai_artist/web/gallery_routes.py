@@ -449,6 +449,29 @@ async def toggle_like(
     db.commit()
     db.refresh(image)
 
+    # Feed AdaptiveLearner only on like (not unlike) so gallery taste steers style
+    if liked:
+        try:
+            from ai_artist.learning import FeedbackSignal, get_adaptive_learner
+
+            gen_params = image_obj.generation_params or {}
+            get_adaptive_learner().record_feedback(
+                FeedbackSignal(
+                    artwork_id=str(image_obj.filename or share_id),
+                    user_action="like",
+                    prompt=str(image_obj.prompt or ""),
+                    model_id=str(image_obj.model_id or "unknown"),
+                    mood=(
+                        gen_params.get("mood") if isinstance(gen_params, dict) else None
+                    ),
+                    generation_params=(
+                        gen_params if isinstance(gen_params, dict) else {}
+                    ),
+                )
+            )
+        except Exception as learn_err:
+            logger.debug("gallery_like_learner_failed", error=str(learn_err))
+
     return LikeResponse(
         success=True,
         liked=liked,
