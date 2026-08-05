@@ -1522,6 +1522,22 @@ async def create_artwork(
                         "image_saved_to_disk", path=str(save_path), backend=backend
                     )
 
+                    # Index into knowledge graph first so curator can cite neighbors
+                    with contextlib.suppress(Exception):
+                        from ..knowledge import index_artwork_in_knowledge_graph
+
+                        index_artwork_in_knowledge_graph(
+                            filename,
+                            prompt=prompt,
+                            mood=mood.value,
+                            subject=subject,
+                            style=style,
+                            model=getattr(generator, "node_type", None)
+                            or getattr(generator, "model_name", None)
+                            or config.model.base_model,
+                            file_path=str(save_path),
+                        )
+
                     # Save metadata JSON for gallery API
                     metadata_path = save_path.with_suffix(".json")
                     curator_note = None
@@ -2063,6 +2079,30 @@ async def user_request_creation(
                     images[0].save(save_path)
 
                     metadata_path = save_path.with_suffix(".json")
+                    with contextlib.suppress(Exception):
+                        from ..knowledge import index_artwork_in_knowledge_graph
+
+                        index_artwork_in_knowledge_graph(
+                            filename,
+                            prompt=prompt,
+                            mood=mood.value,
+                            subject=subject,
+                            style=style,
+                            model=getattr(generator, "node_type", None)
+                            or config.model.base_model,
+                            file_path=str(save_path),
+                        )
+                    curator_note = None
+                    with contextlib.suppress(Exception):
+                        from ..personality.curator_voice import compose_curator_voice
+
+                        curator_note = compose_curator_voice(
+                            mood=mood.value,
+                            prompt=prompt,
+                            artwork_id=filename,
+                            subject=subject,
+                            style=style,
+                        )
                     metadata_json = {
                         "prompt": prompt,
                         "user_request": body.prompt,
@@ -2075,9 +2115,11 @@ async def user_request_creation(
                             "backend": backend,
                             "reasoning": intent.reasoning,
                             "is_user_request": True,
+                            "curator_note": curator_note,
                         },
                         "created_at": now.isoformat(),
                         "featured": False,
+                        "curator_note": curator_note,
                     }
                     metadata_path.write_text(json.dumps(metadata_json, indent=2))
                     try:
@@ -4424,6 +4466,26 @@ async def get_artwork_context(request: Request, artwork_id: str):
         styles=context.get("styles", []),
         moods=context.get("moods", []),
     )
+
+
+class SimilarArtworksResponse(BaseModel):
+    """Soft neighbors for an artwork in the knowledge graph."""
+
+    artwork_id: str
+    neighbors: list[dict[str, Any]] = Field(default_factory=list)
+
+
+@router.get("/knowledge/similar/{artwork_id}", response_model=SimilarArtworksResponse)
+@limiter.limit("30/minute")
+async def get_similar_artworks(request: Request, artwork_id: str, limit: int = 5):
+    """Return archive neighbors linked or soft-matched in the knowledge graph."""
+    from ..knowledge import get_knowledge_graph
+
+    graph = get_knowledge_graph()
+    neighbors = graph.find_similar_artworks(
+        artwork_id, depth=2, limit=max(1, min(limit, 20))
+    )
+    return SimilarArtworksResponse(artwork_id=artwork_id, neighbors=neighbors)
 
 
 class CuratorVoiceResponse(BaseModel):

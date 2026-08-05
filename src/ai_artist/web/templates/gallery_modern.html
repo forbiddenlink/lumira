@@ -3834,12 +3834,13 @@
       // Fetch Lumira's mood, desire, autonomy, taste — drive atelier strip + hero
       async function fetchLumiraMoodAndStatement() {
         try {
-          const [stateRes, statementRes, autoRes, seriesRes, tasteRes] = await Promise.allSettled([
+          const [stateRes, statementRes, autoRes, seriesRes, tasteRes, dialogueRes] = await Promise.allSettled([
             fetch('/api/lumira/state'),
             fetch('/api/lumira/statement'),
             fetch('/api/lumira/autonomy-status'),
             fetch('/api/lumira/series'),
-            fetch('/api/feedback/stats')
+            fetch('/api/feedback/stats'),
+            fetch('/api/lumira/dialogue')
           ]);
 
           let mood = null;
@@ -3875,10 +3876,22 @@
             const drives = auto.drives || {};
             const driveNames = Object.keys(drives);
             if (driveNames.length && desireEl && !feeling) {
-              const top = driveNames
-                .map(function(n) { return { n: n, v: (drives[n] && (drives[n].intensity || drives[n].value || 0)) || 0 }; })
-                .sort(function(a,b){ return b.v - a.v; })[0];
-              if (top) desireEl.textContent = 'Drawn toward ' + top.n.replace(/_/g, ' ');
+              const ranked = driveNames
+                .map(function(n) {
+                  var d = drives[n] || {};
+                  return {
+                    n: n,
+                    v: d.intensity || d.value || 0,
+                    reason: d.reasoning || d.reason || ''
+                  };
+                })
+                .sort(function(a,b){ return b.v - a.v; });
+              var top = ranked[0];
+              if (top) {
+                desireEl.textContent = top.reason
+                  ? top.reason
+                  : ('Drawn toward ' + top.n.replace(/_/g, ' '));
+              }
             }
             const nextEl = document.getElementById('atelier-next');
             if (nextEl) {
@@ -3894,6 +3907,22 @@
             if (seriesEl && auto.active_series_count) {
               seriesEl.textContent = auto.active_series_count + ' active series';
             }
+          }
+
+          if (dialogueRes.status === 'fulfilled' && dialogueRes.value.ok) {
+            try {
+              const dialogue = await dialogueRes.value.json();
+              const turns = dialogue.turns || [];
+              const thought = document.getElementById('atelier-thought');
+              if (thought && turns.length) {
+                const last = turns[turns.length - 1];
+                const voice = last.voice ? String(last.voice) : 'mind';
+                const content = last.content ? String(last.content) : '';
+                if (content) {
+                  thought.textContent = voice + ': ' + content.slice(0, 180);
+                }
+              }
+            } catch (e) { /* ignore */ }
           }
 
           if (seriesRes.status === 'fulfilled' && seriesRes.value.ok) {

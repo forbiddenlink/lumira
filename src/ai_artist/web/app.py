@@ -604,14 +604,35 @@ async def share_page(request: Request, share_id: str, gallery_path: GalleryPathD
         )
         mood = gen_params.get("mood") or nested.get("mood")
         thinking = gen_params.get("thinking") or nested.get("thinking")
+        reasoning = gen_params.get("reasoning") or nested.get("reasoning")
+        curator_note = (
+            gen_params.get("curator_note") or nested.get("curator_note") or None
+        )
         thought_line = None
+        thinking_steps: list[dict[str, str]] = []
         if isinstance(thinking, dict):
+            for key in ("observe", "reflect", "decide", "express"):
+                if thinking.get(key):
+                    thinking_steps.append(
+                        {"label": key, "text": str(thinking[key])[:280]}
+                    )
             for key in ("express", "decide", "reflect", "observe"):
                 if thinking.get(key):
                     thought_line = str(thinking[key])[:240]
                     break
         elif isinstance(thinking, str) and thinking.strip():
             thought_line = thinking.strip()[:240]
+        if not curator_note:
+            with contextlib.suppress(Exception):
+                from ..personality.curator_voice import compose_curator_voice
+
+                curator_note = compose_curator_voice(
+                    mood=str(mood) if mood else None,
+                    prompt=image.prompt,
+                    artwork_id=Path(image.filename or "").name or None,
+                    subject=nested.get("subject") or gen_params.get("subject"),
+                    style=nested.get("style") or gen_params.get("style"),
+                )
         return templates.TemplateResponse(
             request,
             "share.html",
@@ -625,6 +646,9 @@ async def share_page(request: Request, share_id: str, gallery_path: GalleryPathD
                 "soundtrack_url": soundtrack_url,
                 "mood": mood,
                 "thought_line": thought_line,
+                "curator_note": curator_note,
+                "reasoning": reasoning,
+                "thinking_steps": thinking_steps,
             },
         )
 

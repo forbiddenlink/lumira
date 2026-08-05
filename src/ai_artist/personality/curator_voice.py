@@ -35,6 +35,21 @@ def compose_curator_voice(
 
         graph = get_knowledge_graph()
         if artwork_id:
+            neighbors = graph.find_similar_artworks(str(artwork_id), depth=1, limit=3)
+            titles: list[str] = []
+            for n in neighbors:
+                label = n.get("title") or n.get("id")
+                if label:
+                    titles.append(str(label)[:48])
+            if titles:
+                if len(titles) == 1:
+                    parts.append(f"Neighbors in the archive: «{titles[0]}».")
+                else:
+                    parts.append(
+                        "Neighbors in the archive: "
+                        + ", ".join(f"«{t}»" for t in titles[:3])
+                        + "."
+                    )
             ctx = graph.get_artwork_context(str(artwork_id))
             if ctx:
                 styles: list[str] = [

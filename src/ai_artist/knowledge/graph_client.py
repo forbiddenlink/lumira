@@ -473,7 +473,11 @@ class KnowledgeGraph:
     def find_similar_artworks(
         self, artwork_id: str, depth: int = 2, limit: int = 10
     ) -> list[dict[str, Any]]:
-        """Find artworks similar to given artwork (up to N hops)."""
+        """Find artworks similar to given artwork (up to N hops).
+
+        Prefers explicit SIMILAR_TO edges; falls back to shared
+        subject / style / mood links when those edges are sparse.
+        """
         if self.is_connected:
             result = self._graph.ro_query(
                 f"""
@@ -483,21 +487,165 @@ class KnowledgeGraph:
                 """,
                 {"id": artwork_id, "limit": limit},
             )
-            return [
-                {"id": r[0], "title": r[1], "aesthetic_score": r[2]}
+            rows = [
+                {
+                    "id": r[0],
+                    "title": r[1],
+                    "aesthetic_score": r[2],
+                    "score": None,
+                }
                 for r in result.result_set
             ]
-        else:
-            # Simple in-memory: direct connections only
-            matching = [
-                rel
-                for rel in self._memory_relationships
-                if rel["type"] == "SIMILAR_TO" and rel["from"] == artwork_id
-            ]
-            return [
-                {"id": rel["to"], "score": rel.get("score", 0.5)}
-                for rel in matching[:limit]
-            ]
+            if rows:
+                return rows
+            # Soft neighbors via shared attributes
+            try:
+                soft = self._graph.ro_query(
+                    """
+                    MATCH (a:Artwork {id: $id})
+                    OPTIONAL MATCH (a)-[:DEPICTS]->(s:Subject)<-[:DEPICTS]-(o1:Artwork)
+                    OPTIONAL MATCH (a)-[:HAS_STYLE]->(st:Style)<-[:HAS_STYLE]-(o2:Artwork)
+                    OPTIONAL MATCH (a)-[:EVOKES]->(m:Mood)<-[:EVOKES]-(o3:Artwork)
+                    WITH collect(DISTINCT o1) + collect(DISTINCT o2) + collect(DISTINCT o3) AS others
+                    UNWIND others AS similar
+                    WITH similar
+                    WHERE similar IS NOT NULL AND similar.id <> $id
+                    RETURN DISTINCT similar.id, similar.title, similar.aesthetic_score
+                    LIMIT $limit
+                    """,
+                    {"id": artwork_id, "limit": limit},
+                )
+                return [
+                    {
+                        "id": r[0],
+                        "title": r[1],
+                        "aesthetic_score": r[2],
+                        "score": None,
+                    }
+                    for r in soft.result_set
+                ]
+            except Exception as e:
+                logger.debug("find_similar_soft_failed", error=str(e))
+                return []
+
+        # In-memory: SIMILAR_TO first, then shared DEPICTS/HAS_STYLE/EVOKES
+        matching = [
+            rel
+            for rel in self._memory_relationships
+            if rel["type"] == "SIMILAR_TO" and rel["from"] == artwork_id
+        ]
+        out: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for rel in matching:
+            nid = str(rel["to"])
+            if nid in seen:
+                continue
+            seen.add(nid)
+            node = self._memory_artworks.get(nid)
+            out.append(
+                {
+                    "id": nid,
+                    "title": getattr(node, "title", None) if node else None,
+                    "score": rel.get("score", 0.5),
+                }
+            )
+            if len(out) >= limit:
+                return out
+
+        my_attrs = {
+            (rel["type"], rel["to"])
+            for rel in self._memory_relationships
+            if rel["from"] == artwork_id
+            and rel["type"] in {"DEPICTS", "HAS_STYLE", "EVOKES"}
+        }
+        for rel in self._memory_relationships:
+            if rel["type"] not in {"DEPICTS", "HAS_STYLE", "EVOKES"}:
+                continue
+            key = (rel["type"], rel["to"])
+            if key not in my_attrs:
+                continue
+            nid = str(rel["from"])
+            if nid == artwork_id or nid in seen:
+                continue
+            seen.add(nid)
+            node = self._memory_artworks.get(nid)
+            out.append(
+                {
+                    "id": nid,
+                    "title": getattr(node, "title", None) if node else None,
+                    "score": 0.55,
+                }
+            )
+            if len(out) >= limit:
+                break
+        return out
+
+    def index_creation(
+        self,
+        artwork_id: str,
+        *,
+        prompt: str = "",
+        title: str | None = None,
+        mood: str | None = None,
+        subject: str | None = None,
+        style: str | None = None,
+        model: str = "",
+        aesthetic_score: float | None = None,
+        file_path: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Index a new piece and soft-link archive neighbors.
+
+        Returns neighbor dicts (id/title/score) for curator voice.
+        """
+        art_title = (
+            title or (prompt[:72] if prompt else artwork_id) or artwork_id
+        ).strip()
+        self.add_artwork(
+            artwork_id=artwork_id,
+            title=art_title,
+            prompt=prompt or "",
+            model=model or "",
+            aesthetic_score=aesthetic_score,
+            file_path=file_path,
+        )
+
+        if subject and subject.strip():
+            subj = subject.strip()
+            self.add_subject(subj)
+            self.link_artwork_depicts(artwork_id, subj)
+            if mood and mood.strip():
+                self.link_subject_mood_association(subj, mood.strip().lower())
+
+        if style and style.strip():
+            sty = style.strip()
+            self.add_style(sty)
+            self.link_artwork_style(artwork_id, sty)
+
+        if mood and mood.strip():
+            mood_name = mood.strip().lower()
+            self.add_mood(mood_name)
+            self.link_artwork_mood(artwork_id, mood_name)
+
+        # Soft-link a few peers that share subject / style / mood
+        neighbors = self.find_similar_artworks(artwork_id, depth=1, limit=5)
+        for peer in neighbors:
+            peer_id = peer.get("id")
+            if not peer_id or peer_id == artwork_id:
+                continue
+            score = peer.get("score")
+            try:
+                sim = float(score) if score is not None else 0.6
+            except (TypeError, ValueError):
+                sim = 0.6
+            self.link_similar_artworks(artwork_id, str(peer_id), sim)
+
+        logger.info(
+            "artwork_indexed_in_knowledge_graph",
+            artwork_id=artwork_id,
+            neighbors=len(neighbors),
+            connected=self.is_connected,
+        )
+        return neighbors
 
     def get_subjects_for_mood(
         self, mood_name: str, limit: int = 10

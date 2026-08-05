@@ -432,6 +432,26 @@
             {{ thought_line }}
           </p>
           {% endif %}
+          {% if curator_note %}
+          <p class="artwork-curator" style="margin:1rem 0 0;line-height:1.55;opacity:0.9;font-size:0.95rem;">
+            {{ curator_note }}
+          </p>
+          {% endif %}
+          {% if reasoning %}
+          <p class="artwork-reasoning" style="margin:0.85rem 0 0;opacity:0.72;font-size:0.88rem;line-height:1.5;">
+            Desire: {{ reasoning }}
+          </p>
+          {% endif %}
+          {% if thinking_steps %}
+          <details style="margin-top:1rem;opacity:0.85;">
+            <summary style="cursor:pointer;font-size:0.8rem;letter-spacing:0.06em;text-transform:uppercase;">Creation story</summary>
+            <ul style="margin:0.75rem 0 0;padding-left:1.1rem;line-height:1.55;font-size:0.9rem;">
+              {% for step in thinking_steps %}
+              <li><strong>{{ step.label }}</strong> — {{ step.text }}</li>
+              {% endfor %}
+            </ul>
+          </details>
+          {% endif %}
           {% if soundtrack_url %}
           <div class="artwork-audio" style="margin-top:1.25rem;">
             <div style="font-size:0.75rem;letter-spacing:0.08em;text-transform:uppercase;opacity:0.65;margin-bottom:0.4rem;">
