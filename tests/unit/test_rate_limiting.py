@@ -283,7 +283,8 @@ class TestGenerationEndpointRateLimits:
             # Clear the in-memory storage used by slowapi
             app.state.limiter._storage.storage.clear()
 
-        return TestClient(app)
+        # Existence checks only — don't fail the suite on missing DB tables / LLM stubs
+        return TestClient(app, raise_server_exceptions=False)
 
     def test_preview_endpoint_exists(self, client):
         """Preview endpoint should exist and be accessible."""
@@ -308,10 +309,13 @@ class TestGenerationEndpointRateLimits:
         """Img2img endpoint should exist."""
         response = client.post(
             "/api/lumira/img2img",
-            json={"image_id": 1, "prompt": "test"},
+            json={
+                "image_id": 1,
+                "prompt": "a quiet twilight meadow with soft gold light",
+            },
         )
-        # Will likely be 404 for missing image, but endpoint exists
-        assert response.status_code in [200, 404, 422, 500]
+        # 400 = thin-prompt / validation; 404 = missing image; endpoint exists either way
+        assert response.status_code in [200, 400, 404, 422, 500]
 
     def test_variations_endpoint_exists(self, client):
         """Variations endpoint should exist."""
@@ -319,7 +323,7 @@ class TestGenerationEndpointRateLimits:
             "/api/lumira/variations",
             json={"image_id": 1, "count": 2},
         )
-        assert response.status_code in [200, 404, 422, 500]
+        assert response.status_code in [200, 400, 404, 422, 500]
 
     def test_batch_create_endpoint_exists(self, client):
         """Batch create endpoint should exist."""

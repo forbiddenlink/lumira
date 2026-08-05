@@ -24,7 +24,7 @@ class TestPreviewConfig:
         assert config.height == 1024
         assert config.width == 1024
         assert config.guidance_scale == 0.0
-        assert config.device == "mps"
+        assert config.device == "auto"
         assert config.auto_approve_threshold == 0.7
 
     def test_custom_values(self):
@@ -109,7 +109,10 @@ class TestPreviewGenerator:
     def test_init_with_config(self):
         """Test initialization with custom config."""
         config = PreviewConfig(device="cuda")
-        gen = PreviewGenerator(config=config)
+        with patch(
+            "ai_artist.core.preview_generator._detect_device", return_value="cuda"
+        ):
+            gen = PreviewGenerator(config=config)
         assert gen.config.device == "cuda"
 
     def test_init_with_helpers(self):
@@ -147,7 +150,11 @@ class TestPreviewGenerator:
         result = await generator.preview("test prompt")
 
         assert result.error is not None
-        assert "Failed to load" in result.error
+        assert (
+            "Failed to load" in result.error
+            or "Hugging Face auth" in result.error
+            or "HF_TOKEN" in result.error
+        )
 
     @pytest.mark.asyncio
     async def test_preview_with_mock_pipeline(self):

@@ -195,7 +195,8 @@ class TestGalleryNavigation:
         page = lumira_page
 
         gallery_grid = page.locator("#gallery-grid")
-        expect(gallery_grid).to_be_visible()
+        # Empty grid can have zero height (Playwright treats as hidden); attach is enough.
+        expect(gallery_grid).to_be_attached()
         expect(gallery_grid).to_have_attribute("role", "list")
 
     def test_art_cards_are_clickable(self, lumira_page: Page):
