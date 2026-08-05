@@ -192,19 +192,19 @@ def _recent_prompt_duplicate(
         query = query.filter(GeneratedImage.created_at >= cutoff)
 
     # Fast path: exact case-insensitive match in SQL (covers old originals)
-    exact = (
+    exact: GeneratedImage | None = (
         query.filter(GeneratedImage.prompt.ilike(prompt.strip()))
         .order_by(GeneratedImage.created_at.desc())
         .first()
     )
     if exact is not None:
-        return exact
+        return exact  # type: ignore[no-any-return]
 
     # Fallback: normalized compare among a bounded set
     rows = query.order_by(GeneratedImage.created_at.desc()).limit(500).all()
     for row in rows:
         if _normalize_prompt_key(str(row.prompt or "")) == key:
-            return row
+            return row  # type: ignore[no-any-return]
     return None
 
 
