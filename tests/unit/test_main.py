@@ -183,18 +183,18 @@ class TestAIArtistInitialization:
         artist = AIArtist(config=mock_config, name="TestArtist")
         assert artist.name == "TestArtist"
 
-    def test_init_with_lora_path(self, mock_config, mock_patches, tmp_path):
-        """Test initialization with LoRA weights."""
-        # Create mock LoRA path
+    def test_lora_path_is_loaded_on_first_use(
+        self, mock_config, mock_patches, tmp_path
+    ):
+        """Weights load at generation time, not at construction."""
         lora_path = tmp_path / "test_lora"
         lora_path.mkdir()
         mock_config.model.lora_path = str(lora_path)
 
-        _artist = AIArtist(
-            config=mock_config
-        )  # noqa: F841 - instantiation triggers load_lora
+        artist = AIArtist(config=mock_config)
+        mock_patches["generator"].load_lora.assert_not_called()
 
-        # Verify load_lora was called
+        artist.ensure_models_loaded()
         mock_patches["generator"].load_lora.assert_called_once()
 
     def test_init_with_nonexistent_lora_path(self, mock_config, mock_patches):
@@ -209,25 +209,26 @@ class TestAIArtistInitialization:
         # load_lora should NOT have been called
         mock_patches["generator"].load_lora.assert_not_called()
 
-    def test_init_with_controlnet_enabled(self, mock_config, mock_patches):
-        """Test initialization with ControlNet enabled."""
+    def test_controlnet_is_loaded_on_first_use(self, mock_config, mock_patches):
         mock_config.controlnet.enabled = True
         mock_config.controlnet.model_id = "test/controlnet-model"
 
-        _artist = AIArtist(config=mock_config)  # noqa: F841 - triggers load_model
+        artist = AIArtist(config=mock_config)
+        mock_patches["generator"].load_model.assert_not_called()
 
-        # Verify load_model was called with controlnet model
+        artist.ensure_models_loaded()
         mock_patches["generator"].load_model.assert_called_once_with(
             controlnet_model="test/controlnet-model"
         )
 
-    def test_init_with_refiner_enabled(self, mock_config, mock_patches):
-        """Test initialization with refiner model."""
+    def test_refiner_is_loaded_on_first_use(self, mock_config, mock_patches):
         mock_config.model.use_refiner = True
         mock_config.model.refiner_model = "test/refiner-model"
 
-        _artist = AIArtist(config=mock_config)  # noqa: F841 - triggers load_refiner
+        artist = AIArtist(config=mock_config)
+        mock_patches["generator"].load_refiner.assert_not_called()
 
+        artist.ensure_models_loaded()
         mock_patches["generator"].load_refiner.assert_called_once_with(
             refiner_id="test/refiner-model"
         )
@@ -1442,3 +1443,39 @@ class TestArtistInitialisation:
         assert artist.gallery is not None
         assert artist.scheduler is not None
         assert artist.model_pool is not None
+
+    def test_construction_loads_no_weights(self):
+        """Constructing an artist must not pull anything off the Hub.
+
+        _initialize() used to call generator.load_model() inline, so building
+        an AIArtist at all -- for a CLI that only prints help, for a test --
+        downloaded multi-GB weights. They load on first generation now.
+        """
+        from ai_artist.main import AIArtist
+        from ai_artist.utils.config import Config
+
+        config = Config()
+        config.model.device = "cpu"
+
+        artist = AIArtist(config=config)
+
+        assert artist._models_loaded is False
+        assert artist.generator is not None
+        assert artist.generator.pipeline is None
+
+    def test_ensure_models_loaded_is_idempotent(self):
+        from unittest.mock import MagicMock
+
+        from ai_artist.main import AIArtist
+        from ai_artist.utils.config import Config
+
+        config = Config()
+        config.model.device = "cpu"
+        artist = AIArtist(config=config)
+        artist.generator = MagicMock()
+
+        artist.ensure_models_loaded()
+        artist.ensure_models_loaded()
+
+        assert artist._models_loaded is True
+        assert artist.generator.load_model.call_count == 1

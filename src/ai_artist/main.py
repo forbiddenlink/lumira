@@ -79,6 +79,7 @@ class AIArtist:
         self.two_stage_generator: TwoStageGenerator | None = (
             None  # Preview + full render workflow
         )
+        self._models_loaded = False
 
         # Lumira's personality - the core of who she is
         self.mood_system = MoodSystem()
@@ -160,35 +161,7 @@ class AIArtist:
             dtype=get_torch_dtype(self.config.model.dtype),
         )
 
-        # Determine if ControlNet is enabled
-        controlnet_model = None
-        if self.config.controlnet.enabled:
-            controlnet_model = self.config.controlnet.model_id
-            logger.info("controlnet_enabled", model=controlnet_model)
-
-        # Load model (will use model pool if available)
-        if self.model_pool:
-            logger.info("using_model_pool_for_loading")
-            # Model pool will be used during generation via get_or_load_model()
-
-        self.generator.load_model(controlnet_model=controlnet_model)
-
-        # Load Refiner if enabled
-        if self.config.model.use_refiner:
-            logger.info("loading_refiner_enabled")
-            self.generator.load_refiner(refiner_id=self.config.model.refiner_model)
-
-        # Load LoRA if specified
-        if self.config.model.lora_path:
-            lora_path = Path(self.config.model.lora_path)
-            if lora_path.exists():
-                logger.info("loading_lora_from_config", path=str(lora_path))
-                self.generator.load_lora(
-                    lora_path=lora_path,
-                    lora_scale=self.config.model.lora_scale,
-                )
-            else:
-                logger.warning("lora_path_not_found", path=str(lora_path))
+        # Weights load on first use -- see ensure_models_loaded().
 
         # Initialize upscaler if enabled
         if self.config.upscaling.enabled:
@@ -318,6 +291,54 @@ class AIArtist:
         )
         logger.info("two_stage_generator_initialized")
 
+    def ensure_models_loaded(self) -> None:
+        """Load the diffusion weights, once, on first use.
+
+        _initialize() used to do this inline, so *constructing* an AIArtist --
+        for a CLI that only prints help, for a test, for the gallery viewer --
+        pulled multi-GB weights off the Hub before it returned. Nothing prior
+        to the first generation needs them, and the model pool built alongside
+        this already assumed loading happens at generation time.
+
+        Idempotent. The generation entry points call it unconditionally, and
+        ImageGenerator.generate() still raises when the pipeline is missing,
+        so a path that forgets to call it fails loudly rather than silently.
+        """
+        if self._models_loaded or self.generator is None:
+            return
+
+        controlnet_model = None
+        if self.config.controlnet.enabled:
+            controlnet_model = self.config.controlnet.model_id
+            logger.info("controlnet_enabled", model=controlnet_model)
+
+        if self.model_pool:
+            logger.info("using_model_pool_for_loading")
+
+        logger.info("loading_models_on_first_use")
+        self.generator.load_model(controlnet_model=controlnet_model)
+
+        if self.config.model.use_refiner:
+            logger.info("loading_refiner_enabled")
+            self.generator.load_refiner(refiner_id=self.config.model.refiner_model)
+
+        if self.config.model.lora_path:
+            lora_path = Path(self.config.model.lora_path)
+            if lora_path.exists():
+                logger.info("loading_lora_from_config", path=str(lora_path))
+                self.generator.load_lora(
+                    lora_path=lora_path,
+                    lora_scale=self.config.model.lora_scale,
+                )
+            else:
+                logger.warning("lora_path_not_found", path=str(lora_path))
+
+        # StyleInterpolator was handed the pipeline before one existed.
+        if self.style_interpolator is not None:
+            self.style_interpolator.pipe = self.generator.pipeline
+
+        self._models_loaded = True
+
     def _get_ws_manager(self) -> Any:
         """Lazily load WebSocket manager to avoid circular imports."""
         if self._ws_manager is None:
@@ -363,6 +384,8 @@ class AIArtist:
 
     async def create_artwork(self, theme: str | None = None) -> Path | None:
         """Create a single piece of artwork with Lumira's personality."""
+        self.ensure_models_loaded()
+
         # Set unique request ID for this operation
         request_id = set_request_id()
         self._current_session_id = request_id
@@ -965,6 +988,8 @@ class AIArtist:
         Returns:
             Dict with preview_result, approved, final_image (if approved)
         """
+        self.ensure_models_loaded()
+
         request_id = set_request_id()
         self._current_session_id = request_id
 
