@@ -107,7 +107,7 @@ async def get_statistics(
                     "prompt": a.prompt,
                     "status": a.status,
                     "final_score": a.final_score,
-                    "created_at": a.created_at.isoformat(),
+                    "created_at": (a.created_at.isoformat() if a.created_at else None),
                 }
                 for a in recent
             ],

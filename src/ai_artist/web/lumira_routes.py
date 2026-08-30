@@ -9,7 +9,7 @@ import time
 import uuid
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 import aiofiles
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
@@ -220,7 +220,7 @@ def _recent_variation_count(
     rows = query.all()
     count = 0
     for row in rows:
-        params: dict[str, Any] = cast("dict[str, Any]", row.generation_params or {})
+        params = row.generation_params or {}
         if params.get("variation_of") == source_id:
             count += 1
     return count
@@ -5184,7 +5184,7 @@ async def export_video(
         raise HTTPException(status_code=404, detail="No images found")
 
     # Preserve order from request
-    id_to_image = {int(img.id): img for img in images}
+    id_to_image = {img.id: img for img in images}
     ordered_images = [id_to_image[id_] for id_ in body.image_ids if id_ in id_to_image]
 
     if len(ordered_images) != len(body.image_ids):

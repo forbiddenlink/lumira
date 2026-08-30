@@ -594,7 +594,7 @@ async def share_page(request: Request, share_id: str, gallery_path: GalleryPathD
 
     if image:
         base_url = str(request.base_url).rstrip("/")
-        rel_path = resolve_gallery_file_path(str(image.filename), gallery_path)
+        rel_path = resolve_gallery_file_path(image.filename, gallery_path)
         image_url = f"{base_url}/api/images/file/{rel_path}"
         share_url = f"{base_url}/share/{share_id}"
         gen_params: dict[str, Any] = cast(
@@ -633,7 +633,7 @@ async def share_page(request: Request, share_id: str, gallery_path: GalleryPathD
 
                 curator_note = compose_curator_voice(
                     mood=str(mood) if mood else None,
-                    prompt=str(image.prompt) if image.prompt else None,
+                    prompt=image.prompt,
                     artwork_id=Path(image.filename or "").name or None,
                     subject=nested.get("subject") or gen_params.get("subject"),
                     style=nested.get("style") or gen_params.get("style"),
@@ -908,7 +908,7 @@ async def list_images(
                 row_path = Path(row.filename)
                 if not row_path.exists():
                     continue
-                prompt_text = str(row.prompt or "")
+                prompt_text = row.prompt or ""
                 # Hide harness junk from the public gallery
                 from ..utils.prompt_quality import is_trivial_prompt
 
@@ -924,9 +924,7 @@ async def list_images(
                     rel = row_path.relative_to(gallery_base)
                 except ValueError:
                     rel = row_path
-                gen_params: dict[str, Any] = cast(
-                    "dict[str, Any]", row.generation_params or {}
-                )
+                gen_params = row.generation_params or {}
                 from ..utils.metadata_helpers import enrich_generation_metadata
 
                 enriched = enrich_generation_metadata(
@@ -1243,7 +1241,7 @@ async def toggle_featured(
                     .first()
                 )
             if row is not None:
-                row.is_featured = featured  # type: ignore[assignment]
+                row.is_featured = featured
                 db.commit()
         finally:
             db_gen.close()
