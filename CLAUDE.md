@@ -34,10 +34,12 @@ pytest tests/unit/test_moods.py             # Single file
 pytest -k "test_critic"                     # Pattern match
 pytest --cov=src/ai_artist tests/           # With coverage
 
-# Linting & formatting
-black src/ tests/
-ruff check src/ --fix
-mypy src/ai_artist --ignore-missing-imports
+# Linting & formatting -- these are the exact commands CI runs.
+# ruff and black are not project dependencies; uvx fetches them, which is why
+# a bare `ruff`/`black` in this venv is "command not found".
+uvx ruff check src/ tests/ --fix
+uvx black src/ tests/
+uv run mypy src/ --ignore-missing-imports   # mypy IS a dev dependency
 pre-commit run --all-files
 
 # Database migrations

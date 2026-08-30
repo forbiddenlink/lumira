@@ -5,7 +5,24 @@
 > Stack is Python/FastAPI + Jinja2 templates + plain CSS custom properties (NOT Next.js/Tailwind). Tokens live in <style> blocks inside templates, not a token pipeline.
 > Philosophy = .impeccable.md. When editing UI: reuse the named CSS vars below; never introduce ad-hoc hex.
 
-## Enforced by tests — read before changing colors or layout
+## Enforced by tests — read before touching a template
+Three things now fail CI rather than review. All are cheap to comply with and
+expensive to discover by accident:
+
+1. NO inline event handlers. `onclick=`, `oninput=`, `onmouseover=` and friends
+   are banned in every template (and static/offline.html), because a CSP nonce
+   covers <script> blocks but cannot cover handler attributes — they are what
+   kept 'unsafe-inline' in script-src. Use `data-action="fnName"` (plus
+   `data-arg="..."` when the handler took an argument) and let the page's
+   delegated listener dispatch it. Each page keeps an explicit ACTION_NAMES
+   allowlist at the bottom of its script; add the function name there or the
+   click does nothing. Hover styling belongs in CSS, not a handler.
+2. EVERY inline <script> needs `nonce="{{ csp_nonce }}"`. The nonce is injected
+   for all templates by a Jinja context processor, so nothing needs passing per
+   route. A bare <script> fails the guard test and would be blocked in a browser.
+3. Contrast, target size, overflow and dialog focus — see the next section.
+
+## The accessibility gate — read before changing colors or layout
 `tests/e2e/test_a11y.py` runs axe-core (WCAG 2.0/2.1 A + AA) over `/`, `/lumira`, `/privacy`
 and `/admin/` at 1280x720 and at 390x844, and additionally asserts: no horizontal scroll at
 390px, no interactive target under 24x24 (WCAG 2.2), and no focusable control inside a closed
@@ -61,5 +78,6 @@ has made yet.
 ## Deep references
 - src/ai_artist/web/templates/lumira.html + gallery_modern.html — token :root blocks (canonical = lumira.html names)
 - src/ai_artist/web/templates/admin/dashboard.html — the same tokens applied to an instrument surface
-- tests/e2e/test_a11y.py — the gate that keeps the above true
+- tests/e2e/test_a11y.py — the accessibility gate
+- tests/unit/test_middleware.py — the CSP nonce + no-inline-handler guards
 - .impeccable.md — philosophy + anti-references
