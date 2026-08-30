@@ -522,14 +522,27 @@
 
       /* Modal Transitions */
       .modal,
-      .lightbox {
+      /* opacity:0 alone leaves these dialogs in the tab order: keyboard users
+         could tab into five invisible controls inside a closed lightbox that
+         was simultaneously marked aria-hidden="true" -- the aria-hidden-focus
+         violation. visibility:hidden takes them out of both trees, and the
+         delay keeps the fade-out visible. */
+      .lightbox,
+      .modal {
         opacity: 0;
-        transition: opacity 0.3s ease;
+        visibility: hidden;
+        transition:
+          opacity 0.3s ease,
+          visibility 0s linear 0.3s;
       }
 
       .modal.active,
       .lightbox.active {
         opacity: 1;
+        visibility: visible;
+        transition:
+          opacity 0.3s ease,
+          visibility 0s;
       }
 
       .modal-content,
@@ -920,6 +933,9 @@
       #creating-overlay {
         position: fixed;
         inset: 0;
+        /* Same reason as .lightbox above: it is a full-screen overlay sitting
+           at opacity 0 with a focusable control inside it. */
+        visibility: hidden;
         background: rgba(0, 0, 0, 0.85);
         -webkit-backdrop-filter: blur(10px);
         backdrop-filter: blur(10px);
@@ -934,6 +950,7 @@
 
       #creating-overlay.active {
         opacity: 1;
+        visibility: visible;
         pointer-events: all;
       }
 
@@ -1319,7 +1336,7 @@
       }
 
       .btn-preview {
-        background: rgba(187, 134, 252, 0.15);
+        background: color-mix(in oklab, var(--accent) 15%, transparent);
         border: 1px solid var(--accent);
         color: var(--text-main);
         border-radius: 8px;
@@ -1374,7 +1391,7 @@
         margin-bottom: 0.5rem;
       }
       .series-card {
-        border-left: 2px solid rgba(187, 134, 252, 0.45);
+        border-left: 2px solid color-mix(in oklab, var(--accent) 45%, transparent);
         padding: 0.55rem 0.65rem;
         margin-bottom: 0.55rem;
         background: rgba(255, 255, 255, 0.03);
@@ -2019,6 +2036,10 @@
       .request-toggle input[type="checkbox"]:focus-visible {
         box-shadow: 0 0 0 3px var(--focus-ring);
       }
+      /* The text block is the label element, so the whole row is clickable. */
+      .request-toggle label {
+        cursor: pointer;
+      }
       .request-toggle .toggle-label {
         font-size: 0.8rem;
         color: var(--text-main);
@@ -2030,6 +2051,9 @@
 
       .request-actions {
         display: flex;
+        /* Six buttons on one nowrap line shrank until their labels clipped
+           mid-word ("Or let Lumira dec..."). Let them wrap instead. */
+        flex-wrap: wrap;
         gap: 0.75rem;
         margin-top: 0.5rem;
       }
@@ -2118,12 +2142,20 @@
         font-size: 0.65rem;
         padding: 0.15rem 0.5rem;
         border-radius: 20px;
-        background: rgba(187, 134, 252, 0.15);
+        background: color-mix(in oklab, var(--accent) 15%, transparent);
         color: var(--accent);
         font-family: var(--font-ui);
       }
 
       /* ===== AWWWARDS ENHANCEMENTS ===== */
+      .cursor-dot,
+      .cursor-ring {
+        opacity: 0;
+      }
+      body.cursor-ready .cursor-dot,
+      body.cursor-ready .cursor-ring {
+        opacity: 1;
+      }
       .cursor-dot {
         position: fixed;
         width: 6px;
@@ -2139,7 +2171,7 @@
         position: fixed;
         width: 36px;
         height: 36px;
-        border: 1.5px solid rgba(187, 134, 252, 0.55);
+        border: 1.5px solid var(--focus-ring);
         border-radius: 50%;
         pointer-events: none;
         z-index: 99998;
@@ -2152,7 +2184,7 @@
       body.cursor-hover .cursor-ring {
         width: 52px;
         height: 52px;
-        border-color: rgba(212, 168, 255, 0.75);
+        border-color: color-mix(in oklab, var(--accent) 75%, transparent);
       }
       body.cursor-click .cursor-dot {
         transform: translate(-50%, -50%) scale(0.5);
@@ -2385,15 +2417,25 @@
       .dialogue-panel {
         max-height: 130px;
       }
+      /* Sticky action bar over a scrolling column. The gradient must stay
+         opaque behind the buttons themselves (the old 70% stop let the
+         section beneath show straight through the labels) and must bleed
+         over the panel's 28px bottom padding, which was an uncovered gap
+         that scrolling text slid into. */
       .mind-panel .controls {
         margin-top: 1rem;
+        margin-bottom: -28px;
         position: sticky;
-        bottom: 0;
-        padding-top: 0.75rem;
+        /* Sticky `bottom: 0` pins to the scrollport's padding edge, which left
+           the panel's 28px bottom padding uncovered for text to scroll into. */
+        bottom: -28px;
+        z-index: 2;
+        padding-top: 1.75rem;
+        padding-bottom: 28px;
         background: linear-gradient(
           to top,
-          var(--bg-panel) 70%,
-          transparent
+          var(--bg-panel) 0 82%,
+          transparent 100%
         );
       }
 
@@ -2402,6 +2444,25 @@
         overflow-y: auto;
         padding: clamp(1.25rem, 2.5vw, 2.25rem);
         background: transparent;
+      }
+
+      /* Lives inside .gallery-panel: as a direct child of the flex-row body it
+         became a third column, stealing ~450px from the gallery on every
+         desktop viewport and squeezing the request controls until their
+         labels truncated. */
+      .ai-disclosure {
+        margin-top: 2.5rem;
+        padding: 1rem 0 0.25rem;
+        border-top: 1px solid var(--border);
+        color: var(--text-muted);
+        font-size: 0.7rem;
+        letter-spacing: 0.04em;
+        text-align: center;
+      }
+
+      .ai-disclosure a {
+        color: inherit;
+        margin-left: 0.75rem;
       }
 
       .theme-toggle {
@@ -2708,27 +2769,6 @@
         <div class="series-empty">Listening for an arc worth continuing…</div>
       </div>
 
-      <!-- Controls -->
-      <nav class="controls" role="group" aria-label="Primary actions">
-        <button
-          id="create-btn"
-          onclick="triggerCreate()"
-          aria-describedby="create-desc"
-        >
-          LET HER CREATE
-        </button>
-        <span id="create-desc" hidden
-          >Trigger Lumira to create a new artwork</span
-        >
-        <button
-          class="btn-outline"
-          onclick="showStatement()"
-          title="Artist Statement"
-          aria-label="View artist statement"
-        >
-          ?
-        </button>
-      </nav>
       <details class="atelier-tools">
         <summary>Studio tools</summary>
         <nav
@@ -2780,6 +2820,27 @@
           </button>
         </nav>
       </details>
+      <!-- Controls -->
+      <nav class="controls" role="group" aria-label="Primary actions">
+        <button
+          id="create-btn"
+          onclick="triggerCreate()"
+          aria-describedby="create-desc"
+        >
+          LET HER CREATE
+        </button>
+        <span id="create-desc" hidden
+          >Trigger Lumira to create a new artwork</span
+        >
+        <button
+          class="btn-outline"
+          onclick="showStatement()"
+          title="Artist Statement"
+          aria-label="View artist statement"
+        >
+          ?
+        </button>
+      </nav>
     </aside>
 
     <!-- RIGHT PANEL: GALLERY -->
@@ -2864,12 +2925,12 @@
             checked
             aria-label="Allow Lumira to interpret and enhance your prompt"
           />
-          <div>
+          <label for="request-interpretation">
             <div class="toggle-label">Allow Interpretation</div>
             <div class="toggle-desc">
               Lumira can creatively enhance and reinterpret your prompt
             </div>
-          </div>
+          </label>
         </div>
 
         <div class="request-toggle">
@@ -2878,12 +2939,12 @@
             id="request-lora"
             aria-label="Apply Lumira's signature style"
           />
-          <div>
+          <label for="request-lora">
             <div class="toggle-label">Lumira Style</div>
             <div class="toggle-desc">
               Apply Lumira's trained artistic style to the creation
             </div>
-          </div>
+          </label>
         </div>
 
         <div class="request-toggle">
@@ -2892,12 +2953,12 @@
             id="request-soundtrack"
             aria-label="Pair artwork with Magica instrumental soundtrack"
           />
-          <div>
+          <label for="request-soundtrack">
             <div class="toggle-label">Soundtrack</div>
             <div class="toggle-desc">
               Pair the piece with a Magica instrumental (uses Magica credits)
             </div>
-          </div>
+          </label>
         </div>
 
         <div id="studio-media-player" class="studio-media-player" style="display:none;margin:0.75rem 0 0.25rem;">
@@ -3031,6 +3092,11 @@
       >
         <!-- Art cards injected here -->
       </div>
+
+      <footer class="ai-disclosure" role="contentinfo" aria-label="AI transparency notice">
+        Lumira is an autonomous AI artist — images here are AI-generated.
+        <a href="/privacy">Privacy</a>
+      </footer>
     </main>
 
     <!-- Loading Overlay -->
@@ -4141,12 +4207,19 @@
           critiqueEl.style.display = "none";
         }
 
-        document.getElementById("lightbox").classList.add("active");
+        var lightboxEl = document.getElementById("lightbox");
+        lightboxEl.classList.add("active");
+        // The markup ships aria-hidden="true" for the closed state and nothing
+        // ever cleared it, so an open dialog stayed invisible to screen
+        // readers even though it covered the page for everyone else.
+        lightboxEl.removeAttribute("aria-hidden");
       }
 
       function closeLightbox(e) {
         if (e && e.target !== e.currentTarget) return;
-        document.getElementById("lightbox").classList.remove("active");
+        var lightboxEl = document.getElementById("lightbox");
+        lightboxEl.classList.remove("active");
+        lightboxEl.setAttribute("aria-hidden", "true");
       }
 
       function triggerCreate() {
@@ -6162,6 +6235,13 @@
             rx = 0,
             ry = 0;
           document.addEventListener("mousemove", function (e) {
+            if (!document.body.classList.contains("cursor-ready")) {
+              // First real position: place the ring there too, so it does not
+              // fly in from the top-left corner it was parked at.
+              rx = e.clientX;
+              ry = e.clientY;
+              document.body.classList.add("cursor-ready");
+            }
             cx = e.clientX;
             cy = e.clientY;
             dot.style.left = cx + "px";
@@ -6194,14 +6274,6 @@
         })();
       });
     </script>
-    <footer
-      role="contentinfo"
-      aria-label="AI transparency notice"
-      style="text-align:center;padding:0.75rem 1rem;color:var(--text-muted);font-size:0.7rem;border-top:1px solid var(--border);letter-spacing:0.04em"
-    >
-      Lumira is an autonomous AI artist — images here are AI-generated.
-      <a href="/privacy" style="color: inherit; margin-left: 0.75rem">Privacy</a>
-    </footer>
       <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", function () {
