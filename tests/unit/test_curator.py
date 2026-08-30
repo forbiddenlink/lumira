@@ -162,3 +162,53 @@ def test_technical_score_resolution():
 
     # Higher resolution should score higher
     assert score_large > score_small
+
+
+class TestRemoteCodeIsRefused:
+    """Model loads must never leave trust_remote_code to transformers' default.
+
+    The aesthetics-predictor repo ships custom code in its config. With the
+    argument omitted, transformers 5.x stops and asks on stdin -- unanswerable
+    in a worker or container -- and the two RCE advisories fixed by the 5.x
+    upgrade (CVE-2026-4372, CVE-2026-5241) were both about untrusted config
+    data steering exactly this decision.
+    """
+
+    def test_aesthetic_model_and_processor_refuse_remote_code(self):
+        curator = ImageCurator(device="cpu")
+
+        with (
+            patch("aesthetics_predictor.AestheticsPredictorV2Linear") as model_cls,
+            patch("transformers.CLIPProcessor") as processor_cls,
+        ):
+            model_cls.from_pretrained.return_value.to.return_value = object()
+            curator._load_aesthetic_model()
+
+            assert (
+                model_cls.from_pretrained.call_args.kwargs["trust_remote_code"] is False
+            )
+            assert (
+                processor_cls.from_pretrained.call_args.kwargs["trust_remote_code"]
+                is False
+            )
+
+    def test_agiqa_model_and_processor_refuse_remote_code(self):
+        from ai_artist.curation.agiqa_scorer import AGIQAScorer
+
+        scorer = AGIQAScorer(device="cpu")
+
+        # agiqa_scorer binds these at module import, so patch them there.
+        with (
+            patch("ai_artist.curation.agiqa_scorer.CLIPModel") as model_cls,
+            patch("ai_artist.curation.agiqa_scorer.CLIPProcessor") as processor_cls,
+        ):
+            model_cls.from_pretrained.return_value.to.return_value = object()
+            scorer._load_model()
+
+            assert (
+                model_cls.from_pretrained.call_args.kwargs["trust_remote_code"] is False
+            )
+            assert (
+                processor_cls.from_pretrained.call_args.kwargs["trust_remote_code"]
+                is False
+            )

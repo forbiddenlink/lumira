@@ -142,11 +142,18 @@ class ImageCurator:
                 model_id=self._aesthetic_model_id,
             )
 
+            # The aesthetics-predictor repo ships custom code in its config.
+            # With this argument omitted, transformers 5.x stops and asks on
+            # stdin ("Do you wish to run the custom code? [y/N]"), which a
+            # worker or container has no way to answer. Nothing here needs
+            # that code -- AestheticsPredictorV2Linear is imported locally and
+            # loads identically with it refused -- and saying so explicitly
+            # means a compromised model repo cannot opt itself in.
             self._aesthetic_model = AestheticsPredictorV2Linear.from_pretrained(
-                self._aesthetic_model_id
+                self._aesthetic_model_id, trust_remote_code=False
             )
             self._aesthetic_processor = CLIPProcessor.from_pretrained(
-                self._aesthetic_model_id
+                self._aesthetic_model_id, trust_remote_code=False
             )
 
             # Move model to device and set to evaluation mode

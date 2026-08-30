@@ -77,8 +77,14 @@ class AGIQAScorer:
             return
 
         try:
-            self._processor = CLIPProcessor.from_pretrained(self.model_name)
-            self._model = CLIPModel.from_pretrained(self.model_name)
+            # No model this app loads needs remote code; refusing it
+            # explicitly keeps a swapped-out model repo from opting itself in.
+            self._processor = CLIPProcessor.from_pretrained(
+                self.model_name, trust_remote_code=False
+            )
+            self._model = CLIPModel.from_pretrained(
+                self.model_name, trust_remote_code=False
+            )
             self._model.to(self._device)
             self._model.eval()
             logger.info("agiqa_model_loaded", model=self.model_name)
