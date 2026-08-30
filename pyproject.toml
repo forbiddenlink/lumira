@@ -28,6 +28,7 @@ dependencies = [
     "python-dotenv>=1.2.2",
     "apscheduler>=3.10.0",
     "structlog>=24.4.0,<27.0.0",
+    "psutil>=5.9.0",
     "tqdm>=4.66.0",
     "fastapi>=0.115.0,<0.142.0",
     "python-multipart>=0.0.31,<0.1.0",
@@ -62,7 +63,7 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.setuptools.package-data]
-ai_artist = ["web/templates/*.html", "web/static/**/*"]
+ai_artist = ["web/templates/**/*.html", "web/static/**/*"]
 
 [project.optional-dependencies]
 dev = [

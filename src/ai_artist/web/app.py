@@ -35,6 +35,7 @@ from ..gallery.manager import GalleryManager
 from ..utils.config import WebConfig
 from ..utils.logging import get_logger
 from .admin import router as admin_router
+from .admin import shell_router as admin_shell_router
 from .dependencies import (
     GalleryManagerDep,
     GalleryPathDep,
@@ -511,6 +512,7 @@ app.include_router(prompt_router)
 app.include_router(feedback_router)
 app.include_router(gallery_router)
 app.include_router(metrics_router)
+app.include_router(admin_shell_router)
 app.include_router(admin_router)
 
 # Templates directory
@@ -532,6 +534,19 @@ if static_dir is None:
     static_dir.mkdir(parents=True, exist_ok=True)
     logger.warning("static_dir_not_found_created_empty", path=str(static_dir.resolve()))
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+_favicon_path = static_dir / "favicon.ico"
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon() -> Response:
+    """Serve the favicon from the well-known root path.
+
+    Browsers request /favicon.ico on every navigation regardless of the
+    <link rel="icon"> tags, so without this every page load logged a 404.
+    """
+    if not _favicon_path.is_file():
+        return Response(status_code=404)
+    return FileResponse(_favicon_path, media_type="image/x-icon")
 
 
 @app.get("/", response_class=HTMLResponse, tags=["pages"])

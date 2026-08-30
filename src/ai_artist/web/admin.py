@@ -1,9 +1,11 @@
 """Admin dashboard for AI Artist."""
 
+import functools
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import anyio.to_thread
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -20,13 +22,20 @@ router = APIRouter(
     prefix="/admin", tags=["admin"], dependencies=[Depends(require_api_key)]
 )
 
-# Setup templates - templates are in project root, not src directory
-# Path: admin.py -> web -> ai_artist -> src -> lumira -> templates
-templates_dir = Path(__file__).parent.parent.parent.parent / "templates"
+# The dashboard shell renders no data of its own, and a browser cannot attach
+# an X-API-Key header to a top-level navigation -- so gating the HTML made the
+# console unreachable in any deployment that actually sets keys. The shell is
+# served unauthenticated and asks for the key client-side; every /admin/*
+# endpoint that returns data stays behind `router`'s dependency.
+shell_router = APIRouter(prefix="/admin", tags=["admin"])
+
+# Templates ship inside the package (see [tool.setuptools.package-data]) so a
+# wheel install resolves them the same way an editable checkout does.
+templates_dir = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=str(templates_dir))
 
 
-@router.get("/", response_class=HTMLResponse)
+@shell_router.get("/", response_class=HTMLResponse)
 async def admin_dashboard(request: Request) -> HTMLResponse:
     """Render admin dashboard.
 
@@ -181,7 +190,9 @@ async def get_system_info() -> dict[str, Any]:
     """Get system information.
 
     Returns:
-        Dict with system info
+        Dict with system info, or ``{"available": False, "detail": ...}`` when
+        psutil is absent (the gallery-only deployment installs no ML stack, and
+        psutil arrives transitively through it).
     """
     try:
         import psutil
@@ -208,8 +219,17 @@ async def get_system_info() -> dict[str, Any]:
         except ImportError:
             pass
 
+        # psutil.cpu_percent needs a sampling window to mean anything, and the
+        # previous interval=1 call ran it on the event loop -- pinning every
+        # other request in the process for a full second on each 30s poll.
+        # A short window off-thread keeps the number honest and the loop free.
+        cpu_percent = await anyio.to_thread.run_sync(
+            functools.partial(psutil.cpu_percent, interval=0.3)
+        )
+
         return {
-            "cpu_percent": psutil.cpu_percent(interval=1),
+            "available": True,
+            "cpu_percent": cpu_percent,
             "memory": {
                 "total": psutil.virtual_memory().total,
                 "available": psutil.virtual_memory().available,
@@ -219,9 +239,19 @@ async def get_system_info() -> dict[str, Any]:
             "timestamp": datetime.now().isoformat(),
         }
 
+    except ImportError:
+        logger.info("system_info_unavailable: psutil not installed")
+        return {
+            "available": False,
+            "detail": "Host metrics need psutil, which is not installed.",
+            "timestamp": datetime.now().isoformat(),
+        }
+
     except Exception as e:
         logger.error("system_info_error", error=str(e))
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(
+            status_code=500, detail="Could not read system information."
+        ) from e
 
 
 @router.delete("/artworks/{artwork_id}")
