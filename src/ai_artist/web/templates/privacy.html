@@ -105,6 +105,11 @@
       }
 
       header a {
+        /* inline-flex + min-height meets the WCAG 2.2 target-size minimum;
+           these were 17px tall. */
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
         color: var(--muted);
         text-decoration: none;
         margin-left: 1rem;
@@ -174,6 +179,9 @@
       }
 
       footer a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
         color: var(--muted);
         text-decoration: none;
         transition: color 0.15s ease;

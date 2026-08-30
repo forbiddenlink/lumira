@@ -198,4 +198,5 @@ dev = [
     "types-aiofiles>=25.1.0.20251011",
     "fakeredis>=2.21.0",  # For queue tests
     "pytest-playwright>=0.6.2",  # For e2e tests
+    "axe-playwright-python>=0.1.8",  # WCAG scans in tests/e2e/test_a11y.py
 ]

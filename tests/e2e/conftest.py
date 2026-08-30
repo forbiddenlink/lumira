@@ -308,6 +308,41 @@ def gallery_page(page_with_server: Page, base_url: str) -> Page:
     return page
 
 
+# iPhone 13 / 14 metrics. Hard-coded rather than pulled from
+# playwright.devices so the fixture does not depend on a device registry that
+# renames entries between releases.
+MOBILE_VIEWPORT = {"width": 390, "height": 844}
+
+
+@pytest.fixture(scope="function")
+def mobile_page(browser: Browser, base_url: str) -> Generator[Page, None, None]:
+    """A touch-sized page against the running test server.
+
+    Everything else in this suite runs at 1280x720, so layout that only breaks
+    on a phone -- overflow, collapsed controls, targets too small to tap -- had
+    no coverage at all.
+    """
+    context = browser.new_context(
+        viewport=MOBILE_VIEWPORT,
+        device_scale_factor=3,
+        is_mobile=True,
+        has_touch=True,
+        service_workers="block",
+    )
+    for pattern in (
+        r"https?://fonts\.(googleapis|gstatic)\.com/.*",
+        r"https?://unpkg\.com/.*",
+    ):
+        context.route(re.compile(pattern), lambda route: route.abort())
+    page = context.new_page()
+    page.set_default_timeout(15000)
+    try:
+        yield page
+    finally:
+        page.close()
+        context.close()
+
+
 @pytest.fixture(scope="function")
 def standalone_page(browser: Browser) -> Generator[Page, None, None]:
     """Create a standalone page for testing without server.

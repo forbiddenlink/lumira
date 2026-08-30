@@ -1,24 +1,37 @@
 # Lumira — Design System (AI-readable index)
 
-> Machine-readable token index for AI coding agents editing Lumira's templates.
+> Snapshot as of 2026-08-30. Machine-readable token index for AI coding agents editing Lumira's templates.
 > Brand: "intimate, cinematic, alive." Gallery-first atelier — artwork owns the viewport; mood tints atmosphere (not a purple glow).
 > Stack is Python/FastAPI + Jinja2 templates + plain CSS custom properties (NOT Next.js/Tailwind). Tokens live in <style> blocks inside templates, not a token pipeline.
 > Philosophy = .impeccable.md. When editing UI: reuse the named CSS vars below; never introduce ad-hoc hex.
 
-## ⚠️ Known drift (fix before trusting either as SoT)
-1. Two templates define OVERLAPPING but DIFFERENTLY-NAMED token sets for the same palette:
-   - src/ai_artist/web/templates/gallery_modern.html (:root) — uses --bg-primary/-secondary/-card/-elevated, --text-primary/-secondary, --accent*
-   - src/ai_artist/web/templates/lumira.html (:root) — uses --bg-dark/-panel/-elevated, --text-main/-muted/-faint, + --radius-* and --ease-out
-   TREAT lumira.html's names as the intended direction; consolidate gallery_modern.html onto them.
-2. templates/admin/dashboard.html still uses a purple gradient (#667eea → #764ba2) SaaS look — the EXACT aesthetic .impeccable.md bans. Un-migrated; do not copy it.
+## Enforced by tests — read before changing colors or layout
+`tests/e2e/test_a11y.py` runs axe-core (WCAG 2.0/2.1 A + AA) over `/`, `/lumira`, `/privacy`
+and `/admin/` at 1280x720 and at 390x844, and additionally asserts: no horizontal scroll at
+390px, no interactive target under 24x24 (WCAG 2.2), and no focusable control inside a closed
+dialog. A new accent, token or component that fails contrast will fail CI, not review.
+Contrast floor: any text token must clear 4.5:1 on --bg-dark, --bg-panel AND --bg-elevated.
+
+## Resolved drift (was flagged here through 2026-08-29)
+1. gallery_modern.html now uses lumira.html's token names. The old --bg-primary/-secondary/-card,
+   --text-primary/-secondary and --glow-mint/-pink/-purple names are gone.
+2. The admin dashboard was rebuilt on these tokens (see below). The #667eea→#764ba2 purple
+   gradient is gone; nothing in the repo uses Material purple any more.
 
 ## Color tokens (hex + color-mix(in oklab,...); dark-only, no light mode)
-Backgrounds (warm charcoal ink, never pure black): #12100e (base), #1a1714 (panel/secondary), #221e1a (card/elevated), #2a251f (elevated)
-Text: #ebe4d8 (primary/main), #9a9084 (secondary/muted), #6e665c (faint)
-Accent (gallery brass, shifts with mood): --accent #c4a574, --accent-hover #d4bd94, --accent-light #d9c39f, --accent-secondary #b98a72, --accent-tertiary #d4b483, --accent-ink #1a1510
+Backgrounds (warm charcoal ink, never pure black): #12100e (--bg-dark), #1a1714 (--bg-panel), #221e1a (--bg-elevated), #2a251f (--bg-raised, gallery_modern only)
+Text: #ebe4d8 (--text-main), #9a9084 (--text-muted), #8f8578 (--text-faint)
+  ⚠ --text-faint was #6e665c until 2026-08-30; that value is 3.36:1 and fails AA. Do not restore it.
+Accent (gallery brass, shifts with mood): --accent #c4a574, --accent-hover, --accent-soft, --accent-glow, --accent-light #d9c39f, --accent-secondary #b98a72, --accent-tertiary #d4b483, --accent-ink #1a1510
 Status: --success #7dba8a, --danger #d4646a, --warning #d4a84b
-Effects: --shadow rgba(0,0,0,.6), --glow / --glow-mint / --glow-gold / --glow-pink / --glow-purple, --mood-wash (color-mix)
+Effects: --shadow rgba(0,0,0,.6), --glow, --glow-soft, --glow-gold, --glow-rose, --mood-wash, --focus-ring, --border, --border-strong
 High-contrast override (forced-colors): --bg-dark #000000, --accent #ffff00
+
+## Mood accents are backgrounds, not text colors
+`applyMoodAtmosphere()` in lumira.html rewrites --accent (and -soft/-glow/-hover/--focus-ring/
+--mood-wash) per mood. Several mood hues are dark — rebellious #b8323a is 2.78:1 as text on its
+own 20% wash. Render mood color as a tint and mix the label toward --text-main
+(`color-mix(in oklab, var(--tag-mood) 30%, var(--text-main))`); never set text to the raw mood hex.
 
 ## Radius / motion (defined in lumira.html)
 - --radius-sm 6px, --radius-md 10px, --radius-lg 16px
@@ -29,7 +42,9 @@ High-contrast override (forced-colors): --bg-dark #000000, --accent #ffff00
 - UI: Figtree — --font-ui ("Figtree",system-ui,sans-serif)
 
 ## Components
-No component library (no shadcn/cva). Styling is hand-written CSS in per-template <style> blocks (.header, .logo, .stat, etc.).
+No component library (no shadcn/cva). Styling is hand-written CSS in per-template <style> blocks
+(.header, .logo, .stat, etc.). templates live in src/ai_artist/web/templates/ — including
+admin/dashboard.html, which moved there from the repo root so package-data ships it.
 
 ## Hard rules (.impeccable.md — 5 principles)
 - Art first. Presence over telemetry (stats collapse behind "About Lumira"). Atmosphere from emotion. Quiet instruments. Kill generic AI aesthetics.
@@ -37,6 +52,14 @@ No component library (no shadcn/cva). Styling is hand-written CSS in per-templat
 - Anti-references (banned): Material purple AI dashboards, Inter + gradient headings, RPG skill trees, glassmorphism kits, metric-card grids.
 - References to steal from: A24, Are.na/Cargo, Botto.
 
+## Known gap (not drift — a judgement call left open)
+The gallery homepage still opens on the "Meet Lumira" welcome card rather than on artwork, which
+sits against principle 1. It is dismissible and now clamped to 5 lines on mobile, but the desktop
+first viewport is still mostly prose. Shortening or repositioning it is a taste decision nobody
+has made yet.
+
 ## Deep references
 - src/ai_artist/web/templates/lumira.html + gallery_modern.html — token :root blocks (canonical = lumira.html names)
+- src/ai_artist/web/templates/admin/dashboard.html — the same tokens applied to an instrument surface
+- tests/e2e/test_a11y.py — the gate that keeps the above true
 - .impeccable.md — philosophy + anti-references

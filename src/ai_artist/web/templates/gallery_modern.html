@@ -107,6 +107,7 @@
         --bg-raised: #2a251f;
         --text-main: #ebe4d8;
         --text-muted: #9a9084;
+        --text-faint: #8f8578;
         --accent: #c4a574;
         --accent-hover: #d4bd94;
         --accent-light: #d9c39f;
@@ -230,11 +231,12 @@
 
       .stat-label {
         font-size: 10px;
+        /* No opacity here: dimming the muted token to 0.75 rendered an
+           effective #7a7268, which is 3.8:1 and fails AA at 10px. */
         color: var(--text-muted);
         text-transform: uppercase;
         letter-spacing: 0.08em;
         font-weight: 500;
-        opacity: 0.75;
       }
 
       /* Controls */
@@ -1786,6 +1788,45 @@
         .controls-right {
           width: 100%;
           justify-content: space-between;
+          flex-wrap: wrap;
+        }
+
+        /* At 390px the sort control, filter button and four view buttons on
+           one unwrapped line pushed the page to 544px of horizontal scroll. */
+        .view-toggle {
+          flex-wrap: wrap;
+        }
+
+        .welcome-hero-actions {
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+
+        /* The full artist statement gets injected here, and on a phone it ran
+           past the whole viewport -- so the opening screen was a wall of text
+           with no artwork in it, and its own CTA landed under the fixed
+           "Ask Lumira" button. The statement reads in full in the studio. */
+        #hero-subhead {
+          display: -webkit-box;
+          -webkit-line-clamp: 5;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+
+        /* Five tabs do not fit and should not stack into rows: a tab strip
+           scrolls sideways within itself. Its buttons keep it keyboard
+           reachable, so this stays out of scrollable-region-focusable. */
+        .gallery-view-tabs {
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+
+        .gallery-view-tabs::-webkit-scrollbar {
+          display: none;
+        }
+
+        .view-tab {
+          flex: 0 0 auto;
         }
 
         .gallery-container {
@@ -2359,7 +2400,9 @@
         text-transform: capitalize;
         letter-spacing: 0.03em;
         margin-bottom: 10px;
-        color: #fff;
+        /* White on the brass badge is 2.69:1; the ink tone is what this
+           accent is paired with everywhere else. */
+        color: var(--accent-ink);
       }
 
       .welcome-hero-cta-secondary {

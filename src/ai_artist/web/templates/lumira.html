@@ -66,7 +66,11 @@
         --bg-elevated: #221e1a;
         --text-main: #ebe4d8;
         --text-muted: #9a9084;
-        --text-faint: #6e665c;
+        /* Was #6e665c: 3.36:1 on --bg-dark, which fails WCAG AA for the
+           small labels it is used on. #8f8578 clears 4.5:1 against dark,
+           panel and elevated while staying the quietest of the three text
+           tiers. */
+        --text-faint: #8f8578;
         --accent: #c4a574; /* gallery brass default */
         --accent-soft: color-mix(in oklab, var(--accent) 22%, transparent);
         --accent-glow: color-mix(in oklab, var(--accent) 28%, transparent);
@@ -493,6 +497,10 @@
 
       .gallery-panel {
         animation: fadeIn 0.5s ease-out;
+      }
+
+      .art-card-item {
+        display: contents;
       }
 
       .art-card {
@@ -2007,10 +2015,11 @@
       }
       .request-toggle input[type="checkbox"] {
         appearance: none;
-        width: 36px;
-        height: 20px;
+        width: 40px;
+        /* 24px is the WCAG 2.2 target-size minimum; the switch was 20px. */
+        height: 24px;
         background: rgba(255, 255, 255, 0.15);
-        border-radius: 10px;
+        border-radius: 12px;
         position: relative;
         cursor: pointer;
         transition: background 0.2s;
@@ -2487,10 +2496,17 @@
         border-radius: var(--radius-sm);
       }
 
+      .tag[style*="--tag-mood"] {
+        background: color-mix(in oklab, var(--tag-mood) 20%, transparent);
+        color: color-mix(in oklab, var(--tag-mood) 30%, var(--text-main));
+      }
+
       .tag {
         border-radius: 999px;
         background: color-mix(in oklab, var(--accent) 12%, transparent);
-        color: color-mix(in oklab, var(--accent) 75%, var(--text-main));
+        /* 75% accent against the card wash fell under AA at this size; a
+           lighter mix keeps the brass cast and clears the threshold. */
+        color: color-mix(in oklab, var(--accent) 30%, var(--text-main));
       }
       @keyframes ws-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
     </style>
@@ -2519,6 +2535,7 @@
             text-decoration: none;
             display: inline-flex;
             align-items: center;
+            min-height: 24px;
             gap: 4px;
             margin-bottom: 0.5rem;
             transition: color 0.2s;
@@ -2727,6 +2744,7 @@
       <div class="section-header">Inner Dialogue</div>
       <div
         id="dialogue-panel"
+        tabindex="0"
         class="dialogue-panel"
         role="log"
         aria-live="polite"
@@ -2753,6 +2771,7 @@
       <div
         id="statement-pulse"
         class="series-empty"
+        tabindex="0"
         role="status"
         aria-live="polite"
         aria-label="Lumira artist statement"
@@ -2764,6 +2783,7 @@
       <div class="section-header">Thematic Series</div>
       <div
         id="series-panel"
+        tabindex="0"
         class="series-panel"
         role="region"
         aria-live="polite"
@@ -4113,8 +4133,11 @@
 
         var moodTag = document.createElement("span");
         moodTag.className = "tag";
-        moodTag.style.background = moodColor + "33";
-        moodTag.style.color = moodColor;
+        // Rendering the label in the raw mood hex fails AA for the darker
+        // moods (rebellious #b8323a came out at 2.78:1). The chip keeps the
+        // mood as its tint; the text is mixed toward --text-main so it stays
+        // legible whatever the mood is.
+        moodTag.style.setProperty("--tag-mood", moodColor);
         moodTag.textContent = mood;
         tags.appendChild(moodTag);
 
@@ -4126,7 +4149,14 @@
         info.appendChild(tags);
         div.appendChild(info);
 
-        return div;
+        // The grid is role="list", which may only contain listitems; the card
+        // itself has to stay role="button" to keep its click and Enter
+        // behaviour, so it rides inside a listitem wrapper.
+        var item = document.createElement("div");
+        item.setAttribute("role", "listitem");
+        item.className = "art-card-item";
+        item.appendChild(div);
+        return item;
       }
 
       function openLightbox(id) {
@@ -4158,8 +4188,11 @@
 
         var moodTag = document.createElement("span");
         moodTag.className = "tag";
-        moodTag.style.background = moodColor + "33";
-        moodTag.style.color = moodColor;
+        // Rendering the label in the raw mood hex fails AA for the darker
+        // moods (rebellious #b8323a came out at 2.78:1). The chip keeps the
+        // mood as its tint; the text is mixed toward --text-main so it stays
+        // legible whatever the mood is.
+        moodTag.style.setProperty("--tag-mood", moodColor);
         moodTag.textContent = mood;
         tagsEl.appendChild(moodTag);
 
