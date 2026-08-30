@@ -1,6 +1,7 @@
 """SQLAlchemy database models."""
 
 from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy import (
     JSON,
@@ -196,7 +197,7 @@ class GalleryCollection(Base):  # type: ignore[misc, valid-type]
 
 
 @event.listens_for(GalleryCollection, "before_update")
-def _update_collection_timestamp(mapper, connection, target):  # type: ignore[misc]
+def _update_collection_timestamp(mapper: Any, connection: Any, target: Any) -> None:
     """Keep updated_at current on every UPDATE — SQLite-safe replacement for onupdate."""
     target.updated_at = datetime.now(UTC)
 

@@ -4,6 +4,7 @@ import asyncio
 import random
 import sys
 from pathlib import Path
+from typing import Any, Literal, cast
 
 from .api.unsplash import UnsplashClient
 from .core.face_restore import FaceRestorer
@@ -40,33 +41,44 @@ from .utils.prompt_engine import PromptEngine
 
 logger = get_logger(__name__)
 
+# Mirrors AutonomousInspiration.generate_from_mode's accepted values.
+InspirationMode = Literal["surprise", "exploration", "fusion", "mashup"]
+
 
 class AIArtist:
     """Lumira - An autonomous AI artist with personality, moods, and memory."""
 
-    def __init__(self, config: Config, name: str = "Lumira"):
+    def __init__(self, config: Config, name: str = "Lumira") -> None:
         self.config = config
         self.name = name
-        self.generator = None
-        self.upscaler = None
-        self.inpainter = None
-        self.face_restorer = None
-        self.gallery = None
-        self.unsplash = None
-        self.scheduler = None
-        self.curator = None
-        self.model_pool = None  # Model pool for pre-warmed models
-        self.prompt_engine = None
-        self.trend_manager = None
-        self.model_manager = None
+        # Assigned in _initialize(). Annotated because an unannotated `= None`
+        # makes the attribute type None, which hides every later assignment
+        # and every attribute access on it from the type checker -- that is
+        # how the two AttributeErrors in _initialize() survived this long.
+        self.generator: ImageGenerator | None = None
+        self.upscaler: ImageUpscaler | None = None
+        self.inpainter: ImageInpainter | None = None
+        self.face_restorer: FaceRestorer | None = None
+        self.gallery: GalleryManager | None = None
+        self.unsplash: UnsplashClient | None = None
+        self.scheduler: CreationScheduler | None = None
+        self.curator: ImageCurator | None = None
+        self.model_pool: ModelPool | None = None  # Model pool for pre-warmed models
+        self.prompt_engine: PromptEngine | None = None
+        self.trend_manager: TrendManager | None = None
+        self.model_manager: ModelManager | None = None
 
         # Lumira 2.0 enhancements
-        self.graph_memory = None  # FalkorDB institutional memory
-        self.inner_dialogue = None  # Internal deliberation system
-        self.mood_blender = None  # Mood interpolation
-        self.style_interpolator = None  # LoRA style blending
-        self.preview_generator = None  # Fast FLUX.1 Schnell previews
-        self.two_stage_generator = None  # Preview + full render workflow
+        self.graph_memory: Any = None  # FalkorDB institutional memory
+        self.inner_dialogue: InnerDialogue | None = None  # Internal deliberation system
+        self.mood_blender: MoodBlender | None = None  # Mood interpolation
+        self.style_interpolator: StyleInterpolator | None = None  # LoRA style blending
+        self.preview_generator: PreviewGenerator | None = (
+            None  # Fast FLUX.1 Schnell previews
+        )
+        self.two_stage_generator: TwoStageGenerator | None = (
+            None  # Preview + full render workflow
+        )
 
         # Lumira's personality - the core of who she is
         self.mood_system = MoodSystem()
@@ -97,12 +109,12 @@ class AIArtist:
             on_thought=self._on_thought,
         )
         # WebSocket manager for real-time updates (lazy loaded)
-        self._ws_manager = None
+        self._ws_manager: Any = None
 
         # Initialize all components
         self._initialize()
 
-    def _initialize(self):
+    def _initialize(self) -> None:
         """Initialize components."""
         # Setup logging with rotation
         configure_logging(
@@ -124,12 +136,18 @@ class AIArtist:
         self.prompt_engine = PromptEngine()
 
         # Initialize model pool if enabled (for 10x faster startup)
-        if self.config.performance.enable_model_pool:
+        # These live on model_manager. There has never been a Config.performance
+        # section, and because Config sets extra="allow" pydantic accepted the
+        # attribute name without complaint -- so this raised AttributeError at
+        # runtime instead, on the first line of AIArtist._initialize().
+        if self.config.model_manager.enable_model_pool:
             logger.info("initializing_model_pool", enabled=True)
             self.model_pool = ModelPool(config=self.config)
             # Start background preloading of models
-            if self.config.performance.preload_models:
-                preload_list = self.config.performance.preload_models.split(",")
+            if self.config.model_manager.preload_models:
+                # preload_models is already a list[str]; the old .split(",")
+                # would have raised AttributeError too.
+                preload_list = list(self.config.model_manager.preload_models)
                 logger.info("preloading_models", models=preload_list)
                 # Note: Actual preloading happens asynchronously
         else:
@@ -202,10 +220,17 @@ class AIArtist:
         # Initialize autonomous inspiration for original prompts
         self.autonomous_inspiration = AutonomousInspiration()
 
-        # Initialize Unsplash (kept optional for reference images)
-        self.unsplash = UnsplashClient(
-            access_key=self.config.api_keys.unsplash_access_key.get_secret_value(),
-        )
+        # Initialize Unsplash (kept optional for reference images). The key
+        # defaults to None, and calling .get_secret_value() on it crashed
+        # _initialize() for anyone without an Unsplash key configured -- which
+        # is the default. Callers already guard on `if self.unsplash`.
+        unsplash_key = self.config.api_keys.unsplash_access_key
+        if unsplash_key is not None:
+            self.unsplash = UnsplashClient(
+                access_key=unsplash_key.get_secret_value(),
+            )
+        else:
+            logger.info("unsplash_disabled", reason="no access key configured")
 
         # Initialize curator
         self.curator = ImageCurator(device=self.config.model.device)
@@ -229,7 +254,7 @@ class AIArtist:
 
         logger.info("ai_artist_initialized")
 
-    def _initialize_enhancements(self):
+    def _initialize_enhancements(self) -> None:
         """Initialize Lumira 2.0 enhancement components."""
         # Initialize MoodBlender for mood interpolation
         self.mood_blender = MoodBlender()
@@ -238,7 +263,7 @@ class AIArtist:
         # Initialize StyleInterpolator for LoRA blending
         # Registry will be populated when LoRAs are loaded
         self.style_interpolator = StyleInterpolator(
-            pipeline=self.generator._pipe if self.generator else None,
+            pipeline=self.generator.pipeline if self.generator else None,
             lora_registry={},
         )
         logger.info("style_interpolator_initialized")
@@ -293,7 +318,7 @@ class AIArtist:
         )
         logger.info("two_stage_generator_initialized")
 
-    def _get_ws_manager(self):
+    def _get_ws_manager(self) -> Any:
         """Lazily load WebSocket manager to avoid circular imports."""
         if self._ws_manager is None:
             try:
@@ -304,7 +329,7 @@ class AIArtist:
                 logger.debug("websocket_manager_not_available")
         return self._ws_manager
 
-    def _on_thought(self, thought):
+    def _on_thought(self, thought: Any) -> None:
         """Handle a new thought from the thinking process."""
         # Log the thought
         logger.info(
@@ -336,7 +361,7 @@ class AIArtist:
             except Exception as e:
                 logger.debug("websocket_broadcast_failed", error=str(e))
 
-    async def create_artwork(self, theme: str | None = None):
+    async def create_artwork(self, theme: str | None = None) -> Path | None:
         """Create a single piece of artwork with Lumira's personality."""
         # Set unique request ID for this operation
         request_id = set_request_id()
@@ -599,7 +624,9 @@ class AIArtist:
                     theme=query
                 )
             else:
-                base_prompt = self.autonomous_inspiration.generate_from_mode(mode)
+                base_prompt = self.autonomous_inspiration.generate_from_mode(
+                    cast(InspirationMode, mode)
+                )
 
             logger.info(
                 "lumira_original_vision",
@@ -707,7 +734,7 @@ class AIArtist:
                     # Store tasks to prevent garbage collection
                     _progress_tasks: list = []
 
-                    def on_progress(step: int, total_steps: int, message: str):
+                    def on_progress(step: int, total_steps: int, message: str) -> None:
                         ws = self._get_ws_manager()
                         if ws:
                             try:
@@ -844,7 +871,7 @@ class AIArtist:
             )
 
             # Let Lumira reflect on her creation
-            reflection = self.mood_system.reflect_on_work(best_score, theme)
+            reflection = self.mood_system.reflect_on_work(best_score, theme or "")
 
             # Record in memory (both simple and enhanced)
             extracted_style = self._extract_style_from_prompt(prompt)
@@ -989,7 +1016,7 @@ class AIArtist:
             # Callback for WebSocket broadcasts
             ws_manager = self._get_ws_manager()
 
-            async def on_preview(result, approved, score):
+            async def on_preview(result: Any, approved: bool, score: float) -> None:
                 if ws_manager:
                     await ws_manager.broadcast(
                         {
@@ -1085,7 +1112,7 @@ class AIArtist:
         # Default based on mood if no style found
         return "dreamlike"
 
-    async def update_trends(self):
+    async def update_trends(self) -> None:
         """Update trending styles."""
         if not self.trend_manager:
             return
@@ -1116,7 +1143,7 @@ class AIArtist:
         except Exception as e:
             logger.error("trend_update_failed", error=str(e))
 
-    async def run_manual(self, theme: str | None = None):
+    async def run_manual(self, theme: str | None = None) -> None:
         """Run manual creation once."""
         # Optional: Update trends on manual run if enabled
         if self.config.trends.enabled:
@@ -1124,7 +1151,7 @@ class AIArtist:
 
         await self.create_artwork(theme=theme)
 
-    async def run_automated(self):
+    async def run_automated(self) -> None:
         """Run in automated mode with scheduling."""
         logger.info("starting_automated_mode")
 
@@ -1133,12 +1160,16 @@ class AIArtist:
             await self.update_trends()
 
         # Schedule daily creation at 9 AM
-        self._background_tasks = set()
+        # create_artwork returns a Path, update_trends returns None.
+        self._background_tasks: set[asyncio.Task[Any]] = set()
 
-        def creation_job():
+        def creation_job() -> None:
             task = asyncio.create_task(self.create_artwork())
             self._background_tasks.add(task)
             task.add_done_callback(self._background_tasks.discard)
+
+        if self.scheduler is None:
+            raise RuntimeError("Scheduler was not initialised")
 
         self.scheduler.add_daily_job(
             job_func=creation_job, hour=9, minute=0, job_id="daily_creation"
@@ -1147,7 +1178,7 @@ class AIArtist:
         # Schedule trend updates if enabled
         if self.config.trends.enabled:
 
-            def trend_job():
+            def trend_job() -> None:
                 task = asyncio.create_task(self.update_trends())
                 self._background_tasks.add(task)
                 task.add_done_callback(self._background_tasks.discard)
@@ -1171,7 +1202,7 @@ class AIArtist:
         except KeyboardInterrupt:
             logger.info("interrupted_by_user")
 
-    async def shutdown(self):
+    async def shutdown(self) -> None:
         """Cleanup resources."""
         logger.info("shutting_down")
 
@@ -1190,7 +1221,9 @@ class AIArtist:
         logger.info("shutdown_complete")
 
 
-async def async_main(config_path: Path, mode: str = "manual", theme: str | None = None):
+async def async_main(
+    config_path: Path, mode: str = "manual", theme: str | None = None
+) -> None:
     """Async main function."""
     # Load config
     try:
@@ -1223,7 +1256,7 @@ async def async_main(config_path: Path, mode: str = "manual", theme: str | None 
         await app.shutdown()
 
 
-def main():
+def main() -> None:
     """CLI entry point."""
     import argparse
 

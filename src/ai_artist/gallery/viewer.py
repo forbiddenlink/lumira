@@ -7,7 +7,7 @@ from pathlib import Path
 from PIL import Image
 
 
-def list_recent_images(gallery_path: Path, limit: int = 10):
+def list_recent_images(gallery_path: Path, limit: int = 10) -> None:
     """List recent images in the gallery."""
     # Find all PNG files
     images = sorted(
@@ -43,7 +43,7 @@ def list_recent_images(gallery_path: Path, limit: int = 10):
         print()
 
 
-def open_image(image_path: Path):
+def open_image(image_path: Path) -> None:
     """Open an image in the default viewer."""
     try:
         img = Image.open(image_path)
@@ -53,7 +53,7 @@ def open_image(image_path: Path):
         print(f"❌ Error opening image: {e}")
 
 
-def main():
+def main() -> None:
     """Gallery viewer CLI."""
     parser = argparse.ArgumentParser(description="AI Artist Gallery Viewer")
     parser.add_argument(

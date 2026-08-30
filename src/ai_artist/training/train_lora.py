@@ -3,6 +3,7 @@
 import argparse
 import math
 from pathlib import Path
+from typing import Any
 
 import torch
 from accelerate import Accelerator
@@ -26,10 +27,10 @@ class DreamBoothDataset(Dataset):
     def __init__(
         self,
         instance_data_root: Path,
-        tokenizer,
+        tokenizer: Any,
         size: int = 512,
         center_crop: bool = True,
-    ):
+    ) -> None:
         self.size = size
         self.center_crop = center_crop
         self.tokenizer = tokenizer
@@ -60,17 +61,18 @@ class DreamBoothDataset(Dataset):
             ]
         )
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self._length
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> dict[str, Any]:
         example = {}
         instance_image = Image.open(
             self.instance_images_path[index % self.num_instance_images]
         )
-        if instance_image.mode != "RGB":
-            instance_image = instance_image.convert("RGB")
-        example["instance_images"] = self.image_transforms(instance_image)
+        rgb_image: Image.Image = instance_image
+        if rgb_image.mode != "RGB":
+            rgb_image = rgb_image.convert("RGB")
+        example["instance_images"] = self.image_transforms(rgb_image)
 
         # Simple prompt for style training
         example["instance_prompt_ids"] = self.tokenizer(
@@ -97,7 +99,7 @@ def train_lora(
     lr_warmup_steps: int = 0,
     resolution: int = 512,
     mixed_precision: str = "no",
-):
+) -> None:
     """Train a LoRA adapter for Stable Diffusion."""
 
     # Initialize accelerator
@@ -283,7 +285,7 @@ def train_lora(
     accelerator.end_training()
 
 
-def main():
+def main() -> None:
     """CLI entry point."""
     parser = argparse.ArgumentParser(description="Train LoRA for Stable Diffusion")
     parser.add_argument(

@@ -189,12 +189,35 @@ warn_required_dynamic_aliases = true
 module = "aiofiles.*"
 ignore_missing_imports = true
 
-# Incrementally tighten strictness (issue #61): start with the two packages
-# that are least likely to be full of third-party-typed churn. Expand this
-# list package-by-package rather than flipping the global
-# disallow_untyped_defs, which would surface hundreds of errors at once.
+# Incrementally tighten strictness (issue #61). Everything listed here has no
+# unannotated definitions left; the three packages still missing are
+# ai_artist.scheduling (34), ai_artist.utils (15) and ai_artist.web (124),
+# which come next. Kept as an explicit list rather than a global
+# disallow_untyped_defs so the remainder cannot quietly regress the rest.
 [[tool.mypy.overrides]]
-module = ["ai_artist.core.*", "ai_artist.personality.*"]
+module = [
+    "ai_artist.main",
+    "ai_artist.api.*",
+    "ai_artist.caching.*",
+    "ai_artist.core.*",
+    "ai_artist.curation.*",
+    "ai_artist.db.*",
+    "ai_artist.export.*",
+    "ai_artist.gallery.*",
+    "ai_artist.inspiration.*",
+    "ai_artist.intelligence.*",
+    "ai_artist.knowledge.*",
+    "ai_artist.learning.*",
+    "ai_artist.memory.*",
+    "ai_artist.models.*",
+    "ai_artist.monitoring.*",
+    "ai_artist.personality.*",
+    "ai_artist.prompts.*",
+    "ai_artist.queue.*",
+    "ai_artist.social.*",
+    "ai_artist.training.*",
+    "ai_artist.trends.*",
+]
 disallow_untyped_defs = true
 
 [dependency-groups]

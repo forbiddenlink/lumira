@@ -4,6 +4,8 @@ Provides automatic error tracking, performance monitoring, and alerting.
 Only activates if SENTRY_DSN is configured.
 """
 
+from typing import Any
+
 from ..utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -117,7 +119,7 @@ def _filter_sensitive_data(event: dict, hint: dict) -> dict | None:
     return event
 
 
-def capture_exception(error: Exception, **extra_context) -> None:
+def capture_exception(error: Exception, **extra_context: Any) -> None:
     """Capture an exception to Sentry with optional context.
 
     Args:
@@ -140,7 +142,7 @@ def capture_exception(error: Exception, **extra_context) -> None:
         logger.error("sentry_capture_failed", error=str(e))
 
 
-def capture_message(message: str, level: str = "info", **extra_context) -> None:
+def capture_message(message: str, level: str = "info", **extra_context: Any) -> None:
     """Capture a message to Sentry with optional context.
 
     Args:
@@ -164,7 +166,7 @@ def capture_message(message: str, level: str = "info", **extra_context) -> None:
         logger.error("sentry_capture_failed", error=str(e))
 
 
-def set_user(user_id: str | None = None, **user_data) -> None:
+def set_user(user_id: str | None = None, **user_data: Any) -> None:
     """Set user context for Sentry events.
 
     Args:

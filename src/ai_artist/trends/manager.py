@@ -21,7 +21,7 @@ class TrendProvider(Protocol):
 class CivitAITrendProvider:
     """Fetches trending tags from CivitAI (AI Art specific)."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.base_url = "https://civitai.com/api/v1"
         self.client = httpx.AsyncClient(timeout=10.0)
 
@@ -43,14 +43,14 @@ class CivitAITrendProvider:
             logger.error("civitai_trend_fetch_failed", error=str(e))
             return []
 
-    async def close(self):
+    async def close(self) -> None:
         await self.client.aclose()
 
 
 class ArtStationTrendProvider:
     """Fetches trending subjects from ArtStation (General Art)."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.url = "https://www.artstation.com/api/v2/community/channels/trending.json"
         self.client = httpx.AsyncClient(
             timeout=10.0,
@@ -74,14 +74,14 @@ class ArtStationTrendProvider:
             logger.warning("artstation_trend_fetch_failed", error=str(e))
             return []
 
-    async def close(self):
+    async def close(self) -> None:
         await self.client.aclose()
 
 
 class TrendManager:
     """Manages trend sourcing and updating."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.providers: list[TrendProvider] = [
             CivitAITrendProvider(),
             ArtStationTrendProvider(),
@@ -111,7 +111,7 @@ class TrendManager:
 
     async def update_wildcard_file(
         self, filepath: str = "config/wildcards/trending.txt"
-    ):
+    ) -> None:
         """Update a wildcard file with current trends."""
         tags = await self.get_combined_trends()
         if not tags:
@@ -132,7 +132,7 @@ class TrendManager:
         except Exception as e:
             logger.error("trend_file_update_failed", error=str(e))
 
-    async def close(self):
+    async def close(self) -> None:
         for p in self.providers:
             if hasattr(p, "close"):
                 await p.close()

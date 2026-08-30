@@ -27,7 +27,9 @@ class CivitAIModel(BaseModel):
 class ModelManager:
     """Manages downloading and organizing models."""
 
-    def __init__(self, base_path: Path | str = "models", api_key: str | None = None):
+    def __init__(
+        self, base_path: Path | str = "models", api_key: str | None = None
+    ) -> None:
         # Reject non-path base_path (e.g. an unconfigured Mock attribute) so a
         # bad value can't silently mkdir junk directories at the repo root.
         if not isinstance(base_path, str | Path):
@@ -118,7 +120,7 @@ class ModelManager:
                 destination.unlink()  # Delete partial
             return False
 
-    async def download_top_lora(self, tag: str):
+    async def download_top_lora(self, tag: str) -> None:
         """Find and download the top LoRA for a specific tag."""
         logger.info("finding_lora_for_tag", tag=tag)
         results = await self.search_models(query=tag, limit=1, types="LORA")
@@ -150,5 +152,5 @@ class ModelManager:
             dest_path = self.lora_path / filename
             await self.download_file(download_url, dest_path)
 
-    async def close(self):
+    async def close(self) -> None:
         await self.client.aclose()

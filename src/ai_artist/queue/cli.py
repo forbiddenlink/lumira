@@ -18,7 +18,7 @@ configure_logging()
 logger = get_logger(__name__)
 
 
-def main():
+def main() -> None:
     """Launch an RQ worker for image generation jobs."""
     parser = argparse.ArgumentParser(
         description="Run an AI Artist image generation worker",

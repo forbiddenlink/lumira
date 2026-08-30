@@ -1,10 +1,11 @@
 """Database session management."""
 
-from collections.abc import Generator
+from collections.abc import Generator, Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
 from sqlalchemy import create_engine, text
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 # Global session factory (initialized on first use)
@@ -27,7 +28,7 @@ def set_session_factory(session_factory: sessionmaker) -> None:
     _session_factory = session_factory
 
 
-def create_db_engine(db_path: Path):
+def create_db_engine(db_path: Path) -> Engine:
     """Create SQLite engine with optimal settings."""
     db_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -54,7 +55,7 @@ def create_session_factory(db_path: Path) -> sessionmaker:
 
 
 @contextmanager
-def get_db_session(session_factory: sessionmaker):
+def get_db_session(session_factory: sessionmaker) -> Iterator[Session]:
     """Context manager for database sessions."""
     session = session_factory()
     try:

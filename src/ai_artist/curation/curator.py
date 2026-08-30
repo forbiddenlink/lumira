@@ -83,7 +83,9 @@ class QualityMetrics:
 class ImageCurator:
     """CLIP-based image curation with LAION aesthetic scoring."""
 
-    def __init__(self, device: str = "cuda", aesthetic_model_id: str | None = None):
+    def __init__(
+        self, device: str = "cuda", aesthetic_model_id: str | None = None
+    ) -> None:
         self.device = device
         # Note: CLIP loading is deferred to avoid import errors if not installed yet
         self.model = None
@@ -95,7 +97,7 @@ class ImageCurator:
         self._aesthetic_available: bool | None = None  # None = not checked yet
         logger.info("curator_initialized", device=device)
 
-    def _load_clip(self):
+    def _load_clip(self) -> bool:
         """Lazy load CLIP model."""
         if self.model is None:
             try:

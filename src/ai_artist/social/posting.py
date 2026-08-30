@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from PIL import Image
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
 
 from ..utils.logging import get_logger
 
@@ -69,7 +69,7 @@ class TwitterPoster:
         access_token: str | None = None,
         access_secret: str | None = None,
         bearer_token: str | None = None,
-    ):
+    ) -> None:
         """Initialize Twitter poster.
 
         Args:
@@ -91,7 +91,7 @@ class TwitterPoster:
 
             _social = _lc().social
 
-            def _s(secret):
+            def _s(secret: SecretStr | None) -> str | None:
                 return secret.get_secret_value() if secret else None
 
             cfg_key = _s(_social.twitter_api_key)
@@ -221,7 +221,7 @@ class InstagramPoster:
         username: str | None = None,
         password: str | None = None,
         session_file: str | None = None,
-    ):
+    ) -> None:
         """Initialize Instagram poster.
 
         Args:
@@ -363,7 +363,7 @@ class BlueskyPoster:
         self,
         handle: str | None = None,
         password: str | None = None,
-    ):
+    ) -> None:
         """Initialize Bluesky poster.
 
         Args:
@@ -472,7 +472,7 @@ class BlueskyPoster:
 class SocialPoster:
     """Unified social media poster for multiple platforms."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize all available social posters."""
         self.twitter = TwitterPoster()
         self.instagram = InstagramPoster()

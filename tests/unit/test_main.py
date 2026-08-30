@@ -1388,3 +1388,57 @@ model:
             with pytest.raises(SystemExit) as exc_info:
                 main()
             assert exc_info.value.code == 0
+
+
+class TestArtistInitialisation:
+    """AIArtist._initialize() must complete on a default config.
+
+    It did not: `self.config.performance.enable_model_pool` raised
+    AttributeError on its first line (Config has no `performance` section, and
+    extra="allow" meant pydantic never objected to the name), and further down
+    `unsplash_access_key.get_secret_value()` raised for anyone without an
+    Unsplash key -- which is the default. Both are the kind of thing mypy sees
+    only once it type-checks against the real dependencies (#90).
+    """
+
+    def test_config_has_no_performance_section(self):
+        from ai_artist.utils.config import Config
+
+        config = Config()
+        assert not hasattr(config, "performance")
+        # The settings the old code looked for live here instead.
+        assert isinstance(config.model_manager.enable_model_pool, bool)
+        assert isinstance(config.model_manager.preload_models, list)
+
+    def test_initialises_without_an_unsplash_key(self):
+        from unittest.mock import MagicMock, patch
+
+        from ai_artist.main import AIArtist
+        from ai_artist.utils.config import Config
+
+        config = Config()
+        config.model.device = "cpu"
+        config.api_keys.unsplash_access_key = None
+
+        # _initialize() eagerly constructs the model-backed components, which
+        # would pull SDXL from the Hub. The bugs under test are in the config
+        # wiring around them, so stand them all out of the way.
+        heavy = (
+            "ImageGenerator",
+            "ImageUpscaler",
+            "ImageInpainter",
+            "FaceRestorer",
+            "ImageCurator",
+            "ModelPool",
+            "PreviewGenerator",
+            "TwoStageGenerator",
+            "StyleInterpolator",
+        )
+        with patch.multiple("ai_artist.main", **{name: MagicMock() for name in heavy}):
+            artist = AIArtist(config=config)
+
+        # Reached the end of _initialize() rather than dying partway through.
+        assert artist.unsplash is None
+        assert artist.gallery is not None
+        assert artist.scheduler is not None
+        assert artist.model_pool is not None

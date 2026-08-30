@@ -69,10 +69,10 @@ class CreativeMind:
 
     def __init__(
         self,
-        mood_system=None,
-        memory_system=None,
-        learner=None,
-        profile=None,
+        mood_system: Any = None,
+        memory_system: Any = None,
+        learner: Any = None,
+        profile: Any = None,
         api_key: str | None = None,
         model: str = "claude-sonnet-4-5",
     ):
@@ -973,9 +973,9 @@ _creative_mind: CreativeMind | None = None
 
 
 def get_creative_mind(
-    mood_system=None,
-    memory_system=None,
-    learner=None,
+    mood_system: Any = None,
+    memory_system: Any = None,
+    learner: Any = None,
 ) -> CreativeMind:
     """Get or create the global CreativeMind instance.
 

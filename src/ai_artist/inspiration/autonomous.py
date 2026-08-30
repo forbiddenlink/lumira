@@ -2,7 +2,7 @@
 
 import random
 from collections.abc import Callable
-from typing import Literal
+from typing import Any, Literal
 
 from ..utils.logging import get_logger
 
@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 class AutonomousInspiration:
     """Generate truly autonomous inspiration without human input."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Concept categories for autonomous exploration
         self.subjects = [
             # Nature
@@ -327,7 +327,7 @@ class AutonomousInspiration:
 class WikipediaInspiration:
     """Get inspiration from random Wikipedia articles."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.api_url = "https://en.wikipedia.org/api/rest_v1/page/random/summary"
         logger.info("wikipedia_inspiration_initialized")
 
@@ -379,15 +379,15 @@ class WikipediaInspiration:
 class TrendingInspiration:
     """Generate prompts based on trending topics."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         from ..trends.manager import ArtStationTrendProvider, CivitAITrendProvider
 
         self.civitai = CivitAITrendProvider()
         self.artstation = ArtStationTrendProvider()
-        self.cached_trends = []
+        self.cached_trends: list[str] = []
         logger.info("trending_inspiration_initialized")
 
-    async def fetch_trends(self):
+    async def fetch_trends(self) -> None:
         """Fetch and cache trending topics."""
         try:
             civitai_trends = await self.civitai.get_trending_tags(limit=15)
@@ -415,7 +415,7 @@ class TrendingInspiration:
         logger.info("trending_prompt_generated", prompt=prompt, tags=tags)
         return prompt
 
-    async def close(self):
+    async def close(self) -> None:
         """Cleanup resources."""
         await self.civitai.close()
         await self.artstation.close()
@@ -424,12 +424,12 @@ class TrendingInspiration:
 class EvolutionaryInspiration:
     """Learn from successful generations and evolve."""
 
-    def __init__(self, gallery_manager=None):
+    def __init__(self, gallery_manager: Any = None) -> None:
         self.gallery_manager = gallery_manager
-        self.successful_themes = []
+        self.successful_themes: list[str] = []
         logger.info("evolutionary_inspiration_initialized")
 
-    async def analyze_successes(self, min_score: float = 0.65):
+    async def analyze_successes(self, min_score: float = 0.65) -> None:
         """Analyze highly-rated images to find successful patterns."""
         if not self.gallery_manager:
             return

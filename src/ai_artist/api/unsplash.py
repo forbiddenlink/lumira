@@ -1,5 +1,6 @@
 """Unsplash API client with retry logic."""
 
+from types import TracebackType
 from typing import Any
 
 import httpx
@@ -24,7 +25,7 @@ class RateLimitError(Exception):
 class UnsplashClient:
     """Async Unsplash API client."""
 
-    def __init__(self, access_key: str, app_name: str = "lumira"):
+    def __init__(self, access_key: str, app_name: str = "lumira") -> None:
         self.access_key = access_key
         self.app_name = app_name
         self.base_url = "https://api.unsplash.com"
@@ -86,7 +87,7 @@ class UnsplashClient:
         result: dict[str, Any] = response.json()
         return result
 
-    async def trigger_download(self, download_location: str):
+    async def trigger_download(self, download_location: str) -> None:
         """Track download (required by Unsplash guidelines)."""
         await self.client.get(download_location)
         logger.info("download_tracked", location=download_location)
@@ -101,14 +102,19 @@ class UnsplashClient:
             f'<a href="https://unsplash.com/?{utm}">Unsplash</a>'
         )
 
-    async def close(self):
+    async def close(self) -> None:
         """Close HTTP client."""
         await self.client.aclose()
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "UnsplashClient":
         """Async context manager entry."""
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         """Async context manager exit."""
         await self.close()
