@@ -29,10 +29,6 @@ from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Res
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
-from slowapi import Limiter
-from slowapi.errors import RateLimitExceeded
-from slowapi.middleware import SlowAPIMiddleware
-from slowapi.util import get_remote_address
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from ..gallery.manager import GalleryManager
@@ -70,7 +66,7 @@ from .middleware import (
     add_cors_middleware,
 )
 from .prompt_routes import router as prompt_router
-from .rate_limit import RATE_LIMIT_ENABLED, rate_limit_exceeded_handler
+from .rate_limit import configure_rate_limiting, limiter
 from .websocket import ALLOWED_CLIENT_MESSAGE_TYPES
 from .websocket import manager as ws_manager
 
@@ -90,16 +86,10 @@ _generation_queue_size = 0  # Track queue depth
 # Background task tracking to prevent premature garbage collection
 _background_tasks: set = set()
 
-# Rate limiter instance
-# Generous default backstop so routes without an explicit @limiter.limit are
-# still capped. Set well above any legitimate polling rate; stricter per-route
-# decorators (e.g. 5/minute on generation) bind first, so this only ever
-# throttles otherwise-unlimited endpoints.
-limiter = Limiter(
-    key_func=get_remote_address,
-    default_limits=["600/minute"],
-    enabled=RATE_LIMIT_ENABLED,
-)
+# `limiter` is imported from rate_limit.py above — a single shared Limiter
+# instance used by this module, lumira_routes.py, and anywhere else that
+# needs @limiter.limit(...). See rate_limit.py for the default-limits
+# backstop rationale and configure_rate_limiting() for the app wiring.
 
 logger = get_logger(__name__)
 
@@ -482,9 +472,6 @@ Connect to `/ws` for real-time generation progress updates.
     openapi_url="/openapi.json",
 )
 
-# Add rate limiter to app state
-app.state.limiter = limiter
-
 # Add exception handlers
 # FastAPI accepts subtype-specific handlers at runtime; cast for static typing.
 app.add_exception_handler(
@@ -499,10 +486,6 @@ app.add_exception_handler(
     Exception,
     cast(ExceptionHandler, general_exception_handler),
 )
-app.add_exception_handler(
-    RateLimitExceeded,
-    cast(ExceptionHandler, rate_limit_exceeded_handler),
-)
 
 # Add middleware (added in reverse order of execution)
 # CORS must be added last so it processes requests first
@@ -516,8 +499,10 @@ app.add_middleware(SecurityHeadersMiddleware)
 # directly around the router and therefore catches every route exception
 # before it can reach a BaseHTTPMiddleware's try/except further out in the
 # stack. A middleware-based catch-all here would never fire.
-# Enforces limiter.default_limits on routes without an explicit decorator.
-app.add_middleware(SlowAPIMiddleware)
+# Single wiring point: attaches app.state.limiter, the RateLimitExceeded
+# handler, and SlowAPIMiddleware (which enforces limiter.default_limits on
+# routes without an explicit @limiter.limit decorator).
+configure_rate_limiting(app)
 
 # Include routers
 app.include_router(health_router)

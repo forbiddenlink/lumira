@@ -270,9 +270,28 @@ class TestGenerationEndpointRateLimits:
     """Tests verifying generation endpoints have correct rate limits configured."""
 
     @pytest.fixture
-    def client(self):
-        """Create test client for the Lumira app with fresh rate limiter."""
+    def client(self, tmp_path):
+        """Create test client for the Lumira app with a fresh rate limiter
+        and an isolated test database.
+
+        Without DB isolation this fixture hits the real dev
+        data/ai_artist.db, and the dedup checks in lumira_routes.py
+        (_recent_prompt_duplicate / _recent_variation_count) then
+        correctly-but-flakily reject the tests' canned prompt/image_id
+        once any prior run has written matching rows.
+        """
+        from ai_artist.db.models import Base
+        from ai_artist.db.session import (
+            create_db_engine,
+            create_session_factory,
+            set_session_factory,
+        )
         from ai_artist.web.app import app
+
+        db_path = tmp_path / "test_generation_rate_limits.db"
+        engine = create_db_engine(db_path)
+        Base.metadata.create_all(engine)
+        set_session_factory(create_session_factory(db_path))
 
         # Reset rate limiter storage to avoid cross-test interference
         if (
@@ -284,7 +303,9 @@ class TestGenerationEndpointRateLimits:
             app.state.limiter._storage.storage.clear()
 
         # Existence checks only — don't fail the suite on missing DB tables / LLM stubs
-        return TestClient(app, raise_server_exceptions=False)
+        yield TestClient(app, raise_server_exceptions=False)
+
+        set_session_factory(None)
 
     def test_preview_endpoint_exists(self, client):
         """Preview endpoint should exist and be accessible."""

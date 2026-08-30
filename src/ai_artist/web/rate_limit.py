@@ -35,6 +35,24 @@ if not RATE_LIMIT_ENABLED:
     )
 
 
+# Single shared Limiter for the whole app. Previously app.py and
+# lumira_routes.py each constructed their own bare `Limiter(...)` instance,
+# which meant two independent limiter states existed side by side (only one
+# of which, app.py's, was ever attached to app.state.limiter / checked by
+# SlowAPIMiddleware for undecorated routes). Both modules now import this
+# single instance so there is exactly one limiter, one default-limits
+# backstop, and one piece of state to reason about.
+limiter = Limiter(
+    key_func=get_remote_address,
+    # Generous default backstop so routes without an explicit @limiter.limit
+    # are still capped. Set well above any legitimate polling rate; stricter
+    # per-route decorators (e.g. 5/minute on generation) bind first, so this
+    # only ever throttles otherwise-unlimited endpoints.
+    default_limits=["600/minute"],
+    enabled=RATE_LIMIT_ENABLED,
+)
+
+
 # Rate limit constants for generation endpoints
 # These limits protect GPU resources and prevent abuse
 class RateLimits:
@@ -171,33 +189,24 @@ class RateLimitHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
-def setup_rate_limiting(app) -> Limiter:
-    """Configure rate limiting for the FastAPI application.
+def configure_rate_limiting(app) -> Limiter:
+    """Attach the shared limiter, exception handler, and middleware to `app`.
+
+    This is the single wiring point for rate limiting. Previously there was
+    a second, never-called `setup_rate_limiting()` here (with its own
+    `default_limits=["200/minute"]`) alongside app.py manually doing the
+    same three steps with a separately-constructed Limiter. Both app.py and
+    lumira_routes.py now share the one `limiter` instance defined above, and
+    app.py calls this function once during startup.
 
     Args:
         app: The FastAPI application instance.
 
     Returns:
-        The configured Limiter instance.
+        The shared Limiter instance.
     """
-    # Create limiter with IP-based key function
-    limiter = Limiter(
-        key_func=get_rate_limit_key,
-        default_limits=["200/minute"],  # Default for unlisted endpoints
-        headers_enabled=True,  # Enable X-RateLimit-* headers
-        strategy="fixed-window",  # Use fixed window strategy
-        enabled=RATE_LIMIT_ENABLED,
-    )
-
-    # Attach limiter to app state
     app.state.limiter = limiter
-
-    # Add exception handler for rate limit errors
     app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
-
-    # Add SlowAPI middleware for header injection
     app.add_middleware(SlowAPIMiddleware)
-
     logger.info("rate_limiting_configured", strategy="fixed-window")
-
     return limiter

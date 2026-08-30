@@ -16,8 +16,6 @@ from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 from PIL import Image
 from pydantic import BaseModel, Field, model_validator
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
 from ..caching import get_generation_cache
@@ -39,7 +37,7 @@ from .generation_registry import (
 from .generation_registry import (
     register as register_generation_task,
 )
-from .rate_limit import RATE_LIMIT_ENABLED, RateLimits
+from .rate_limit import RateLimits, limiter
 
 logger = get_logger(__name__)
 
@@ -278,9 +276,6 @@ def _start_generation_task(session_id: str, coro: Any) -> asyncio.Task:
     task.add_done_callback(_background_tasks.discard)
     return task
 
-
-# Rate limiter
-limiter = Limiter(key_func=get_remote_address, enabled=RATE_LIMIT_ENABLED)
 
 # Create router
 router = APIRouter(prefix="/api/lumira", tags=["lumira"])
