@@ -260,6 +260,10 @@ class TestLightbox:
 
         lightbox = page.locator("#lightbox")
         expect(lightbox).to_have_class(re.compile(r"active"))
+        # A class name is not evidence the dialog is on screen, and it must be
+        # reachable by assistive tech once open.
+        expect(lightbox).to_be_visible()
+        expect(lightbox).not_to_have_attribute("aria-hidden", "true")
 
     def test_lightbox_closes_on_close_button(self, lumira_page: Page):
         """Test that lightbox closes when clicking close button."""
@@ -275,6 +279,10 @@ class TestLightbox:
         # Verify lightbox is closed
         lightbox = page.locator("#lightbox")
         expect(lightbox).not_to_have_class(re.compile(r"active"))
+        # Closed means gone from view and from the tab order, not just
+        # un-classed: it used to sit at opacity 0 with five focusable controls.
+        expect(lightbox).not_to_be_visible()
+        expect(lightbox).to_have_attribute("aria-hidden", "true")
 
     def test_lightbox_closes_on_escape_key(self, lumira_page: Page):
         """Test that lightbox closes when pressing Escape."""
@@ -348,18 +356,11 @@ class TestLightbox:
         actions = page.locator("#lb-actions")
         expect(actions).to_be_visible()
 
-        # Check for specific action buttons
-        variations_btn = page.locator("button:has-text('Variations')")
-        expect(variations_btn).to_be_visible()
-
-        similar_btn = page.locator("button:has-text('Similar')")
-        expect(similar_btn).to_be_visible()
-
-        download_btn = page.locator("button:has-text('Download')")
-        expect(download_btn).to_be_visible()
-
-        share_btn = page.locator("button:has-text('Share')")
-        expect(share_btn).to_be_visible()
+        # Scoped to the lightbox: unscoped, "Share" also matches the request
+        # panel's "Share as Lumira" and Playwright fails on strict mode. This
+        # only surfaced once the gallery had cards for the lightbox to open.
+        for label in ("Variations", "Similar", "Download", "Share"):
+            expect(actions.locator(f"button:has-text('{label}')")).to_be_visible()
 
 
 class TestSemanticSearch:

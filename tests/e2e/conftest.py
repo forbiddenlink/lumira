@@ -87,7 +87,15 @@ def _seed_e2e_runtime(root: Path) -> None:
     )
     (data_dir / "lumira_mood_history.json").write_text("[]", encoding="utf-8")
 
-    for index, color in enumerate(((120, 80, 200), (80, 150, 120)), start=1):
+    # Prompts must read like real work. The gallery filters harness junk via
+    # is_trivial_prompt(), which rejects anything containing "e2e test" -- so
+    # the seed used to be invisible to the app under test and every card,
+    # lightbox and keyboard-navigation case skipped itself as "empty gallery".
+    seeds = (
+        ((120, 80, 200), "a quiet twilight meadow with soft gold light"),
+        ((80, 150, 120), "still lake at dawn, watercolor, muted greens"),
+    )
+    for index, (color, prompt) in enumerate(seeds, start=1):
         sample_img = gallery_dir / f"e2e-sample-{index}.png"
         sample_json = gallery_dir / f"e2e-sample-{index}.json"
         try:
@@ -103,8 +111,9 @@ def _seed_e2e_runtime(root: Path) -> None:
         sample_json.write_text(
             json.dumps(
                 {
-                    "prompt": f"E2E test artwork {index}",
+                    "prompt": prompt,
                     "created_at": f"2026-06-25T12:0{index}:00",
+                    "metadata": {"mood": "serene", "style": "watercolor"},
                 }
             ),
             encoding="utf-8",
