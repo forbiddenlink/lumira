@@ -2469,6 +2469,32 @@
         text-align: center;
       }
 
+      .overlay-dismiss {
+        margin-top: 1.5rem;
+        background: none;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 0.5rem 1.5rem;
+        color: var(--text-muted);
+        font-family: var(--font-ui);
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition:
+          border-color 0.2s var(--ease-out),
+          color 0.2s var(--ease-out);
+      }
+
+      .overlay-dismiss:hover,
+      .overlay-dismiss:focus-visible {
+        border-color: var(--accent);
+        color: var(--text-main);
+      }
+
+      .atelier-back-link:hover,
+      .atelier-back-link:focus-visible {
+        color: var(--accent);
+      }
+
       .ai-disclosure-link {
         display: inline-flex;
         align-items: center;
@@ -2540,8 +2566,7 @@
             margin-bottom: 0.5rem;
             transition: color 0.2s;
           "
-          onmouseover="this.style.color = 'var(--accent)'"
-          onmouseout="this.style.color = 'var(--text-muted)'"
+          class="atelier-back-link"
           >← Gallery</a
         >
         <a
@@ -2555,7 +2580,7 @@
         <button
           id="theme-toggle"
           class="theme-toggle"
-          onclick="toggleTheme()"
+          data-action="toggleTheme"
           aria-label="Toggle theme"
         >
           <span class="theme-icon">☀️</span>
@@ -2622,7 +2647,7 @@
         <div class="influence-buttons">
           <button
             class="influence-btn"
-            onclick="influenceMood('energize')"
+            data-action="influenceMood" data-arg="energize"
             title="Energize"
             aria-label="Energize Lumira's mood"
           >
@@ -2630,7 +2655,7 @@
           </button>
           <button
             class="influence-btn"
-            onclick="influenceMood('calm')"
+            data-action="influenceMood" data-arg="calm"
             title="Calm"
             aria-label="Calm Lumira's mood"
           >
@@ -2638,7 +2663,7 @@
           </button>
           <button
             class="influence-btn"
-            onclick="influenceMood('provoke')"
+            data-action="influenceMood" data-arg="provoke"
             title="Provoke"
             aria-label="Provoke Lumira's mood"
           >
@@ -2646,7 +2671,7 @@
           </button>
           <button
             class="influence-btn"
-            onclick="influenceMood('inspire')"
+            data-action="influenceMood" data-arg="inspire"
             title="Inspire"
             aria-label="Inspire Lumira's mood"
           >
@@ -2801,42 +2826,42 @@
         >
           <button
             class="btn-outline"
-            onclick="forceEvolve()"
+            data-action="forceEvolve"
             aria-label="Evolve Lumira's state"
           >
             Evolve
           </button>
           <button
             class="btn-outline"
-            onclick="showEvolution()"
+            data-action="showEvolution"
             aria-label="View evolution timeline"
           >
             Timeline
           </button>
           <button
             class="btn-outline"
-            onclick="showMoodGraph()"
+            data-action="showMoodGraph"
             aria-label="View mood evolution graph"
           >
             Moods
           </button>
           <button
             class="btn-outline"
-            onclick="showMemory()"
+            data-action="showMemory"
             aria-label="View memory dashboard"
           >
             Memory
           </button>
           <button
             class="btn-outline"
-            onclick="window.location.href = '/monitoring'"
+            data-nav="/monitoring"
             aria-label="View monitoring dashboard"
           >
             Monitor
           </button>
           <button
             class="btn-outline"
-            onclick="window.location.href = '/'"
+            data-nav="/"
             aria-label="Go back to gallery"
           >
             Gallery
@@ -2847,7 +2872,7 @@
       <nav class="controls" role="group" aria-label="Primary actions">
         <button
           id="create-btn"
-          onclick="triggerCreate()"
+          data-action="triggerCreate"
           aria-describedby="create-desc"
         >
           LET HER CREATE
@@ -2857,7 +2882,7 @@
         >
         <button
           class="btn-outline"
-          onclick="showStatement()"
+          data-action="showStatement"
           title="Artist Statement"
           aria-label="View artist statement"
         >
@@ -2889,7 +2914,7 @@
             placeholder="Describe what you'd like Lumira to create..."
             aria-label="Describe what you'd like Lumira to create"
             maxlength="2000"
-            oninput="updatePromptCounter(this)"
+            data-input-action="updatePromptCounter"
           ></textarea>
           <div id="request-prompt-counter" class="request-char-counter" aria-live="polite" style="text-align:right;font-size:0.75rem;opacity:0.6;margin-top:2px">0/2000</div>
           <div id="prompt-suggestion" class="prompt-suggestion" role="region" aria-live="polite" aria-label="Lumira's prompt suggestion"></div>
@@ -2993,7 +3018,7 @@
           <button
             id="request-create-btn"
             class="btn-request"
-            onclick="submitCreationRequest()"
+            data-action="submitCreationRequest"
             aria-label="Submit creation request to Lumira"
           >
             Create for Me
@@ -3001,14 +3026,14 @@
           <button
             id="request-preview-btn"
             class="btn-preview"
-            onclick="generatePreview()"
+            data-action="generatePreview"
             aria-label="Generate a fast preview"
           >
             Quick Preview
           </button>
           <button
             class="btn-preview"
-            onclick="openExploreModal()"
+            data-action="openExploreModal"
             aria-label="Explore latent space between concepts"
           >
             Explore
@@ -3017,7 +3042,7 @@
             type="button"
             class="btn-preview"
             id="animate-last-btn"
-            onclick="animateLastPiece()"
+            data-action="animateLastPiece"
             aria-label="Animate the latest piece with Magica video"
           >
             Animate Latest
@@ -3026,14 +3051,14 @@
             type="button"
             class="btn-preview"
             id="share-as-lumira-btn"
-            onclick="shareLatestAsLumira()"
+            data-action="shareLatestAsLumira"
             aria-label="Share the latest piece in Lumira's voice"
           >
             Share as Lumira
           </button>
           <button
             class="btn-autonomous"
-            onclick="triggerCreate()"
+            data-action="triggerCreate"
             aria-label="Let Lumira create autonomously"
           >
             Or let Lumira decide
@@ -3051,12 +3076,12 @@
             <button
               type="button"
               class="btn-preview"
-              onclick="approvePreview()"
+              data-action="approvePreview"
               id="preview-approve-btn"
             >
               Approve Full Render
             </button>
-            <button type="button" class="btn-preview" onclick="clearPreview()">
+            <button type="button" class="btn-preview" data-action="clearPreview">
               Dismiss
             </button>
           </div>
@@ -3144,31 +3169,8 @@
           Beginning creative process
         </div>
         <button
-          onclick="
-            document
-              .getElementById('creating-overlay')
-              .classList.remove('active')
-          "
-          style="
-            margin-top: 1.5rem;
-            background: none;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 0.5rem 1.5rem;
-            color: var(--text-muted);
-            font-family: var(--font-ui);
-            font-size: 0.75rem;
-            cursor: pointer;
-            transition: all 0.2s;
-          "
-          onmouseover="
-            this.style.borderColor = 'var(--accent)';
-            this.style.color = 'var(--text-main)';
-          "
-          onmouseout="
-            this.style.borderColor = 'var(--border)';
-            this.style.color = 'var(--text-muted)';
-          "
+          class="overlay-dismiss"
+          data-action="dismissCreatingOverlay"
           aria-label="Dismiss overlay"
         >
           DISMISS
@@ -3180,15 +3182,15 @@
     <div
       id="explore-modal"
       class="explore-modal"
-      onclick="closeExploreModal(event)"
+      data-action="closeExploreModalOnBackdrop"
       role="dialog"
       aria-modal="true"
       aria-labelledby="explore-title"
     >
-      <div class="explore-content" onclick="event.stopPropagation()">
+      <div class="explore-content">
         <div style="display: flex; justify-content: space-between; align-items: center">
           <h2 id="explore-title" style="margin: 0; font-size: 1rem">Latent Exploration</h2>
-          <button type="button" class="close-btn" onclick="closeExploreModal()">&times;</button>
+          <button type="button" class="close-btn" data-action="closeExploreModal">&times;</button>
         </div>
         <div class="explore-field">
           <label for="explore-concept-a">Starting concept</label>
@@ -3198,7 +3200,7 @@
           <label for="explore-concept-b">Ending concept</label>
           <input id="explore-concept-b" type="text" placeholder="e.g. neon city at midnight" />
         </div>
-        <button type="button" class="btn-preview" onclick="runExplore()">Run Exploration</button>
+        <button type="button" class="btn-preview" data-action="runExplore">Run Exploration</button>
         <div id="explore-grid" class="explore-grid"></div>
       </div>
     </div>
@@ -3207,16 +3209,16 @@
     <div
       id="lightbox"
       class="lightbox"
-      onclick="closeLightbox(event)"
+      data-action="closeLightboxOnBackdrop"
       role="dialog"
       aria-modal="true"
       aria-labelledby="lb-title"
       aria-hidden="true"
     >
-      <div class="lightbox-content" onclick="event.stopPropagation()">
+      <div class="lightbox-content">
         <button
           class="close-btn"
-          onclick="closeLightbox()"
+          data-action="closeLightbox"
           aria-label="Close lightbox"
         >
           &times;
@@ -3241,26 +3243,26 @@
             <div class="lightbox-actions" id="lb-actions">
               <button
                 class="action-btn"
-                onclick="generateVariations()"
+                data-action="generateVariations"
                 title="Generate Variations"
               >
                 <i data-lucide="palette"></i> Variations
               </button>
               <button
                 class="action-btn"
-                onclick="findSimilarArtworks()"
+                data-action="findSimilarArtworks"
                 title="Find Similar"
               >
                 <i data-lucide="search"></i> Similar
               </button>
               <button
                 class="action-btn"
-                onclick="downloadArtwork()"
+                data-action="downloadArtwork"
                 title="Download"
               >
                 <i data-lucide="download"></i> Download
               </button>
-              <button class="action-btn" onclick="shareArtwork()" title="Share">
+              <button class="action-btn" data-action="shareArtwork" title="Share">
                 <i data-lucide="share-2"></i> Share
               </button>
             </div>
@@ -3308,7 +3310,7 @@
     </div>
 
     <!-- Keyboard navigation handler -->
-    <script>
+    <script nonce="{{ csp_nonce }}">
       // Keyboard accessibility
       document.addEventListener("keydown", (e) => {
         // Escape to close lightbox/modals
@@ -3358,7 +3360,7 @@
       }
     </script>
 
-    <script>
+    <script nonce="{{ csp_nonce }}">
       // Utility: Escape HTML to prevent XSS
       function escapeHtml(text) {
         if (!text) return "";
@@ -4251,8 +4253,7 @@
         lightboxEl.removeAttribute("aria-hidden");
       }
 
-      function closeLightbox(e) {
-        if (e && e.target !== e.currentTarget) return;
+      function closeLightbox() {
         var lightboxEl = document.getElementById("lightbox");
         lightboxEl.classList.remove("active");
         lightboxEl.setAttribute("aria-hidden", "true");
@@ -5869,8 +5870,7 @@
         if (modal) modal.classList.add("open");
       }
 
-      function closeExploreModal(event) {
-        if (event && event.target && event.currentTarget !== event.target) return;
+      function closeExploreModal() {
         var modal = document.getElementById("explore-modal");
         if (modal) modal.classList.remove("open");
       }
@@ -6159,8 +6159,8 @@
             '</div>' +
             '<div class="prompt-suggestion-text">' + escapeHtml(data.suggestion) + '</div>' +
             '<div class="prompt-suggestion-actions">' +
-              '<button class="prompt-suggestion-use" onclick="useSuggestion()">Use Lumira\u2019s version</button>' +
-              '<button class="prompt-suggestion-keep" onclick="hideSuggestionPanel()">Keep mine</button>' +
+              '<button class="prompt-suggestion-use" data-action="useSuggestion">Use Lumira\u2019s version</button>' +
+              '<button class="prompt-suggestion-keep" data-action="hideSuggestionPanel">Keep mine</button>' +
             '</div>';
         })
         .catch(function() {
@@ -6310,7 +6310,100 @@
         })();
       });
     </script>
-      <script>
+    <script nonce="{{ csp_nonce }}">
+      // Event delegation in place of inline on*= attributes. Those attributes
+      // are what forced 'unsafe-inline' into script-src: a nonce covers
+      // script blocks but not handler attributes, so while any remained the
+      // CSP could not be tightened (#60).
+      //
+      // Actions are looked up in an explicit allowlist, never by evaluating
+      // markup, so a data-action attribute cannot reach anything not named
+      // here.
+      (function () {
+        "use strict";
+
+        var ACTION_NAMES = [
+          "animateLastPiece",
+          "approvePreview",
+          "clearPreview",
+          "closeExploreModal",
+          "closeLightbox",
+          "downloadArtwork",
+          "findSimilarArtworks",
+          "forceEvolve",
+          "generatePreview",
+          "generateVariations",
+          "hideSuggestionPanel",
+          "influenceMood",
+          "openExploreModal",
+          "runExplore",
+          "shareArtwork",
+          "shareLatestAsLumira",
+          "showEvolution",
+          "showMemory",
+          "showMoodGraph",
+          "showStatement",
+          "submitCreationRequest",
+          "toggleTheme",
+          "triggerCreate",
+          "updatePromptCounter",
+          "useSuggestion",
+        ];
+
+        var actions = {};
+        ACTION_NAMES.forEach(function (name) {
+          if (typeof window[name] === "function") {
+            actions[name] = window[name];
+          }
+        });
+
+        // A backdrop closes only when the click landed on the backdrop itself.
+        actions.closeLightboxOnBackdrop = function (event, arg, element) {
+          if (event.target === element) closeLightbox();
+        };
+        actions.closeExploreModalOnBackdrop = function (event, arg, element) {
+          if (event.target === element) closeExploreModal();
+        };
+        actions.dismissCreatingOverlay = function () {
+          var overlay = document.getElementById("creating-overlay");
+          if (overlay) overlay.classList.remove("active");
+        };
+
+        function run(name, event, arg, element) {
+          var fn = actions[name];
+          if (!fn) return;
+          try {
+            fn(arg !== undefined && arg !== null ? arg : event, undefined, element);
+          } catch (err) {
+            console.error("action failed: " + name, err);
+          }
+        }
+
+        document.addEventListener("click", function (event) {
+          var nav = event.target.closest("[data-nav]");
+          if (nav) {
+            window.location.href = nav.getAttribute("data-nav");
+            return;
+          }
+          var el = event.target.closest("[data-action]");
+          if (!el) return;
+          var name = el.getAttribute("data-action");
+          if (name === "closeLightboxOnBackdrop" || name === "closeExploreModalOnBackdrop") {
+            actions[name](event, undefined, el);
+            return;
+          }
+          run(name, event, el.getAttribute("data-arg"), el);
+        });
+
+        document.addEventListener("input", function (event) {
+          var el = event.target.closest("[data-input-action]");
+          if (!el) return;
+          var fn = actions[el.getAttribute("data-input-action")];
+          if (fn) fn(el);
+        });
+      })();
+    </script>
+      <script nonce="{{ csp_nonce }}">
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", function () {
           navigator.serviceWorker.register("/service-worker.js").catch(function () {});

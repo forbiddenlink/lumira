@@ -317,7 +317,7 @@
         <button
           class="btn btn-button"
           type="button"
-          onclick="window.location.reload()"
+          data-action="reload"
         >
           Try Again
         </button>
@@ -326,7 +326,7 @@
       </div>
     </main>
 
-    <script>
+    <script nonce="{{ csp_nonce }}">
       // Generate stars
       (function () {
         var container = document.getElementById("stars");
@@ -346,6 +346,23 @@
           ].join(";");
           container.appendChild(s);
         }
+      })();
+    
+      // Delegated in place of inline on*= attributes, which a CSP nonce
+      // cannot cover (#60). Names resolve through an allowlist.
+      (function () {
+        var allowed = ["reload"];
+        document.addEventListener("click", function (event) {
+          var el = event.target.closest("[data-action]");
+          if (!el) return;
+          var name = el.getAttribute("data-action");
+          if (allowed.indexOf(name) === -1) return;
+          if (name === "reload") {
+            window.location.reload();
+            return;
+          }
+          if (typeof window[name] === "function") window[name](event);
+        });
       })();
     </script>
   </body>

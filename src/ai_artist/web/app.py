@@ -65,6 +65,7 @@ from .middleware import (
     RequestLoggingMiddleware,
     SecurityHeadersMiddleware,
     add_cors_middleware,
+    csp_nonce_context,
 )
 from .prompt_routes import router as prompt_router
 from .rate_limit import configure_rate_limiting, limiter
@@ -517,7 +518,9 @@ app.include_router(admin_router)
 
 # Templates directory
 templates_dir = Path(__file__).parent / "templates"
-templates = Jinja2Templates(directory=str(templates_dir))
+templates = Jinja2Templates(
+    directory=str(templates_dir), context_processors=[csp_nonce_context]
+)
 
 # Static files directory. Resolve robustly so it works both when run from
 # source (repo-root/static via __file__) AND when the package is pip-installed

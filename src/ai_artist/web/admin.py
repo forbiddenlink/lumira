@@ -15,6 +15,7 @@ from ..db.models import GeneratedImage
 from ..db.session import get_db
 from ..utils.logging import get_logger
 from .dependencies import require_api_key
+from .middleware import csp_nonce_context
 
 logger = get_logger(__name__)
 
@@ -32,7 +33,9 @@ shell_router = APIRouter(prefix="/admin", tags=["admin"])
 # Templates ship inside the package (see [tool.setuptools.package-data]) so a
 # wheel install resolves them the same way an editable checkout does.
 templates_dir = Path(__file__).parent / "templates"
-templates = Jinja2Templates(directory=str(templates_dir))
+templates = Jinja2Templates(
+    directory=str(templates_dir), context_processors=[csp_nonce_context]
+)
 
 
 @shell_router.get("/", response_class=HTMLResponse)

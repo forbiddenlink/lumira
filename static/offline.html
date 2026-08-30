@@ -227,7 +227,7 @@
         <h1>You're Offline</h1>
         <p>It looks like you've lost your internet connection. Don't worry, Lumira's artwork is still here.</p>
 
-        <button class="retry-button" onclick="window.location.reload()">
+        <button class="retry-button" data-action="reload">
             Try Again
         </button>
 
@@ -251,6 +251,23 @@
                 window.location.reload();
             }
         }, 5000);
+    
+      // Delegated in place of inline on*= attributes, which a CSP nonce
+      // cannot cover (#60). Names resolve through an allowlist.
+      (function () {
+        var allowed = ["reload"];
+        document.addEventListener("click", function (event) {
+          var el = event.target.closest("[data-action]");
+          if (!el) return;
+          var name = el.getAttribute("data-action");
+          if (allowed.indexOf(name) === -1) return;
+          if (name === "reload") {
+            window.location.reload();
+            return;
+          }
+          if (typeof window[name] === "function") window[name](event);
+        });
+      })();
     </script>
 </body>
 </html>

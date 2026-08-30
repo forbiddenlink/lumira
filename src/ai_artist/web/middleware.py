@@ -1,5 +1,6 @@
 """FastAPI middleware for error handling, logging, and CORS."""
 
+import secrets
 import time
 from collections.abc import Awaitable, Callable
 
@@ -46,15 +47,30 @@ def resolve_allowed_origins(cors_origins: list[str] | None = None) -> list[str]:
     return DEFAULT_DEV_ORIGINS.copy()
 
 
-def build_content_security_policy() -> str:
-    """Build Content-Security-Policy header value."""
+def generate_csp_nonce() -> str:
+    """Return a fresh, unguessable nonce for one response's inline scripts."""
+    return secrets.token_urlsafe(16)
+
+
+def build_content_security_policy(nonce: str | None = None) -> str:
+    """Build Content-Security-Policy header value.
+
+    Args:
+        nonce: Per-response nonce for inline <script> blocks. When omitted the
+            policy simply has no script nonce, which is correct for responses
+            that carry no inline script (JSON, static files).
+    """
+    # lucide is self-hosted (static/js/lucide.min.js), so unpkg.com is gone.
+    # 'unsafe-inline' is gone too: every inline block carries the nonce below,
+    # and the inline on*= handler attributes it used to exist for -- 98 of
+    # them, which a nonce cannot cover -- are now delegated listeners (#60).
+    script_src = "script-src 'self'"
+    if nonce:
+        script_src += f" 'nonce-{nonce}'"
+
     csp_directives = [
         "default-src 'self'",
-        # lucide is now self-hosted (static/js/lucide.min.js), so unpkg.com is
-        # gone from script-src. 'unsafe-inline' stays: the inline studio
-        # scripts in lumira.html still need it — a full nonce-based refactor
-        # of those inline scripts is out of scope here.
-        "script-src 'self' 'unsafe-inline'",
+        script_src,
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com",
         "font-src 'self' https://fonts.gstatic.com",
         "img-src 'self' data: blob:",
@@ -67,6 +83,16 @@ def build_content_security_policy() -> str:
         "manifest-src 'self'",
     ]
     return "; ".join(csp_directives)
+
+
+def csp_nonce_context(request: Request) -> dict[str, str]:
+    """Expose the per-response CSP nonce to templates as ``csp_nonce``.
+
+    SecurityHeadersMiddleware puts it on request.state before the route runs.
+    Registering this as a Jinja context processor means every inline <script>
+    can stamp the nonce without each route passing it by hand.
+    """
+    return {"csp_nonce": getattr(request.state, "csp_nonce", "")}
 
 
 def is_websocket_origin_allowed(
@@ -101,13 +127,20 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
         """Add security headers to response."""
+        # Generated before the route runs so templates can read it off
+        # request.state and stamp it onto their inline <script> tags.
+        nonce = generate_csp_nonce()
+        request.state.csp_nonce = nonce
+
         response = await call_next(request)
 
         # Prevent clickjacking
         response.headers["X-Frame-Options"] = "DENY"
 
         # Content Security Policy
-        response.headers["Content-Security-Policy"] = build_content_security_policy()
+        response.headers["Content-Security-Policy"] = build_content_security_policy(
+            nonce
+        )
 
         # Prevent MIME type sniffing
         response.headers["X-Content-Type-Options"] = "nosniff"

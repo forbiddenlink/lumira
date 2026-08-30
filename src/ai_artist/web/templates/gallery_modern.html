@@ -3000,7 +3000,7 @@
             <div class="stat-value" id="total-prompts">0</div>
             <div class="stat-label">Themes</div>
           </div>
-          <button class="header-action-btn" onclick="showShortcutsModal()">
+          <button class="header-action-btn" data-action="showShortcutsModal">
             <svg
               width="18"
               height="18"
@@ -3023,7 +3023,7 @@
             </svg>
             Shortcuts
           </button>
-          <button class="header-action-btn" onclick="showTemplatesModal()">
+          <button class="header-action-btn" data-action="showTemplatesModal">
             <svg
               width="18"
               height="18"
@@ -3074,9 +3074,9 @@
           <p class="hero-body" id="hero-body">This isn't a gallery of AI images — it's an artist's portfolio. Every piece was created because Lumira felt something.</p>
         </div>
         <div class="welcome-hero-actions">
-          <a href="#gallery" class="welcome-hero-cta" onclick="event.preventDefault(); document.getElementById('gallery').scrollIntoView({behavior:'smooth'}); return false;">Explore Her Work &#8595;</a>
+          <a href="#gallery" class="welcome-hero-cta" data-action="scrollToGallery">Explore Her Work &#8595;</a>
           <a href="/lumira" class="welcome-hero-cta-secondary">Watch Her Create &#8594;</a>
-          <button class="welcome-hero-dismiss" onclick="dismissHero()" aria-label="Dismiss welcome message">&times;</button>
+          <button class="welcome-hero-dismiss" data-action="dismissHero" aria-label="Dismiss welcome message">&times;</button>
         </div>
       </div>
     </div>
@@ -3103,26 +3103,26 @@
     <main id="main-content">
       <!-- Gallery View Tabs -->
       <div class="gallery-view-tabs" role="tablist" aria-label="Gallery view">
-        <button class="view-tab active" role="tab" aria-selected="true" data-view-mode="recent" onclick="switchViewMode('recent')">Recent</button>
-        <button class="view-tab" role="tab" aria-selected="false" data-view-mode="picks" onclick="switchViewMode('picks')">Lumira's Picks</button>
-        <button class="view-tab" role="tab" aria-selected="false" data-view-mode="mood" onclick="switchViewMode('mood')">By Mood</button>
-        <button class="view-tab" role="tab" aria-selected="false" data-view-mode="evolution" onclick="switchViewMode('evolution')">Evolution</button>
-        <button class="view-tab" role="tab" aria-selected="false" data-view-mode="series" onclick="switchViewMode('series')">Series</button>
+        <button class="view-tab active" role="tab" aria-selected="true" data-view-mode="recent" data-action="switchViewMode" data-arg="recent">Recent</button>
+        <button class="view-tab" role="tab" aria-selected="false" data-view-mode="picks" data-action="switchViewMode" data-arg="picks">Lumira's Picks</button>
+        <button class="view-tab" role="tab" aria-selected="false" data-view-mode="mood" data-action="switchViewMode" data-arg="mood">By Mood</button>
+        <button class="view-tab" role="tab" aria-selected="false" data-view-mode="evolution" data-action="switchViewMode" data-arg="evolution">Evolution</button>
+        <button class="view-tab" role="tab" aria-selected="false" data-view-mode="series" data-action="switchViewMode" data-arg="series">Series</button>
       </div>
 
       <!-- Mood Filter Pills (shown only in "By Mood" view) -->
       <div class="mood-pills" id="mood-pills" style="display:none" role="group" aria-label="Filter by mood">
-        <button class="mood-pill active" data-mood-filter="" onclick="filterByMood('')">All</button>
-        <button class="mood-pill" data-mood-filter="contemplative" onclick="filterByMood('contemplative')" style="--pill-color:#9a86a8">Contemplative</button>
-        <button class="mood-pill" data-mood-filter="chaotic" onclick="filterByMood('chaotic')" style="--pill-color:#c45a4e">Chaotic</button>
-        <button class="mood-pill" data-mood-filter="melancholic" onclick="filterByMood('melancholic')" style="--pill-color:#8a929c">Melancholic</button>
-        <button class="mood-pill" data-mood-filter="energized" onclick="filterByMood('energized')" style="--pill-color:#c49646">Energized</button>
-        <button class="mood-pill" data-mood-filter="rebellious" onclick="filterByMood('rebellious')" style="--pill-color:#b46450">Rebellious</button>
-        <button class="mood-pill" data-mood-filter="serene" onclick="filterByMood('serene')" style="--pill-color:#8ca096">Serene</button>
-        <button class="mood-pill" data-mood-filter="restless" onclick="filterByMood('restless')" style="--pill-color:#b4aa9b">Restless</button>
-        <button class="mood-pill" data-mood-filter="playful" onclick="filterByMood('playful')" style="--pill-color:#c48c96">Playful</button>
-        <button class="mood-pill" data-mood-filter="introspective" onclick="filterByMood('introspective')" style="--pill-color:#c4a574">Introspective</button>
-        <button class="mood-pill" data-mood-filter="bold" onclick="filterByMood('bold')" style="--pill-color:#b87a6a">Bold</button>
+        <button class="mood-pill active" data-mood-filter="" data-action="filterByMood" data-arg="">All</button>
+        <button class="mood-pill" data-mood-filter="contemplative" data-action="filterByMood" data-arg="contemplative" style="--pill-color:#9a86a8">Contemplative</button>
+        <button class="mood-pill" data-mood-filter="chaotic" data-action="filterByMood" data-arg="chaotic" style="--pill-color:#c45a4e">Chaotic</button>
+        <button class="mood-pill" data-mood-filter="melancholic" data-action="filterByMood" data-arg="melancholic" style="--pill-color:#8a929c">Melancholic</button>
+        <button class="mood-pill" data-mood-filter="energized" data-action="filterByMood" data-arg="energized" style="--pill-color:#c49646">Energized</button>
+        <button class="mood-pill" data-mood-filter="rebellious" data-action="filterByMood" data-arg="rebellious" style="--pill-color:#b46450">Rebellious</button>
+        <button class="mood-pill" data-mood-filter="serene" data-action="filterByMood" data-arg="serene" style="--pill-color:#8ca096">Serene</button>
+        <button class="mood-pill" data-mood-filter="restless" data-action="filterByMood" data-arg="restless" style="--pill-color:#b4aa9b">Restless</button>
+        <button class="mood-pill" data-mood-filter="playful" data-action="filterByMood" data-arg="playful" style="--pill-color:#c48c96">Playful</button>
+        <button class="mood-pill" data-mood-filter="introspective" data-action="filterByMood" data-arg="introspective" style="--pill-color:#c4a574">Introspective</button>
+        <button class="mood-pill" data-mood-filter="bold" data-action="filterByMood" data-arg="bold" style="--pill-color:#b87a6a">Bold</button>
       </div>
 
       <!-- Evolution Timeline (shown only in "Evolution" view) -->
@@ -3175,7 +3175,7 @@
           </select>
           <button
             class="filter-toggle-btn"
-            onclick="toggleAdvancedFilters()"
+            data-action="toggleAdvancedFilters"
             title="Advanced Filters"
           >
             <svg
@@ -3352,7 +3352,7 @@
         </div>
 
         <div class="filter-actions">
-          <button class="filter-clear-btn" onclick="clearFilters()">
+          <button class="filter-clear-btn" data-action="clearFilters">
             Clear All
           </button>
           <span id="filter-count" class="filter-count"></span>
@@ -3409,11 +3409,11 @@
       <div class="progress-message" id="progress-message">Initializing...</div>
 
       <div class="progress-actions">
-        <button class="progress-btn" onclick="hideProgressPanel()">Hide</button>
+        <button class="progress-btn" data-action="hideProgressPanel">Hide</button>
         <button
           class="progress-btn danger"
           id="cancel-btn"
-          onclick="cancelGeneration()"
+          data-action="cancelGeneration"
           disabled
         >
           Cancel Generation
@@ -3433,7 +3433,7 @@
       <h2 id="modal-title" class="sr-only">Artwork viewer</h2>
       <button
         class="modal-close"
-        onclick="closeModal()"
+        data-action="closeModal"
         aria-label="Close image viewer"
         style="position: absolute; top: 20px; left: 20px; z-index: 1001"
       >
@@ -3447,7 +3447,7 @@
       <button
         class="modal-info-toggle"
         id="modal-info-toggle"
-        onclick="toggleModalInfo()"
+        data-action="toggleModalInfo"
         aria-label="Toggle image information panel"
       >
         <svg
@@ -3471,7 +3471,7 @@
       <button
         class="modal-nav-btn modal-nav-prev"
         id="modal-prev"
-        onclick="navigateModal(-1)"
+        data-action="navigateModal" data-arg="-1"
         aria-label="Previous artwork"
       >
         ‹
@@ -3479,7 +3479,7 @@
       <button
         class="modal-nav-btn modal-nav-next"
         id="modal-next"
-        onclick="navigateModal(1)"
+        data-action="navigateModal" data-arg="1"
         aria-label="Next artwork"
       >
         ›
@@ -3489,21 +3489,21 @@
       <div class="modal-zoom-controls">
         <button
           class="modal-zoom-btn"
-          onclick="zoomModal(-0.2)"
+          data-action="zoomModal" data-arg="-0.2"
           title="Zoom out"
         >
           −
         </button>
         <div class="modal-zoom-level" id="modal-zoom-level">100%</div>
-        <button class="modal-zoom-btn" onclick="zoomModal(0.2)" title="Zoom in">
+        <button class="modal-zoom-btn" data-action="zoomModal" data-arg="0.2" title="Zoom in">
           +
         </button>
-        <button class="modal-zoom-btn" onclick="resetZoom()" title="Reset zoom">
+        <button class="modal-zoom-btn" data-action="resetZoom" title="Reset zoom">
           ⟲
         </button>
         <button
           class="modal-zoom-btn comparison-btn"
-          onclick="startComparison()"
+          data-action="startComparison"
           title="Compare (C)"
           style="margin-left: 12px; font-size: 18px"
         >
@@ -3544,7 +3544,7 @@
       <button
         class="creation-fab-btn"
         id="creation-fab-btn"
-        onclick="toggleCreationPanel()"
+        data-action="toggleCreationPanel"
         title="Request a creation from Lumira"
       >
         Ask Lumira
@@ -3576,7 +3576,7 @@
         <button
           class="creation-panel-submit"
           id="fab-submit"
-          onclick="submitGalleryCreation()"
+          data-action="submitGalleryCreation"
         >
           Create
         </button>
@@ -3588,7 +3588,7 @@
     <button
       class="scroll-top"
       id="scroll-top"
-      onclick="scrollToTop()"
+      data-action="scrollToTop"
       aria-label="Scroll to top"
     >
       ↑
@@ -3613,7 +3613,7 @@
           </h2>
           <button
             class="modal-close"
-            onclick="closeShortcutsModal()"
+            data-action="closeShortcutsModal"
             aria-label="Close shortcuts"
           >
             ×
@@ -3664,7 +3664,7 @@
           <h2 class="templates-title">Prompt Templates</h2>
           <button
             class="templates-close-btn"
-            onclick="toggleTemplatesModal()"
+            data-action="toggleTemplatesModal"
             aria-label="Close templates"
           >
             &times;
@@ -3675,7 +3675,7 @@
             <p class="templates-desc">
               Save and reuse your favorite prompts and settings
             </p>
-            <button class="templates-new-btn" onclick="showTemplateForm()">
+            <button class="templates-new-btn" data-action="showTemplateForm">
               <svg
                 width="16"
                 height="16"
@@ -3791,11 +3791,11 @@
               <div class="template-form-actions">
                 <button
                   class="template-form-cancel"
-                  onclick="hideTemplateForm()"
+                  data-action="hideTemplateForm"
                 >
                   Cancel
                 </button>
-                <button class="template-form-save" onclick="saveTemplate()">
+                <button class="template-form-save" data-action="saveTemplate">
                   Save Template
                 </button>
               </div>
@@ -3809,14 +3809,14 @@
     <div id="bulk-actions-bar" class="bulk-actions-bar">
       <div class="bulk-selection-info">
         <span id="selection-count" class="bulk-selection-count"></span>
-        <button class="bulk-clear-btn" onclick="clearSelection()">
+        <button class="bulk-clear-btn" data-action="clearSelection">
           Clear Selection
         </button>
       </div>
       <div class="bulk-actions-group">
         <button
           class="bulk-action-btn bulk-featured-btn"
-          onclick="bulkToggleFeatured()"
+          data-action="bulkToggleFeatured"
         >
           <svg
             width="16"
@@ -3836,7 +3836,7 @@
         </button>
         <button
           class="bulk-action-btn bulk-download-btn"
-          onclick="bulkDownload()"
+          data-action="bulkDownload"
         >
           <svg
             width="16"
@@ -3854,7 +3854,7 @@
           </svg>
           Download All
         </button>
-        <button class="bulk-action-btn bulk-delete-btn" onclick="bulkDelete()">
+        <button class="bulk-action-btn bulk-delete-btn" data-action="bulkDelete">
           <svg
             width="16"
             height="16"
@@ -3877,7 +3877,7 @@
       </div>
     </div>
 
-    <script>
+    <script nonce="{{ csp_nonce }}">
       // ===== Shared mood color mapping (used by hero, modal, empty states) =====
       const MOOD_COLORS = {
         contemplative: { bg: 'linear-gradient(135deg, rgba(122,98,140,0.12), rgba(28,24,32,0.12))', accent: '#9a86a8', badge: '#9a86a8' },
@@ -4253,7 +4253,7 @@
             queueCuratorNote(image);
             return `
               <div class="creation-story">
-                <button class="creation-story-toggle" onclick="this.nextElementSibling.classList.toggle('expanded'); this.textContent = this.nextElementSibling.classList.contains('expanded') ? 'Hide creation story' : 'Read creation story';">Read creation story</button>
+                <button class="creation-story-toggle" data-action="toggleCreationStory">Read creation story</button>
                 <div class="creation-story-content">
                   <p class="thinking-step"><span class="thinking-step-label">Prompt</span>${escapeHTML(image.prompt)}</p>
                   <p class="thinking-step curator-pending" data-curator-for="${escapeHTML(image.filename || image.path || '')}"><span class="thinking-step-label">Curator</span>Listening to the archive…</p>
@@ -4299,7 +4299,7 @@
 
         return `
           <div class="creation-story">
-            <button class="creation-story-toggle" onclick="this.nextElementSibling.classList.toggle('expanded'); this.textContent = this.nextElementSibling.classList.contains('expanded') ? 'Hide creation story' : 'Read creation story';">Read creation story</button>
+            <button class="creation-story-toggle" data-action="toggleCreationStory">Read creation story</button>
             <div class="creation-story-content">
               ${storyParts.join('\n')}
             </div>
@@ -4336,7 +4336,7 @@
           '<h2>Nothing matches \'' + safeQuery + '\'</h2>' +
           '<p>That theme doesn\'t appear in Lumira\'s work yet.</p>' +
           '<div class="empty-actions">' +
-          '<button type="button" class="empty-btn empty-btn-secondary" onclick="clearFilters()">Browse all work</button>' +
+          '<button type="button" class="empty-btn empty-btn-secondary" data-action="clearFilters">Browse all work</button>' +
           '<a href="/lumira?theme=' + encodedQuery + '" class="empty-btn empty-btn-primary">Ask Lumira to create this &#8594;</a>' +
           '</div></div>';
       }
@@ -4449,9 +4449,9 @@
                         </div>
                     </div>
                     <div class="template-card-actions">
-                        <button class="template-apply-btn" onclick="applyTemplate('${template.id}')">Apply</button>
-                        <button class="template-edit-btn" onclick="editTemplate('${template.id}')">Edit</button>
-                        <button class="template-delete-btn" onclick="deleteTemplate('${template.id}')">Delete</button>
+                        <button class="template-apply-btn" data-action="applyTemplate" data-arg="${template.id}">Apply</button>
+                        <button class="template-edit-btn" data-action="editTemplate" data-arg="${template.id}">Edit</button>
+                        <button class="template-delete-btn" data-action="deleteTemplate" data-arg="${template.id}">Delete</button>
                     </div>
                 </div>
             `,
@@ -5696,10 +5696,10 @@
         if (filteredImages.length === 0) {
           if (currentViewMode === 'mood' && currentMoodFilter) {
             gallery.innerHTML =
-              `<div class="empty-state"><div class="empty-icon" style="color:${MOOD_COLORS[currentMoodFilter]?.accent || 'var(--accent)'}">&#10043;</div><h2>Lumira hasn't explored ${currentMoodFilter} much yet</h2><p>Moods shift often &mdash; check back soon.</p><div class="empty-actions"><button type="button" class="empty-btn empty-btn-secondary" onclick="filterByMood('')">Show All Moods</button></div></div>`;
+              `<div class="empty-state"><div class="empty-icon" style="color:${MOOD_COLORS[currentMoodFilter]?.accent || 'var(--accent)'}">&#10043;</div><h2>Lumira hasn't explored ${currentMoodFilter} much yet</h2><p>Moods shift often &mdash; check back soon.</p><div class="empty-actions"><button type="button" class="empty-btn empty-btn-secondary" data-action="filterByMood" data-arg="">Show All Moods</button></div></div>`;
           } else if (currentViewMode === 'picks' && allImages.length === 0) {
             gallery.innerHTML =
-              '<div class="empty-state"><div class="empty-icon">&#10024;</div><h2>Lumira is still developing her artistic voice</h2><p>Browse her recent work instead.</p><div class="empty-actions"><button type="button" class="empty-btn empty-btn-primary" onclick="switchViewMode(\'recent\')">View Recent</button></div></div>';
+              '<div class="empty-state"><div class="empty-icon">&#10024;</div><h2>Lumira is still developing her artistic voice</h2><p>Browse her recent work instead.</p><div class="empty-actions"><button type="button" class="empty-btn empty-btn-primary" data-action="switchViewMode" data-arg="recent">View Recent</button></div></div>';
           } else if (allImages.length === 0 && !currentSearch) {
             gallery.innerHTML = getEmptyGalleryHTML();
           } else {
@@ -5971,25 +5971,25 @@
         const soundtrackUrl = image.metadata && image.metadata.soundtrack_url;
         const videoUrl = image.metadata && image.metadata.video_url;
         modalActions.innerHTML = `
-                <button class="modal-btn" onclick="loveArtwork(getModalImage(), event)" style="width: 100%;">
+                <button class="modal-btn" data-action="loveModalImage" style="width: 100%;">
                     <span>♥</span> ${image._loved ? "Loved" : "Love — teach Lumira"}
                 </button>
-                <button class="modal-btn" onclick="shareArtwork(event)" style="width: 100%;">
+                <button class="modal-btn" data-action="shareArtwork" style="width: 100%;">
                     <span>↗</span> Share
                 </button>
-                <button class="modal-btn" onclick="shareAsLumira(getModalImage(), event)" style="width: 100%;">
+                <button class="modal-btn" data-action="shareModalImageAsLumira" style="width: 100%;">
                     <span>✦</span> Share as Lumira
                 </button>
-                <button class="modal-btn" onclick="animateArtwork(getModalImage(), event)" style="width: 100%;">
+                <button class="modal-btn" data-action="animateModalImage" style="width: 100%;">
                     <span>▶</span> Animate
                 </button>
-                <button class="modal-btn" onclick="toggleFeaturedInModal(event)" style="width: 100%;">
+                <button class="modal-btn" data-action="toggleFeaturedInModal" style="width: 100%;">
                     <span>${image.featured ? "⭐" : "☆"}</span> ${image.featured ? "Unfeature" : "Feature"}
                 </button>
                 <a class="modal-btn" href="${imagePath}?download=1" download="${image.filename}" style="width: 100%;">
                     <span>⬇</span> Download
                 </a>
-                <button class="modal-btn" onclick="deleteImageFromModal(event)" style="width: 100%; background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #ef4444;">
+                <button class="modal-btn" data-action="deleteImageFromModal" style="width: 100%; background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #ef4444;">
                     <span>🗑</span> Delete
                 </button>
                 <div class="modal-media">
@@ -6977,7 +6977,130 @@
       Artwork on this gallery is created by Lumira, an autonomous AI artist.
       <a href="/privacy" class="ai-disclosure-link">Privacy</a>
     </footer>
-      <script>
+    <script nonce="{{ csp_nonce }}">
+      // Event delegation in place of inline on*= attributes. A nonce covers
+      // script blocks but not handler attributes, so those 58 attributes were
+      // what kept 'unsafe-inline' in script-src (#60).
+      //
+      // Actions resolve through an explicit allowlist, never by evaluating
+      // markup, so a data-action value cannot reach anything not named here.
+      (function () {
+        "use strict";
+
+        var ACTION_NAMES = [
+          "applyTemplate",
+          "bulkDelete",
+          "bulkDownload",
+          "bulkToggleFeatured",
+          "cancelGeneration",
+          "clearFilters",
+          "clearSelection",
+          "closeModal",
+          "closeShortcutsModal",
+          "deleteImageFromModal",
+          "deleteTemplate",
+          "dismissHero",
+          "editTemplate",
+          "filterByMood",
+          "hideProgressPanel",
+          "hideTemplateForm",
+          "navigateModal",
+          "resetZoom",
+          "saveTemplate",
+          "scrollToTop",
+          "shareArtwork",
+          "showShortcutsModal",
+          "showTemplateForm",
+          "showTemplatesModal",
+          "startComparison",
+          "submitGalleryCreation",
+          "switchViewMode",
+          "toggleAdvancedFilters",
+          "toggleCreationPanel",
+          "toggleFeaturedInModal",
+          "toggleModalInfo",
+          "toggleTemplatesModal",
+          "zoomModal",
+        ];
+
+        // Actions whose function takes a numeric argument.
+        var NUMERIC_ARGS = { navigateModal: true, zoomModal: true };
+
+        var actions = {};
+        ACTION_NAMES.forEach(function (name) {
+          if (typeof window[name] === "function") actions[name] = window[name];
+        });
+
+        // Several handlers read ev.currentTarget to disable the button they
+        // were fired from, and ev.stopPropagation() to keep a card click from
+        // opening the modal. A delegated listener's currentTarget is the
+        // document, so hand them a shim carrying the element that was clicked.
+        function shim(event, element) {
+          return {
+            currentTarget: element,
+            target: event.target,
+            stopPropagation: function () {
+              event.stopPropagation();
+            },
+            preventDefault: function () {
+              event.preventDefault();
+            },
+          };
+        }
+
+        actions.loveModalImage = function (event, arg, element) {
+          loveArtwork(getModalImage(), shim(event, element));
+        };
+        actions.shareModalImageAsLumira = function (event, arg, element) {
+          shareAsLumira(getModalImage(), shim(event, element));
+        };
+        actions.animateModalImage = function (event, arg, element) {
+          animateArtwork(getModalImage(), shim(event, element));
+        };
+        actions.scrollToGallery = function (event) {
+          event.preventDefault();
+          var gallery = document.getElementById("gallery");
+          if (gallery) gallery.scrollIntoView({ behavior: "smooth" });
+        };
+        actions.toggleCreationStory = function (event, arg, element) {
+          var body = element.nextElementSibling;
+          if (!body) return;
+          var expanded = body.classList.toggle("expanded");
+          element.textContent = expanded
+            ? "Hide creation story"
+            : "Read creation story";
+        };
+
+        var SHIMMED = {
+          loveModalImage: true,
+          shareModalImageAsLumira: true,
+          animateModalImage: true,
+          scrollToGallery: true,
+          toggleCreationStory: true,
+        };
+
+        document.addEventListener("click", function (event) {
+          var element = event.target.closest("[data-action]");
+          if (!element) return;
+          var name = element.getAttribute("data-action");
+          var fn = actions[name];
+          if (!fn) return;
+          var arg = element.getAttribute("data-arg");
+          try {
+            if (SHIMMED[name]) {
+              fn(event, arg, element);
+            } else if (arg !== null) {
+              fn(NUMERIC_ARGS[name] ? Number(arg) : arg, event);
+            } else {
+              fn(event);
+            }
+          } catch (err) {
+            console.error("action failed: " + name, err);
+          }
+        });
+      })();
+    </script>
+      <script nonce="{{ csp_nonce }}">
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", function () {
           navigator.serviceWorker.register("/service-worker.js").catch(function () {});

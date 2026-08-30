@@ -181,3 +181,100 @@ class TestCorsMiddleware:
         assert (
             response.headers["access-control-allow-origin"] == "http://localhost:3000"
         )
+
+
+class TestContentSecurityPolicyNonce:
+    """script-src is nonce-based, and nothing reintroduces 'unsafe-inline'.
+
+    'unsafe-inline' existed because the templates carried 98 inline on*=
+    handler attributes, which a nonce cannot cover. Those are delegated
+    listeners now, so the directive can name a nonce instead -- and with
+    'unsafe-inline' gone, a browser that understands nonces will refuse any
+    script the server did not stamp.
+    """
+
+    def test_script_src_names_a_nonce_and_not_unsafe_inline(self):
+        from fastapi.testclient import TestClient
+
+        from ai_artist.web.app import app
+
+        response = TestClient(app).get("/privacy")
+        csp = response.headers["Content-Security-Policy"]
+        script_src = next(d for d in csp.split(";") if "script-src" in d)
+
+        assert "'unsafe-inline'" not in script_src
+        assert "'nonce-" in script_src
+
+    def test_nonce_is_fresh_for_every_response(self):
+        import re
+
+        from fastapi.testclient import TestClient
+
+        from ai_artist.web.app import app
+
+        client = TestClient(app)
+
+        def nonce_of(path: str) -> str:
+            csp = client.get(path).headers["Content-Security-Policy"]
+            match = re.search(r"'nonce-([A-Za-z0-9_-]+)'", csp)
+            assert match, csp
+            return match.group(1)
+
+        first, second = nonce_of("/privacy"), nonce_of("/privacy")
+        assert first != second
+        # token_urlsafe(16) -> 22 characters.
+        assert len(first) >= 20
+
+    def test_rendered_pages_carry_the_nonce_from_their_own_header(self):
+        import re
+
+        from fastapi.testclient import TestClient
+
+        from ai_artist.web.app import app
+
+        response = TestClient(app).get("/lumira")
+        nonce = re.search(
+            r"'nonce-([A-Za-z0-9_-]+)'", response.headers["Content-Security-Policy"]
+        ).group(1)
+
+        assert f'nonce="{nonce}"' in response.text
+        # An unrendered {{ csp_nonce }} or an empty one would be blocked.
+        assert 'nonce=""' not in response.text
+        assert "{{ csp_nonce }}" not in response.text
+
+    def test_no_template_reintroduces_an_inline_handler(self):
+        import re
+        from pathlib import Path
+
+        root = Path(__file__).resolve().parents[2]
+        pattern = re.compile(
+            r"\son(?:click|input|change|submit|mouseover|mouseout|keydown|keyup"
+            r"|focus|blur|load|error)\s*=",
+            re.IGNORECASE,
+        )
+        offenders = []
+        for html in list(
+            (root / "src" / "ai_artist" / "web" / "templates").rglob("*.html")
+        ) + [root / "static" / "offline.html"]:
+            for lineno, line in enumerate(
+                html.read_text(encoding="utf-8").splitlines(), start=1
+            ):
+                if pattern.search(line):
+                    offenders.append(f"{html.name}:{lineno}")
+
+        assert not offenders, (
+            "inline handlers cannot be covered by a CSP nonce; use a "
+            "data-action attribute and the page's delegated listener:\n  "
+            + "\n  ".join(offenders)
+        )
+
+    def test_every_inline_script_block_is_nonced(self):
+        from pathlib import Path
+
+        root = Path(__file__).resolve().parents[2]
+        offenders = []
+        for html in (root / "src" / "ai_artist" / "web" / "templates").rglob("*.html"):
+            if "<script>" in html.read_text(encoding="utf-8"):
+                offenders.append(html.name)
+
+        assert not offenders, f"inline <script> without a nonce: {offenders}"

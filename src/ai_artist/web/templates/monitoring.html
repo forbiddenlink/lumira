@@ -112,8 +112,8 @@
     </header>
     <main>
       <div class="toolbar">
-        <button type="button" onclick="refreshAll()">Refresh</button>
-        <button type="button" onclick="toggleAutoRefresh()">
+        <button type="button" data-action="refreshAll">Refresh</button>
+        <button type="button" data-action="toggleAutoRefresh">
           Auto-refresh: <span id="auto-label">ON</span>
         </button>
       </div>
@@ -151,7 +151,7 @@
       <p class="updated" id="last-updated"></p>
     </main>
 
-    <script>
+    <script nonce="{{ csp_nonce }}">
       var autoRefresh = true;
       var refreshTimer = null;
 
@@ -252,6 +252,23 @@
 
       refreshAll();
       refreshTimer = setInterval(refreshAll, 15000);
+    
+      // Delegated in place of inline on*= attributes, which a CSP nonce
+      // cannot cover (#60). Names resolve through an allowlist.
+      (function () {
+        var allowed = ["refreshAll", "toggleAutoRefresh"];
+        document.addEventListener("click", function (event) {
+          var el = event.target.closest("[data-action]");
+          if (!el) return;
+          var name = el.getAttribute("data-action");
+          if (allowed.indexOf(name) === -1) return;
+          if (name === "reload") {
+            window.location.reload();
+            return;
+          }
+          if (typeof window[name] === "function") window[name](event);
+        });
+      })();
     </script>
   </body>
 </html>

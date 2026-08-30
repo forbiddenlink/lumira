@@ -585,13 +585,13 @@
                     <span>⬇</span> download
                 </a>
             </div>
-            <button class="modal-close" onclick="closeModal()" aria-label="Close image detail view">×</button>
+            <button class="modal-close" data-action="closeModal" aria-label="Close image detail view">×</button>
             <img class="modal-image" id="modal-image" src="" alt="">
             <div class="modal-info" id="modal-info"></div>
         </div>
     </div>
 
-    <script>
+    <script nonce="{{ csp_nonce }}">
         let currentFilter = null;
         let currentSearch = '';
         let currentOffset = 0;
@@ -755,6 +755,23 @@
 
         loadStats();
         loadImages();
+    
+      // Delegated in place of inline on*= attributes, which a CSP nonce
+      // cannot cover (#60). Names resolve through an allowlist.
+      (function () {
+        var allowed = ["closeModal"];
+        document.addEventListener("click", function (event) {
+          var el = event.target.closest("[data-action]");
+          if (!el) return;
+          var name = el.getAttribute("data-action");
+          if (allowed.indexOf(name) === -1) return;
+          if (name === "reload") {
+            window.location.reload();
+            return;
+          }
+          if (typeof window[name] === "function") window[name](event);
+        });
+      })();
     </script>
     <footer
       style="text-align:center;padding:1.5rem 1rem;color:#888;font-size:0.8rem;border-top:1px solid rgba(255,255,255,0.08);margin-top:2rem"

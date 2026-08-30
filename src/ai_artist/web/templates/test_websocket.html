@@ -222,12 +222,12 @@
 
         <div class="panel">
             <h2>WebSocket Messages</h2>
-            <button onclick="clearMessages()">Clear Messages</button>
+            <button data-action="clearMessages">Clear Messages</button>
             <div class="messages" id="messages"></div>
         </div>
     </div>
 
-    <script>
+    <script nonce="{{ csp_nonce }}">
         let ws = null;
         let currentSessionId = null;
 
@@ -405,6 +405,23 @@
 
         // Connect on page load
         connectWebSocket();
+    
+      // Delegated in place of inline on*= attributes, which a CSP nonce
+      // cannot cover (#60). Names resolve through an allowlist.
+      (function () {
+        var allowed = ["clearMessages"];
+        document.addEventListener("click", function (event) {
+          var el = event.target.closest("[data-action]");
+          if (!el) return;
+          var name = el.getAttribute("data-action");
+          if (allowed.indexOf(name) === -1) return;
+          if (name === "reload") {
+            window.location.reload();
+            return;
+          }
+          if (typeof window[name] === "function") window[name](event);
+        });
+      })();
     </script>
 </body>
 </html>
