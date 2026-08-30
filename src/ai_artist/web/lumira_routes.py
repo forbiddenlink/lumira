@@ -1599,7 +1599,11 @@ async def create_artwork(
                                     filename=str(save_path),
                                     prompt=prompt,
                                     negative_prompt=negative_prompt,
-                                    status=mood.value,
+                                    # status is the pipeline state, not the
+                                    # mood -- writing the mood here made
+                                    # "how many are curated" unanswerable.
+                                    # Mood lives in generation_params + tags.
+                                    status="curated",
                                     seed=None,
                                     model_id=config.model.base_model,
                                     generation_params={
@@ -2150,7 +2154,11 @@ async def user_request_creation(
                                     filename=str(save_path),
                                     prompt=prompt,
                                     negative_prompt=negative_prompt,
-                                    status=mood.value,
+                                    # status is the pipeline state, not the
+                                    # mood -- writing the mood here made
+                                    # "how many are curated" unanswerable.
+                                    # Mood lives in generation_params + tags.
+                                    status="curated",
                                     seed=None,
                                     model_id=config.model.base_model,
                                     generation_params={
@@ -3720,7 +3728,11 @@ async def create_with_reference(
                                     filename=str(save_path),
                                     prompt=prompt,
                                     negative_prompt=negative_prompt,
-                                    status=mood.value,
+                                    # status is the pipeline state, not the
+                                    # mood -- writing the mood here made
+                                    # "how many are curated" unanswerable.
+                                    # Mood lives in generation_params + tags.
+                                    status="curated",
                                     seed=None,
                                     model_id=config.model.base_model,
                                     generation_params={
