@@ -13,7 +13,7 @@ dependencies = [
     "torch>=2.13.0",
     "torchvision>=0.17.0",
     "diffusers>=0.38.0",
-    "transformers>=4.57.6,<6.0.0",
+    "transformers>=5.5.0,<6.0.0",
     "accelerate>=0.27.0",
     "peft>=0.7.0",
     "safetensors>=0.4.0",
@@ -86,7 +86,7 @@ quality = [
 ]
 aesthetics = [
     "simple-aesthetics-predictor>=0.1.2",
-    "transformers>=4.57.6,<6.0.0",
+    "transformers>=5.5.0,<6.0.0",
 ]
 monitoring = [
     "sentry-sdk[fastapi]>=2.0.0",
@@ -134,6 +134,15 @@ override-dependencies = [
     "pillow>=12.3.0",
     # GHSA OpenSSL wheel fix; atproto caps <47 but works with 48+ at runtime
     "cryptography>=48.0.1",
+    # CVE-2026-4372 (RCE via _attn_implementation_internal, fixed 5.3.0) and
+    # CVE-2026-5241 (RCE in the LightGlue load path, fixed 5.5.0). The only
+    # thing holding the resolution at 4.57.6 is simple-aesthetics-predictor
+    # 0.1.2, whose metadata caps transformers <5.0.0; that package is
+    # unmaintained (0.1.2 is the latest release and is from before the 5.x
+    # line existed) and imports cleanly against 5.16.1. If its model does turn
+    # out to be incompatible at load time, ImageCurator._load_aesthetic_model
+    # catches it, logs aesthetic_model_load_failed and scores without it.
+    "transformers>=5.5.0",
 ]
 
 [tool.ruff]

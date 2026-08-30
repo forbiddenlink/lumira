@@ -2,6 +2,18 @@
 
 Enables semantic search over past creations and memories using embeddings.
 Uses ChromaDB for local, persistent vector storage.
+
+Security note -- this must stay embedded. ChromaDB 1.5.9 (the latest release)
+carries three unpatched advisories, and all three are reachable only through
+its HTTP server: CVE-2026-45833 needs the /api/v2/.../collections endpoint
+with UPDATE_COLLECTION permission, and CVE-2026-45830 / CVE-2026-45831 are
+flaws in the tenant scoping of its RBAC authorization provider. A
+``PersistentClient`` runs in-process against a local directory with no server,
+no auth and no tenants, so none of them apply.
+
+Switching this to ``chromadb.HttpClient`` -- or running a Chroma server beside
+the app -- makes all three live, with no upstream fix available. Do not do it
+without re-checking those advisories first.
 """
 
 from datetime import datetime
