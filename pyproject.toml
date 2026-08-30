@@ -208,4 +208,10 @@ dev = [
     "fakeredis>=2.21.0",  # For queue tests
     "pytest-playwright>=0.6.2",  # For e2e tests
     "axe-playwright-python>=0.1.8",  # WCAG scans in tests/e2e/test_a11y.py
+    # Type checking runs against the project environment (see #90), so
+    # mypy and the stubs it needs are dev dependencies rather than a
+    # throwaway uvx environment where every third-party type is Any.
+    "mypy>=1.14.0",
+    "types-requests>=2.32.0",
+    "types-PyYAML>=6.0.12",
 ]

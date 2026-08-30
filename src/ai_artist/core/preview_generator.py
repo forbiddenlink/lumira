@@ -13,7 +13,6 @@ from typing import TYPE_CHECKING, Any
 from ..utils.logging import get_logger
 
 if TYPE_CHECKING:
-    from diffusers import FluxPipeline
     from PIL import Image
 
 logger = get_logger(__name__)
@@ -153,7 +152,9 @@ class PreviewGenerator:
         self.style_interpolator = style_interpolator
         self.mood_blender = mood_blender
 
-        self._pipeline: FluxPipeline | None = None
+        # diffusers builds the pipeline dynamically; the declared class does
+        # not carry .to()/.enable_attention_slicing()/__call__.
+        self._pipeline: Any = None
         self._loaded = False
         self._load_time: float = 0.0
         self._last_error: str | None = None
@@ -295,7 +296,7 @@ class PreviewGenerator:
                 generator.manual_seed(seed)
                 result.seed = seed
             else:
-                result.seed = torch.randint(0, 2**32 - 1, (1,)).item()
+                result.seed = int(torch.randint(0, 2**32 - 1, (1,)).item())
 
             # Apply style blend if available
             if style_weights and self.style_interpolator:

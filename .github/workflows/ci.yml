@@ -37,9 +37,16 @@ jobs:
     - name: Check code formatting with Black
       run: uvx black --check src/ tests/
 
+    # Type checking needs the project's dependencies present. Under the old
+    # `uvx --with pydantic mypy` the environment held mypy and pydantic and
+    # nothing else, so --ignore-missing-imports resolved every SQLAlchemy,
+    # torch and diffusers symbol to Any and the check had almost nothing left
+    # to catch -- 27 real errors were passing CI (#90).
+    - name: Install dependencies
+      run: uv sync --dev
+
     - name: Type check with mypy
-      run: |
-        uvx --with pydantic mypy src/ --ignore-missing-imports
+      run: uv run --frozen mypy src/ --ignore-missing-imports
 
   # Dependency security review on PRs
   dependency-review:

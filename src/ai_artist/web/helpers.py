@@ -220,7 +220,7 @@ def calculate_gallery_stats_from_db() -> dict | None:
         valid_count = 0
 
         for row in rows:
-            prompt_text = row.prompt or ""
+            prompt_text = str(row.prompt or "")
             if is_trivial_prompt(prompt_text):
                 continue
             row_path = Path(row.filename)

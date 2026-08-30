@@ -161,7 +161,7 @@ class FluxGenerator:
             from diffusers import FluxPipeline
 
             # Build loading kwargs
-            load_kwargs = {
+            load_kwargs: dict[str, Any] = {
                 "torch_dtype": self.dtype,
             }
 

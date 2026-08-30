@@ -1,6 +1,8 @@
 """Unit tests for the curation system."""
 
-from unittest.mock import patch
+import sys
+import types
+from unittest.mock import MagicMock, patch
 
 import pytest
 from PIL import Image
@@ -175,13 +177,19 @@ class TestRemoteCodeIsRefused:
     """
 
     def test_aesthetic_model_and_processor_refuse_remote_code(self):
+        # simple-aesthetics-predictor lives in the optional "aesthetics" extra
+        # and is absent from CI, so stand in a stub module rather than skipping
+        # -- the assertion is about the call, not the package.
+        stub = types.ModuleType("aesthetics_predictor")
+        stub.AestheticsPredictorV2Linear = MagicMock()  # type: ignore[attr-defined]
+        model_cls = stub.AestheticsPredictorV2Linear  # type: ignore[attr-defined]
+
         curator = ImageCurator(device="cpu")
 
         with (
-            patch("aesthetics_predictor.AestheticsPredictorV2Linear") as model_cls,
+            patch.dict(sys.modules, {"aesthetics_predictor": stub}),
             patch("transformers.CLIPProcessor") as processor_cls,
         ):
-            model_cls.from_pretrained.return_value.to.return_value = object()
             curator._load_aesthetic_model()
 
             assert (

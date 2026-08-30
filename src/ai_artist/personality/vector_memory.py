@@ -103,7 +103,7 @@ class VectorMemory:
         )
 
         # Prepare metadata
-        meta = {
+        meta: dict[str, str | int | float | bool] = {
             "subject": subject,
             "style": style,
             "mood": mood,
@@ -240,7 +240,7 @@ class VectorMemory:
         Returns:
             List of matching reflections
         """
-        where = {"type": reflection_type} if reflection_type else None
+        where: Any = {"type": reflection_type} if reflection_type else None
 
         results = self.reflections.query(
             query_texts=[query],
@@ -310,11 +310,12 @@ class VectorMemory:
             where={"mood": mood},
         )
 
-        subjects = []
+        subjects: list[str] = []
         if results["metadatas"] and results["metadatas"][0]:
-            for meta in results["metadatas"][0]:
-                if meta.get("subject"):
-                    subjects.append(meta["subject"])
+            for entry in results["metadatas"][0]:
+                subject = entry.get("subject")
+                if subject:
+                    subjects.append(str(subject))
 
         return subjects
 

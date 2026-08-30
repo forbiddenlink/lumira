@@ -9,7 +9,7 @@ The StyleInterpolator enables:
 import contextlib
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from ..utils.logging import get_logger
 
@@ -106,7 +106,7 @@ class StyleInterpolator:
             pipeline: Diffusion pipeline with LoRA support
             lora_registry: Map of style names to LoRA file paths
         """
-        self.pipe = pipeline
+        self.pipe: Any = pipeline
         self.registry = lora_registry or {}
         self.loaded_loras: set[str] = set()
         self.current_blend: StyleBlend | None = None
@@ -275,7 +275,7 @@ class LatentExplorer:
         Args:
             pipeline: Diffusion pipeline for generation
         """
-        self.pipe = pipeline
+        self.pipe: Any = pipeline
         logger.info("latent_explorer_initialized")
 
     def _get_text_encoder(self) -> Any:
@@ -321,7 +321,7 @@ class LatentExplorer:
             with torch.no_grad():
                 embeddings = text_encoder(input_ids)[0]
 
-            return embeddings
+            return cast("torch.Tensor", embeddings)
         except Exception as e:
             logger.error("encode_prompt_failed", error=str(e))
             return None
