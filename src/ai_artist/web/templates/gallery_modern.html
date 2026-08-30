@@ -2191,10 +2191,21 @@
         margin-top: 0.25rem;
       }
       .live-atelier-link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
         color: inherit;
         text-decoration: underline;
         text-underline-offset: 3px;
       }
+      .ai-disclosure-link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        margin-left: 0.75rem;
+        color: inherit;
+      }
+
       .taste-chip {
         border: 1px solid rgba(212, 175, 120, 0.45);
         padding: 0.15rem 0.55rem;
@@ -2256,6 +2267,10 @@
         align-items: center;
         justify-content: space-between;
         gap: 20px;
+      }
+
+      .welcome-hero-text {
+        max-width: 68ch;
       }
 
       .welcome-hero-text h2 {
@@ -2519,6 +2534,14 @@
       /* ===== AWWWARDS ENHANCEMENTS ===== */
 
       /* Custom cursor */
+      .cursor-dot,
+      .cursor-ring {
+        opacity: 0;
+      }
+      body.cursor-ready .cursor-dot,
+      body.cursor-ready .cursor-ring {
+        opacity: 1;
+      }
       .cursor-dot {
         position: fixed;
         width: 6px;
@@ -6846,8 +6869,13 @@
         setTimeout(dismissPageLoader, 2500);
       })();
 
-      // ===== AWWWARDS: Custom cursor =====
+      // ===== AWWWARDS: Custom cursor (pointer devices only) =====
       (function () {
+        // Without this guard the rAF loop below ran forever on touch devices
+        // to animate two elements the stylesheet had already hidden.
+        if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+          return;
+        }
         var dot = document.getElementById("cursor-dot");
         var ring = document.getElementById("cursor-ring");
         if (!dot || !ring) return;
@@ -6857,6 +6885,13 @@
           ry = 0;
 
         document.addEventListener("mousemove", function (e) {
+          if (!document.body.classList.contains("cursor-ready")) {
+            // Until the first real position both elements sat at (0, 0),
+            // leaving a stray dot and ring in the corner of every page load.
+            rx = e.clientX;
+            ry = e.clientY;
+            document.body.classList.add("cursor-ready");
+          }
           cx = e.clientX;
           cy = e.clientY;
           dot.style.left = cx + "px";
@@ -6897,7 +6932,7 @@
       style="text-align:center;padding:1.25rem 1rem 5.5rem;color:var(--text-muted, #888);font-size:0.75rem;border-top:1px solid var(--border, rgba(255,255,255,0.08));margin-top:2rem"
     >
       Artwork on this gallery is created by Lumira, an autonomous AI artist.
-      <a href="/privacy" style="color: inherit; margin-left: 0.75rem">Privacy</a>
+      <a href="/privacy" class="ai-disclosure-link">Privacy</a>
     </footer>
       <script>
       if ("serviceWorker" in navigator) {

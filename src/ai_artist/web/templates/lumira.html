@@ -2460,9 +2460,12 @@
         text-align: center;
       }
 
-      .ai-disclosure a {
-        color: inherit;
+      .ai-disclosure-link {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
         margin-left: 0.75rem;
+        color: inherit;
       }
 
       .theme-toggle {
@@ -3095,7 +3098,7 @@
 
       <footer class="ai-disclosure" role="contentinfo" aria-label="AI transparency notice">
         Lumira is an autonomous AI artist — images here are AI-generated.
-        <a href="/privacy">Privacy</a>
+        <a href="/privacy" class="ai-disclosure-link">Privacy</a>
       </footer>
     </main>
 
