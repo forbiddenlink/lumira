@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import os
 from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 
@@ -94,7 +95,7 @@ _redis_client = None
 _redis_checked = False
 
 
-def _get_redis():
+def _get_redis() -> Any:
     """Return a redis client if REDIS_URL is set and reachable, else None."""
     global _redis_client, _redis_checked
     if _redis_checked:
@@ -258,7 +259,7 @@ def check_and_record_images(
         record_spend(cost_per_image_usd * num_images, context=provider)
 
 
-def guarded_messages_create(client, **kwargs):
+def guarded_messages_create(client: Any, **kwargs: Any) -> Any:
     """Wrap Anthropic ``client.messages.create`` with kill switch, budget check,
     and usage logging. Drop-in for ``client.messages.create(**kwargs)``.
     """

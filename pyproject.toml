@@ -29,7 +29,7 @@ dependencies = [
     "apscheduler>=3.10.0",
     "structlog>=24.4.0,<27.0.0",
     "tqdm>=4.66.0",
-    "fastapi>=0.115.0",
+    "fastapi>=0.115.0,<0.142.0",
     "python-multipart>=0.0.31,<0.1.0",
     "uvicorn[standard]>=0.32.0,<0.53.0",
     "websockets>=12.0.0",
@@ -178,6 +178,14 @@ warn_required_dynamic_aliases = true
 [[tool.mypy.overrides]]
 module = "aiofiles.*"
 ignore_missing_imports = true
+
+# Incrementally tighten strictness (issue #61): start with the two packages
+# that are least likely to be full of third-party-typed churn. Expand this
+# list package-by-package rather than flipping the global
+# disallow_untyped_defs, which would surface hundreds of errors at once.
+[[tool.mypy.overrides]]
+module = ["ai_artist.core.*", "ai_artist.personality.*"]
+disallow_untyped_defs = true
 
 [dependency-groups]
 dev = [

@@ -193,7 +193,7 @@ class Personality:
         """Check if Lumira is bored with a subject (painted it too recently)."""
         return self.recent_subjects.count(subject) >= 2
 
-    def record_subject(self, subject: str):
+    def record_subject(self, subject: str) -> None:
         """Record a subject that was just painted."""
         self.recent_subjects.append(subject)
         if len(self.recent_subjects) > self.max_recent:
@@ -299,7 +299,7 @@ class Personality:
 
         return base_reflection
 
-    def evolve_preferences(self, style: str, subject: str, score: float):
+    def evolve_preferences(self, style: str, subject: str, score: float) -> None:
         """Evolve Lumira's preferences based on success."""
         # Increase affinity for successful combinations
         if score >= 0.65:
@@ -339,7 +339,7 @@ class Personality:
             "timestamp": datetime.now().isoformat(),
         }
 
-    def fluctuate_energy(self):
+    def fluctuate_energy(self) -> None:
         """Natural energy fluctuation over time."""
         # Random walk with bounds
         change = random.uniform(-0.1, 0.1)

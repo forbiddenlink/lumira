@@ -341,7 +341,7 @@ class MoodSystem:
     # Minimum intensity before mood shifts to neutral
     MIN_INTENSITY_THRESHOLD = 0.3
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.current_mood = self._get_time_based_mood()
         self.energy_level = 0.5  # 0.0 to 1.0
         self.mood_duration = 0

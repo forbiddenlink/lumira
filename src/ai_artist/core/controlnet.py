@@ -245,7 +245,10 @@ class ControlNetPreprocessor:
 
     @classmethod
     def preprocess(
-        cls, image: Image.Image, controlnet_type: ControlNetType | str, **kwargs
+        cls,
+        image: Image.Image,
+        controlnet_type: ControlNetType | str,
+        **kwargs: Any,
     ) -> Image.Image:
         """Preprocess an image using the specified ControlNet type.
 
@@ -279,7 +282,7 @@ class ControlNetPreprocessor:
         return preprocessor_fn(image)
 
     @classmethod
-    def clear_cache(cls):
+    def clear_cache(cls) -> None:
         """Clear cached detectors to free memory."""
         cls._depth_detector = None
         cls._pose_detector = None

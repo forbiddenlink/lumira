@@ -29,7 +29,7 @@ class StyleBlend:
     name: str = ""
     description: str = ""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not self.name and self.styles:
             # Auto-generate name
             sorted_styles = sorted(self.styles.items(), key=lambda x: -x[1])
@@ -278,13 +278,13 @@ class LatentExplorer:
         self.pipe = pipeline
         logger.info("latent_explorer_initialized")
 
-    def _get_text_encoder(self):
+    def _get_text_encoder(self) -> Any:
         """Get the text encoder from pipeline."""
         if self.pipe is None:
             return None
         return getattr(self.pipe, "text_encoder", None)
 
-    def _get_tokenizer(self):
+    def _get_tokenizer(self) -> Any:
         """Get the tokenizer from pipeline."""
         if self.pipe is None:
             return None

@@ -6,6 +6,8 @@ Supports SDXL, FLUX, and other models available on Replicate.
 
 import io
 import os
+from collections.abc import Callable
+from types import TracebackType
 from typing import Any, Literal
 
 import httpx
@@ -70,8 +72,8 @@ class ReplicateGenerator:
         device: Literal[
             "cuda", "mps", "cpu"
         ] = "cpu",  # Ignored, runs on Replicate's GPUs
-        dtype=None,  # Ignored, for compatibility
-    ):
+        dtype: Any = None,  # Ignored, for compatibility
+    ) -> None:
         """Initialize Replicate generator.
 
         Args:
@@ -131,7 +133,7 @@ class ReplicateGenerator:
         guidance_scale: float = 7.5,
         num_images: int = 1,
         seed: int | None = None,
-        on_progress=None,  # Not supported by Replicate API
+        on_progress: Callable[..., Any] | None = None,  # Not supported by Replicate API
         lora_url: str | None = None,
         lora_scale: float = 1.0,
         **kwargs: Any,  # Tolerate backend-agnostic caller params (e.g. use_refiner)
@@ -394,11 +396,15 @@ class ReplicateGenerator:
         """Clear VRAM. No-op for Replicate (runs on cloud)."""
         pass
 
-    def __enter__(self):
+    def __enter__(self) -> "ReplicateGenerator":
         """Context manager entry."""
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         """Context manager exit."""
         self.cleanup()
-        return False

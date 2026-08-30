@@ -74,10 +74,10 @@ class ThinkingProcess:
 
     def __init__(
         self,
-        mood_system=None,
-        memory_system=None,
+        mood_system: Any | None = None,
+        memory_system: Any | None = None,
         on_thought: Callable[[Thought], None] | None = None,
-    ):
+    ) -> None:
         """
         Initialize thinking process.
 

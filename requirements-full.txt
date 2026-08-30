@@ -1,5 +1,11 @@
 # Full requirements for complete Lumira installation
 # Includes all dependencies for local development with ML capabilities
+#
+# Source of truth: this file must mirror `[project.dependencies]` in
+# pyproject.toml (same packages, same version floors/ceilings). It exists
+# separately only so `pip install -r requirements-full.txt` works without an
+# editable install. When bumping a version here (e.g. via Dependabot),
+# make the matching change in pyproject.toml, and vice versa — see issue #59.
 
 # Web server + API
 fastapi>=0.115.0,<0.142.0

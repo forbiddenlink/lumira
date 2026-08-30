@@ -1,6 +1,6 @@
 """Image upscaling using Stable Diffusion x4 Upscaler."""
 
-from typing import Literal
+from typing import Any, Literal
 
 import torch
 from diffusers import StableDiffusionUpscalePipeline
@@ -19,13 +19,13 @@ class ImageUpscaler:
         model_id: str = "stabilityai/stable-diffusion-x4-upscaler",
         device: Literal["cuda", "mps", "cpu"] = "cuda",
         dtype: torch.dtype = torch.float16,
-    ):
+    ) -> None:
         self.model_id = model_id
         self.device = device
         self.dtype = dtype
-        self.pipeline = None
+        self.pipeline: Any = None
 
-    def load_model(self):
+    def load_model(self) -> None:
         """Load the upscaling pipeline."""
         if self.pipeline is not None:
             return
@@ -100,7 +100,7 @@ class ImageUpscaler:
             logger.error("upscaling_failed", error=str(e))
             raise
 
-    def unload(self):
+    def unload(self) -> None:
         """Unload model to free memory."""
         if self.pipeline:
             del self.pipeline

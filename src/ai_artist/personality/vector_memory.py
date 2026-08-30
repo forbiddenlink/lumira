@@ -318,7 +318,7 @@ class VectorMemory:
             "persist_dir": str(self.persist_dir),
         }
 
-    def index_existing_creations(self, db_session) -> int:
+    def index_existing_creations(self, db_session: Any) -> int:
         """Index existing creations from database into vector memory.
 
         Args:

@@ -39,7 +39,7 @@ class ArtistMemory:
             paintings_count=len(self.memory["paintings"]),
         )
 
-    def _load(self):
+    def _load(self) -> None:
         """Load memory from disk."""
         if self.memory_file.exists():
             try:
@@ -52,7 +52,7 @@ class ArtistMemory:
         else:
             logger.info("no_existing_memory", creating_new=True)
 
-    def _save(self):
+    def _save(self) -> None:
         """Save memory to disk."""
         try:
             self.memory_file.parent.mkdir(parents=True, exist_ok=True)
@@ -72,7 +72,7 @@ class ArtistMemory:
         score: float,
         image_path: str,
         metadata: dict | None = None,
-    ):
+    ) -> None:
         """Remember a piece Lumira created."""
         artwork = {
             "timestamp": datetime.now().isoformat(),
@@ -107,7 +107,7 @@ class ArtistMemory:
             total=self.memory["stats"]["total_created"],
         )
 
-    def _update_preferences(self, subject: str, style: str, colors: list[str]):
+    def _update_preferences(self, subject: str, style: str, colors: list[str]) -> None:
         """Update what Lumira likes based on what she creates."""
         # Track subject preferences
         self.memory["preferences"]["favorite_subjects"][subject] = (
@@ -125,7 +125,9 @@ class ArtistMemory:
                 self.memory["preferences"]["favorite_colors"].get(color, 0) + 1
             )
 
-    def add_reflection(self, reflection: str, about_painting: str | None = None):
+    def add_reflection(
+        self, reflection: str, about_painting: str | None = None
+    ) -> None:
         """Lumira reflects on her work or creative process."""
         reflection_entry = {
             "timestamp": datetime.now().isoformat(),

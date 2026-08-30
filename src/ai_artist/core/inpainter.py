@@ -1,6 +1,6 @@
 """Inpainting module for fixing image defects."""
 
-from typing import Literal
+from typing import Any, Literal
 
 import torch
 from diffusers import DPMSolverMultistepScheduler, StableDiffusionInpaintPipeline
@@ -19,13 +19,13 @@ class ImageInpainter:
         model_id: str = "runwayml/stable-diffusion-inpainting",
         device: Literal["cuda", "mps", "cpu"] = "cuda",
         dtype: torch.dtype = torch.float16,
-    ):
+    ) -> None:
         self.model_id = model_id
         self.device = device
         self.dtype = dtype
-        self.pipeline = None
+        self.pipeline: Any = None
 
-    def load_model(self):
+    def load_model(self) -> None:
         """Load the inpainting pipeline."""
         logger.info("loading_inpainter", model=self.model_id)
         try:

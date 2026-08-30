@@ -82,7 +82,7 @@ class IPAdapterManager:
         )
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize IP-Adapter manager."""
         self._loaded_adapter: str | None = None
         self._image_encoder = None
@@ -291,7 +291,7 @@ class IPAdapterManager:
         num_images: int = 1,
         seed: int | None = None,
         generator: torch.Generator | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> list[Image.Image]:
         """Generate images with IP-Adapter conditioning.
 
@@ -366,7 +366,7 @@ class IPAdapterManager:
         reference_image: Image.Image | Path | str,
         prompt: str,
         scales: list[float] | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> list[tuple[float, Image.Image]]:
         """Generate variations with different IP-Adapter scales.
 

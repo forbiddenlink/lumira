@@ -216,7 +216,7 @@ class ArtisticProfile:
     # Artistic periods/phases (tracked over time)
     artistic_periods: list[dict[str, Any]] = field(default_factory=list)
 
-    def add_evolution_note(self, note: str, category: str = "general"):
+    def add_evolution_note(self, note: str, category: str = "general") -> None:
         """Record a significant change or realization in artistic development."""
         self.evolution_notes.append(
             {

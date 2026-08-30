@@ -1,6 +1,7 @@
 """Image generation using Stable Diffusion + LoRA."""
 
 from pathlib import Path
+from types import TracebackType
 from typing import TYPE_CHECKING, Any, Literal, cast
 
 if TYPE_CHECKING:
@@ -106,14 +107,18 @@ class ImageGenerator:
             "initializing_generator", model=model_id, device=device, dtype=str(dtype)
         )
 
-    def __enter__(self):
+    def __enter__(self) -> "ImageGenerator":
         """Context manager entry."""
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         """Context manager exit - automatically cleanup resources."""
         self.unload()
-        return False
 
     def get_model_for_mood(
         self, mood: str, mood_models: dict[str, str] | None = None
@@ -169,7 +174,7 @@ class ImageGenerator:
         self,
         controlnet_model: str | list[str] | None = None,
         model_override: str | None = None,
-    ):
+    ) -> None:
         """Load the diffusion pipeline.
 
         Args:
@@ -388,7 +393,7 @@ class ImageGenerator:
         self,
         controlnet_type: ControlNetType | str,
         use_sdxl: bool = True,
-    ):
+    ) -> None:
         """Load a ControlNet model by type.
 
         This is a convenience method to load a ControlNet with proper SDXL/SD1.5
@@ -418,7 +423,7 @@ class ImageGenerator:
 
     def load_refiner(
         self, refiner_id: str = "stabilityai/stable-diffusion-xl-refiner-1.0"
-    ):
+    ) -> None:
         """Load the refiner pipeline."""
         logger.info("loading_refiner", model=refiner_id)
 
@@ -449,7 +454,7 @@ class ImageGenerator:
             logger.error("refiner_load_failed", model=refiner_id, error=str(e))
             raise
 
-    def load_lora(self, lora_path: Path, lora_scale: float = 0.8):
+    def load_lora(self, lora_path: Path, lora_scale: float = 0.8) -> None:
         """Load LoRA weights from trained model."""
         if not self.pipeline:
             raise RuntimeError("Load model first using load_model()")
@@ -558,7 +563,12 @@ class ImageGenerator:
             generator = torch.Generator(device=self.device).manual_seed(seed)
 
         # Progress callback using modern API (callback_on_step_end)
-        def progress_callback_modern(pipeline, step_index, timestep, callback_kwargs):
+        def progress_callback_modern(
+            pipeline: Any,
+            step_index: int,
+            timestep: Any,
+            callback_kwargs: dict[str, Any],
+        ) -> dict[str, Any]:
             step = step_index + 1  # Make it 1-based for display
             progress_pct = int((step / num_inference_steps) * 100)
             logger.debug(
@@ -823,7 +833,7 @@ class ImageGenerator:
             # Cleanup
             self.clear_vram()
 
-    def clear_vram(self):
+    def clear_vram(self) -> None:
         """Clear GPU memory cache to prevent memory leaks in long-running sessions.
 
         Should be called after each generation cycle, especially in 24/7 operation.
@@ -837,7 +847,7 @@ class ImageGenerator:
             torch.mps.empty_cache()
             logger.debug("mps_vram_cleared")
 
-    def unload(self):
+    def unload(self) -> None:
         """Unload model from memory and cleanup resources."""
         if self.refiner:
             logger.info("unloading_refiner")

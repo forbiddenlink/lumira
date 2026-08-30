@@ -63,7 +63,7 @@ MILESTONE_BONUSES = {
 class ExperienceSystem:
     """Track Lumira's artistic growth through XP and leveling."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.total_xp: int = 0
         self.level: int = 1
         self.title: str = "Novice Artist"
@@ -286,7 +286,7 @@ class ReflectionSystem:
     Generates insights about patterns, growth, and artistic direction.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.reflections: list[dict[str, Any]] = []
         self.last_reflection_time: datetime | None = None
         self.reflection_count: int = 0
@@ -448,7 +448,7 @@ class ReflectionSystem:
 class EpisodicMemory:
     """Memory of specific creative events and experiences."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.episodes: list[dict[str, Any]] = []
 
     def record_episode(
@@ -457,7 +457,7 @@ class EpisodicMemory:
         details: dict[str, Any],
         emotional_state: dict[str, Any],
         timestamp: str | None = None,
-    ):
+    ) -> None:
         """Record a specific episode in Lumira's creative journey."""
         episode = {
             "timestamp": timestamp or datetime.now().isoformat(),
@@ -494,7 +494,7 @@ class EpisodicMemory:
 class SemanticMemory:
     """General knowledge and learned patterns about art and creativity."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.knowledge: dict[str, Any] = {
             "style_effectiveness": {},  # Which styles work well
             "subject_resonance": {},  # Which subjects resonate
@@ -506,7 +506,7 @@ class SemanticMemory:
 
     def record_style_effectiveness(
         self, style: str, avg_score: float, sample_size: int
-    ):
+    ) -> None:
         """Learn which styles tend to produce better work."""
         self.knowledge["style_effectiveness"][style] = {
             "avg_score": avg_score,
@@ -514,14 +514,14 @@ class SemanticMemory:
             "last_updated": datetime.now().isoformat(),
         }
 
-    def record_subject_resonance(self, subject: str, metrics: dict[str, float]):
+    def record_subject_resonance(self, subject: str, metrics: dict[str, float]) -> None:
         """Learn which subjects resonate emotionally."""
         self.knowledge["subject_resonance"][subject] = {
             **metrics,
             "last_updated": datetime.now().isoformat(),
         }
 
-    def learn_association(self, insight: str, category: str = "general"):
+    def learn_association(self, insight: str, category: str = "general") -> None:
         """Record a general creative insight or learned association."""
         self.knowledge["learned_associations"].append(
             {
@@ -552,12 +552,12 @@ class SemanticMemory:
 class WorkingMemory:
     """Short-term memory for current creative session."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.current_context: dict[str, Any] = {}
         self.active_goals: list[str] = []
         self.session_start: str = datetime.now().isoformat()
 
-    def set_context(self, key: str, value: Any):
+    def set_context(self, key: str, value: Any) -> None:
         """Store information in working memory."""
         self.current_context[key] = value
 
@@ -565,16 +565,16 @@ class WorkingMemory:
         """Retrieve from working memory."""
         return self.current_context.get(key)
 
-    def add_goal(self, goal: str):
+    def add_goal(self, goal: str) -> None:
         """Add an active creative goal."""
         self.active_goals.append(goal)
 
-    def complete_goal(self, goal: str):
+    def complete_goal(self, goal: str) -> None:
         """Mark a goal as completed."""
         if goal in self.active_goals:
             self.active_goals.remove(goal)
 
-    def clear_session(self):
+    def clear_session(self) -> None:
         """Clear working memory for new session."""
         self.current_context = {}
         self.active_goals = []
@@ -633,7 +633,7 @@ class EnhancedMemorySystem:
         assert n is not None
         return self.episodic.get_recent_episodes(count=n, event_type=event_type)
 
-    def _load(self):
+    def _load(self) -> None:
         """Load memory from disk."""
         if self.memory_file.exists():
             try:
@@ -664,7 +664,7 @@ class EnhancedMemorySystem:
             except Exception as e:
                 logger.error("enhanced_memory_load_failed", error=str(e))
 
-    def save(self):
+    def save(self) -> None:
         """Persist memory to disk."""
         try:
             self.memory_file.parent.mkdir(parents=True, exist_ok=True)

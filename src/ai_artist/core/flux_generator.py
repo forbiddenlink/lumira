@@ -5,7 +5,8 @@ and text rendering capabilities. This generator provides a compatible
 interface with ImageGenerator for seamless integration.
 """
 
-from typing import TYPE_CHECKING, Literal
+from types import TracebackType
+from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -120,14 +121,18 @@ class FluxGenerator:
             model_type=self.config["description"],
         )
 
-    def __enter__(self):
+    def __enter__(self) -> "FluxGenerator":
         """Context manager entry."""
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         """Context manager exit - automatically cleanup resources."""
         self.unload()
-        return False
 
     @property
     def is_schnell(self) -> bool:
@@ -139,7 +144,7 @@ class FluxGenerator:
         """Check if using FLUX.1-dev (quality) model."""
         return self.model_id == FLUX_DEV
 
-    def load_model(self):
+    def load_model(self) -> None:
         """Load the FLUX pipeline.
 
         FLUX requires specific pipeline loading unlike SDXL.
@@ -195,7 +200,7 @@ class FluxGenerator:
             logger.error("flux_model_load_failed", model=self.model_id, error=str(e))
             raise
 
-    def _apply_optimizations(self, pipeline):
+    def _apply_optimizations(self, pipeline: Any) -> None:
         """Apply memory and speed optimizations to the pipeline."""
         # Enable attention slicing for memory efficiency
         if hasattr(pipeline, "enable_attention_slicing"):
@@ -402,7 +407,7 @@ class FluxGenerator:
             )
             raise
 
-    def clear_vram(self):
+    def clear_vram(self) -> None:
         """Clear GPU memory cache to prevent memory leaks."""
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
@@ -412,7 +417,7 @@ class FluxGenerator:
             torch.mps.empty_cache()
             logger.debug("flux_mps_vram_cleared")
 
-    def unload(self):
+    def unload(self) -> None:
         """Unload model from memory and cleanup resources."""
         if self.pipeline:
             logger.info("unloading_flux_model")

@@ -1,5 +1,9 @@
 # Minimal requirements for Railway/Vercel deployment (Gallery-only mode)
 # No ML libraries needed - just web server
+#
+# This is a deliberate subset of pyproject.toml's [project.dependencies]
+# (web/API packages only, no ML stack). Version floors/ceilings here should
+# still match pyproject.toml for any package listed in both — see issue #59.
 
 fastapi>=0.115.0,<0.142.0
 uvicorn[standard]>=0.32.0,<0.53.0
