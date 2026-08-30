@@ -8,14 +8,55 @@ stops being served.
 """
 
 import builtins
+from datetime import UTC, datetime
 
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
 
+from ai_artist.db.models import Base, GeneratedImage
+from ai_artist.db.session import (
+    create_db_engine,
+    create_session_factory,
+    set_session_factory,
+)
 from ai_artist.utils.config import WebConfig
 from ai_artist.web.app import app
 from ai_artist.web.dependencies import set_web_config
+
+
+@pytest.fixture(autouse=True)
+def admin_db(tmp_path):
+    """Isolated database holding one row, for every test in this module.
+
+    /admin/stats reads the generated_images table. Without a schema these
+    tests only ever exercised the 500 path, which is what they did on CI
+    while passing locally against a developer database.
+    """
+    db_path = tmp_path / "admin.db"
+    engine = create_db_engine(db_path)
+    Base.metadata.create_all(engine)
+    factory = create_session_factory(db_path)
+    set_session_factory(factory)
+
+    session = factory()
+    try:
+        session.add(
+            GeneratedImage(
+                filename="2026/08/30/curated_piece.png",
+                prompt="a quiet twilight meadow",
+                model_id="test-model",
+                final_score=0.82,
+                status="curated",
+                created_at=datetime.now(UTC),
+            )
+        )
+        session.commit()
+    finally:
+        session.close()
+
+    yield
+    set_session_factory(None)
 
 
 @pytest.fixture
@@ -85,12 +126,12 @@ class TestStatsContract:
 
     def test_exposes_totals_and_status_breakdown(self, client, dev_mode):
         payload = client.get("/admin/stats").json()
-        assert isinstance(payload["total_artworks"], int)
-        assert isinstance(payload["statuses"], dict)
+        assert payload["total_artworks"] == 1
+        assert payload["statuses"] == {"curated": 1}
 
     def test_recent_items_carry_the_fields_the_template_renders(self, client, dev_mode):
         recent = client.get("/admin/stats").json()["recent"]
-        assert isinstance(recent, list)
+        assert len(recent) == 1
         for item in recent:
             assert "prompt" in item
             assert "status" in item
