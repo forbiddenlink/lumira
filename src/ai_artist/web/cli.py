@@ -12,7 +12,7 @@ configure_logging()
 logger = get_logger(__name__)
 
 
-def main():
+def main() -> None:
     """Launch the web gallery server."""
     # Use PORT environment variable if available (Railway sets this)
     port = int(os.getenv("PORT", "8000"))

@@ -304,7 +304,7 @@ async def list_public_images(
     tag: str | None = None,
     mood: str | None = None,
     search: str | None = None,
-):
+) -> GalleryListResponse:
     """List public gallery images with filtering and sorting."""
     query = db.query(GeneratedImage).filter(
         GeneratedImage.is_public.is_(True)
@@ -360,7 +360,7 @@ async def get_image_by_share_id(
     request: Request,
     share_id: str,
     db: DbSession,
-):
+) -> GalleryImageResponse:
     """Get a single image by its share ID and increment view count."""
     image = (
         db.query(GeneratedImage)
@@ -392,7 +392,7 @@ async def toggle_like(
     request: Request,
     share_id: str,
     db: DbSession,
-):
+) -> LikeResponse:
     """Like or unlike an image (toggle)."""
     session_id = get_session_id(request)
 
@@ -485,7 +485,7 @@ async def get_like_status(
     request: Request,
     share_id: str,
     db: DbSession,
-):
+) -> dict[str, Any]:
     """Check if current session has liked an image."""
     session_id = get_session_id(request)
 
@@ -522,7 +522,7 @@ async def add_comment(
     share_id: str,
     comment: CommentCreate,
     db: DbSession,
-):
+) -> CommentResponse:
     """Add a comment to an image."""
     session_id = get_session_id(request)
 
@@ -568,7 +568,7 @@ async def get_comments(
     db: DbSession,
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=50),
-):
+) -> CommentListResponse:
     """Get comments for an image."""
     image = (
         db.query(GeneratedImage)
@@ -622,7 +622,7 @@ async def track_share(
     share_id: str,
     share_req: ShareRequest,
     db: DbSession,
-):
+) -> ShareResponse:
     """Track when an image is shared to a platform."""
     image = (
         db.query(GeneratedImage)
@@ -664,7 +664,7 @@ async def publish_to_gallery(
     publish_req: PublishRequest,
     db: DbSession,
     gallery_path: GalleryPathDep,
-):
+) -> PublishResponse:
     """Publish an image to the public share gallery."""
     image = _resolve_image_for_publish(
         db,
@@ -700,7 +700,7 @@ async def unpublish_from_gallery(
     request: Request,
     share_id: str,
     db: DbSession,
-):
+) -> dict[str, Any]:
     """Remove an image from the public gallery (make private)."""
     image = (
         db.query(GeneratedImage)
@@ -725,7 +725,7 @@ async def unpublish_from_gallery(
 async def get_gallery_stats(
     request: Request,
     db: DbSession,
-):
+) -> dict[str, Any]:
     """Get community gallery statistics."""
     total_public = (
         db.query(GeneratedImage)

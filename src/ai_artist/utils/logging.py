@@ -7,6 +7,7 @@ import time
 import uuid
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+from types import TracebackType
 from typing import Any, cast
 
 import structlog
@@ -45,7 +46,7 @@ def configure_logging(
     log_file: Path | None = None,
     json_logs: bool = False,
     enable_rotation: bool = True,
-):
+) -> None:
     """Configure structured logging with request IDs and performance tracking.
 
     Args:
@@ -114,18 +115,25 @@ def get_logger(name: str) -> structlog.BoundLogger:
 class PerformanceTimer:
     """Context manager for timing operations."""
 
-    def __init__(self, logger: structlog.BoundLogger, operation: str):
+    def __init__(self, logger: structlog.BoundLogger, operation: str) -> None:
         self.logger = logger
         self.operation = operation
-        self.start_time = None
+        self.start_time: float | None = None
 
-    def __enter__(self):
+    def __enter__(self) -> "PerformanceTimer":
         self.start_time = time.time()
         self.logger.debug("operation_started", operation=self.operation)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        duration = time.time() - self.start_time
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        # __enter__ always sets this; 0.0 keeps the log line honest if some
+        # caller reaches __exit__ without it rather than raising here.
+        duration = time.time() - (self.start_time or time.time())
         if exc_type is None:
             self.logger.info(
                 "operation_completed",

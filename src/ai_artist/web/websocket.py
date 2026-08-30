@@ -24,7 +24,7 @@ class ConnectionManager:
     Thread-safe using asyncio.Lock for connection list modifications.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Use list instead of set for better iteration safety
         self.active_connections: list[WebSocket] = []
         self.generation_sessions: dict[str, dict] = {}
@@ -84,7 +84,7 @@ class ConnectionManager:
         )
         return True
 
-    async def disconnect(self, websocket: WebSocket, client_id: str = ""):
+    async def disconnect(self, websocket: WebSocket, client_id: str = "") -> None:
         """Remove a WebSocket connection."""
         async with self._lock:
             if websocket in self.active_connections:
@@ -112,7 +112,7 @@ class ConnectionManager:
         times.append(now)
         return True
 
-    async def send_personal_message(self, message: dict, websocket: WebSocket):
+    async def send_personal_message(self, message: dict, websocket: WebSocket) -> None:
         """Send message to a specific connection."""
         try:
             await websocket.send_json(message)
@@ -121,7 +121,7 @@ class ConnectionManager:
             # Remove dead connection
             await self.disconnect(websocket)
 
-    async def broadcast(self, message: dict):
+    async def broadcast(self, message: dict) -> None:
         """Broadcast message to all connected clients.
 
         Handles disconnections gracefully and removes stale connections.
@@ -155,7 +155,7 @@ class ConnectionManager:
                     if conn in self.active_connections:
                         self.active_connections.remove(conn)
 
-    async def send_generation_start(self, session_id: str, prompt: str = ""):
+    async def send_generation_start(self, session_id: str, prompt: str = "") -> None:
         """Send generation start notification."""
         start = {
             "type": "generation_start",
@@ -172,7 +172,7 @@ class ConnectionManager:
         total_steps: int,
         message: str = "",
         preview_base64: str | None = None,
-    ):
+    ) -> None:
         """Send generation progress update (optional JPEG preview thumbnail)."""
         progress = {
             "type": "generation_progress",
@@ -189,7 +189,7 @@ class ConnectionManager:
 
     async def send_generation_complete(
         self, session_id: str, image_paths: list, metadata: dict
-    ):
+    ) -> None:
         """Send generation complete notification."""
         complete = {
             "type": "generation_complete",
@@ -200,7 +200,7 @@ class ConnectionManager:
         }
         await self.broadcast(complete)
 
-    async def send_generation_error(self, session_id: str, error: str):
+    async def send_generation_error(self, session_id: str, error: str) -> None:
         """Send generation error notification."""
         error_msg = {
             "type": "generation_error",
@@ -212,7 +212,7 @@ class ConnectionManager:
 
     async def send_curation_update(
         self, session_id: str, image_path: str, metrics: dict
-    ):
+    ) -> None:
         """Send curation metrics update."""
         update = {
             "type": "curation_update",
@@ -223,7 +223,7 @@ class ConnectionManager:
         }
         await self.broadcast(update)
 
-    async def send_gallery_update(self, action: str, image_data: dict):
+    async def send_gallery_update(self, action: str, image_data: dict) -> None:
         """Send gallery update notification."""
         update = {
             "type": "gallery_update",
@@ -239,7 +239,7 @@ class ConnectionManager:
         thought_type: str,
         content: str,
         context: dict | None = None,
-    ):
+    ) -> None:
         """Send Lumira's thinking process update for visible thinking.
 
         Args:
@@ -264,7 +264,7 @@ class ConnectionManager:
         energy: float,
         feeling: str,
         session_id: str | None = None,
-    ):
+    ) -> None:
         """Send Lumira's current emotional state.
 
         Args:
@@ -290,7 +290,7 @@ class ConnectionManager:
         approved: bool,
         critique: str,
         confidence: float,
-    ):
+    ) -> None:
         """Send critique loop update.
 
         Args:
@@ -316,7 +316,7 @@ class ConnectionManager:
         mood: str,
         intensity: float,
         reason: str = "natural_drift",
-    ):
+    ) -> None:
         """Broadcast mood drift to all connected clients.
 
         Args:
@@ -337,7 +337,7 @@ class ConnectionManager:
         self,
         insight: str,
         insight_type: str = "learning",
-    ):
+    ) -> None:
         """Broadcast a memory insight to all connected clients.
 
         Args:
@@ -359,7 +359,7 @@ class ConnectionManager:
         content: str,
         iteration: int = 1,
         metadata: dict | None = None,
-    ):
+    ) -> None:
         """Broadcast an inner dialogue turn.
 
         Args:
@@ -388,7 +388,7 @@ class ConnectionManager:
         approved: bool,
         prompt: str,
         generation_time: float,
-    ):
+    ) -> None:
         """Broadcast when a preview is ready for review.
 
         Args:
@@ -417,7 +417,7 @@ class ConnectionManager:
         concept: dict,
         iteration: int,
         reason: str,
-    ):
+    ) -> None:
         """Broadcast when a concept evolves during deliberation.
 
         Args:
@@ -444,12 +444,14 @@ manager = ConnectionManager()
 # Convenience functions for module-level access
 async def broadcast_mood_drift(
     mood: str, intensity: float, reason: str = "natural_drift"
-):
+) -> None:
     """Broadcast mood drift to all connected clients."""
     await manager.broadcast_mood_drift(mood, intensity, reason)
 
 
-async def broadcast_memory_insight(insight: str, insight_type: str = "learning"):
+async def broadcast_memory_insight(
+    insight: str, insight_type: str = "learning"
+) -> None:
     """Broadcast a memory insight to all connected clients."""
     await manager.broadcast_memory_insight(insight, insight_type)
 
@@ -460,7 +462,7 @@ async def broadcast_inner_dialogue(
     content: str,
     iteration: int = 1,
     metadata: dict | None = None,
-):
+) -> None:
     """Broadcast an inner dialogue turn."""
     await manager.broadcast_inner_dialogue(
         session_id, voice, content, iteration, metadata
@@ -474,7 +476,7 @@ async def broadcast_preview_ready(
     approved: bool,
     prompt: str,
     generation_time: float,
-):
+) -> None:
     """Broadcast when a preview is ready."""
     await manager.broadcast_preview_ready(
         session_id, image_base64, score, approved, prompt, generation_time
@@ -486,6 +488,6 @@ async def broadcast_concept_evolved(
     concept: dict,
     iteration: int,
     reason: str,
-):
+) -> None:
     """Broadcast when a concept evolves."""
     await manager.broadcast_concept_evolved(session_id, concept, iteration, reason)

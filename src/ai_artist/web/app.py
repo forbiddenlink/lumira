@@ -8,7 +8,7 @@ load_dotenv()
 import asyncio
 import contextlib
 import json
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
@@ -202,7 +202,7 @@ def validate_generation_request(request: GenerationRequest) -> None:
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan - startup and shutdown events."""
     # Initialize database tables on startup
     from ..db.models import Base
@@ -291,10 +291,10 @@ async def lifespan(app: FastAPI):
         reflection_scheduler = CreationScheduler()
 
         # Schedule daily reflection at 11 PM
-        async def daily_reflection_task():
-            from ..personality.enhanced_memory import get_memory_system
+        async def daily_reflection_task() -> None:
+            from ..personality.enhanced_memory import EnhancedMemorySystem
 
-            memory = get_memory_system()
+            memory = EnhancedMemorySystem()
             episodes = memory.get_recent_episodes(limit=50)
             reflection_system.generate_daily_reflection(episodes=episodes)
             logger.info("daily_reflection_generated")
@@ -307,10 +307,10 @@ async def lifespan(app: FastAPI):
         )
 
         # Schedule weekly synthesis on Sundays at 10 PM
-        async def weekly_synthesis_task():
-            from ..personality.enhanced_memory import get_memory_system
+        async def weekly_synthesis_task() -> None:
+            from ..personality.enhanced_memory import EnhancedMemorySystem
 
-            memory = get_memory_system()
+            memory = EnhancedMemorySystem()
             episodes = memory.get_recent_episodes(limit=200)
             reflection_system.generate_weekly_synthesis(episodes=episodes)
             logger.info("weekly_synthesis_generated")
@@ -342,7 +342,7 @@ async def lifespan(app: FastAPI):
         if auto_create:
             from ..web import lumira_routes as _lumira_routes
 
-            async def autonomous_web_create_task():
+            async def autonomous_web_create_task() -> None:
                 await _lumira_routes.run_scheduled_autonomous_create()
 
             reflection_scheduler.add_interval_job(
@@ -531,11 +531,16 @@ _static_candidates = [
     Path("static"),
     Path(__file__).resolve().parent.parent.parent.parent / "static",
 ]
-static_dir = next((c for c in _static_candidates if c.is_dir()), None)
-if static_dir is None:
+# Bound to a definitely-Path name: as `Path | None` every route body that
+# does `static_dir / "..."` reads as an operation on None, because narrowing
+# at module level does not reach into function bodies.
+_resolved_static = next((c for c in _static_candidates if c.is_dir()), None)
+if _resolved_static is None:
     static_dir = Path("static")
     static_dir.mkdir(parents=True, exist_ok=True)
     logger.warning("static_dir_not_found_created_empty", path=str(static_dir.resolve()))
+else:
+    static_dir = _resolved_static
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 _favicon_path = static_dir / "favicon.ico"
 
@@ -553,7 +558,7 @@ async def favicon() -> Response:
 
 
 @app.get("/", response_class=HTMLResponse, tags=["pages"])
-async def root(request: Request):
+async def root(request: Request) -> HTMLResponse:
     """Serve modern gallery homepage."""
     return templates.TemplateResponse(
         request,
@@ -563,7 +568,9 @@ async def root(request: Request):
 
 
 @app.get("/share/{share_id}", response_class=HTMLResponse, tags=["pages"])
-async def share_page(request: Request, share_id: str, gallery_path: GalleryPathDep):
+async def share_page(
+    request: Request, share_id: str, gallery_path: GalleryPathDep
+) -> HTMLResponse:
     """Serve shared image page.
 
     Looks up the shared image and renders an OG-friendly share page.
@@ -671,7 +678,7 @@ async def share_page(request: Request, share_id: str, gallery_path: GalleryPathD
 
 
 @app.get("/lumira", response_class=HTMLResponse, tags=["pages"])
-async def lumira_page(request: Request):
+async def lumira_page(request: Request) -> HTMLResponse:
     """Serve Lumira's creative studio.
 
     Personality, mood, and creation interface.
@@ -684,7 +691,7 @@ async def lumira_page(request: Request):
 
 
 @app.get("/monitoring", response_class=HTMLResponse, tags=["pages"])
-async def monitoring_page(request: Request):
+async def monitoring_page(request: Request) -> HTMLResponse:
     """Operational monitoring dashboard for Lumira."""
     return templates.TemplateResponse(
         request,
@@ -694,7 +701,7 @@ async def monitoring_page(request: Request):
 
 
 @app.get("/robots.txt", response_class=PlainTextResponse, tags=["pages"])
-async def robots_txt(request: Request):
+async def robots_txt(request: Request) -> PlainTextResponse:
     """Serve robots.txt for search engine crawlers."""
     base_url = str(request.base_url).rstrip("/")
     robots_content = f"""# AI Artist Gallery robots.txt
@@ -714,7 +721,7 @@ Llms-Txt: {base_url}/llms.txt
 
 
 @app.get("/llms.txt", response_class=PlainTextResponse, tags=["pages"])
-async def llms_txt(request: Request):
+async def llms_txt(request: Request) -> PlainTextResponse:
     """Machine-readable site summary for AI crawlers and assistants."""
     base_url = str(request.base_url).rstrip("/")
     content = f"""# Lumira
@@ -751,7 +758,7 @@ Public artworks: `{base_url}/share/{{share_id}}`
 
 
 @app.get("/sitemap.xml", tags=["pages"])
-async def sitemap_xml(request: Request):
+async def sitemap_xml(request: Request) -> Response:
     """Serve XML sitemap for search engine indexing."""
     base_url = str(request.base_url).rstrip("/")
 
@@ -789,7 +796,7 @@ async def sitemap_xml(request: Request):
 
 
 @app.get("/manifest.json", tags=["pages"])
-async def manifest():
+async def manifest() -> FileResponse:
     """Serve PWA manifest file."""
     manifest_path = static_dir / "manifest.json"
     if not manifest_path.exists():
@@ -798,7 +805,7 @@ async def manifest():
 
 
 @app.get("/service-worker.js", tags=["pages"])
-async def service_worker():
+async def service_worker() -> FileResponse:
     """Serve service worker for PWA."""
     sw_path = static_dir / "service-worker.js"
     if not sw_path.exists():
@@ -807,7 +814,7 @@ async def service_worker():
 
 
 @app.get("/offline.html", response_class=HTMLResponse, tags=["pages"])
-async def offline_page():
+async def offline_page() -> FileResponse:
     """Serve offline fallback page."""
     offline_path = static_dir / "offline.html"
     if not offline_path.exists():
@@ -816,7 +823,7 @@ async def offline_page():
 
 
 @app.get("/classic", response_class=HTMLResponse, tags=["pages"])
-async def classic_gallery(request: Request):
+async def classic_gallery(request: Request) -> HTMLResponse:
     """Serve classic gallery page."""
     return templates.TemplateResponse(
         request,
@@ -826,7 +833,7 @@ async def classic_gallery(request: Request):
 
 
 @app.get("/test/websocket", response_class=HTMLResponse, tags=["pages"])
-async def test_websocket(request: Request):
+async def test_websocket(request: Request) -> HTMLResponse:
     """Serve WebSocket test page — debug builds only."""
     config = get_web_config()
     if not getattr(config, "debug", False):
@@ -839,7 +846,7 @@ async def test_websocket(request: Request):
 
 
 @app.get("/api/auth-mode", tags=["health"])
-async def auth_mode():
+async def auth_mode() -> dict[str, Any]:
     """Report whether generation requires a key, and whether it can run at all.
 
     Fail-closed deployments with no ``RAILWAY_API_KEY`` and no ``LUMIRA_DEV_MODE``
@@ -868,7 +875,7 @@ async def list_images(
     search: str | None = Query(None, description="Search in prompts"),
     sort_by: str = Query("created_at", description="Sort field: created_at or score"),
     mood: str | None = Query(None, description="Filter by creation mood"),
-):
+) -> list[ImageMetadata]:
     """List all images with metadata."""
     # Prevent caching to ensure fresh results
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
@@ -1050,7 +1057,7 @@ async def get_image_file(
     file_path: str,
     gallery_path: GalleryPathDep,
     download: bool = False,
-):
+) -> Response:
     """Serve image file."""
     gallery_path_obj = Path(gallery_path)
     if not gallery_path_obj:
@@ -1119,7 +1126,7 @@ async def get_image_file(
 async def get_stats(
     request: Request,
     gallery_manager: GalleryManagerDep,
-):
+) -> GalleryStats:
     """Get gallery statistics."""
     # Prefer DB inventory so the count matches the DB-first /api/images gallery.
     stats = calculate_gallery_stats_from_db()
@@ -1145,7 +1152,7 @@ async def delete_image(
     file_path: str,
     gallery_path: GalleryPathDep,
     _api_key: str = Depends(require_api_key),
-):
+) -> dict[str, Any]:
     """Delete an image and its metadata."""
     gallery_path_obj = Path(gallery_path)
 
@@ -1181,7 +1188,7 @@ async def toggle_featured(
     featured: bool,
     gallery_path: GalleryPathDep,
     _api_key: str = Depends(require_api_key),
-):
+) -> dict[str, Any]:
     """Toggle featured status of an image."""
     gallery_path_obj = Path(gallery_path)
     full_image_path = gallery_path_obj / file_path
@@ -1264,7 +1271,7 @@ async def upload_image(
     request: Request,
     gallery_path: GalleryPathDep,
     _api_key: str = Depends(require_api_key),
-):
+) -> dict[str, Any]:
     """Upload a single image with optional metadata.
 
     Expects multipart/form-data with:
@@ -1346,7 +1353,7 @@ async def upload_batch(
     request: Request,
     gallery_path: GalleryPathDep,
     _api_key: str = Depends(require_api_key),
-):
+) -> dict[str, Any]:
     """Upload multiple images in a single request.
 
     Expects multipart/form-data with multiple 'images' files.
@@ -1451,7 +1458,7 @@ def load_templates() -> list[dict]:
         return []
 
 
-def save_templates(templates: list[dict]):
+def save_templates(templates: list[dict]) -> None:
     """Save templates to JSON file."""
     TEMPLATES_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(TEMPLATES_FILE, "w") as f:
@@ -1462,7 +1469,7 @@ def save_templates(templates: list[dict]):
 @limiter.limit("60/minute")
 async def get_templates(
     request: Request,
-):
+) -> list[dict[str, Any]]:
     """Get all prompt templates."""
     templates = load_templates()
     return templates
@@ -1474,7 +1481,7 @@ async def create_template(
     request: Request,
     template_request: CreateTemplateRequest,
     _api_key: str = Depends(require_api_key),
-):
+) -> dict[str, Any]:
     """Create a new prompt template."""
     import uuid
 
@@ -1514,7 +1521,7 @@ async def update_template(
     template_id: str,
     template_request: CreateTemplateRequest,
     _api_key: str = Depends(require_api_key),
-):
+) -> dict[str, Any]:
     """Update an existing prompt template."""
     templates = load_templates()
 
@@ -1545,7 +1552,7 @@ async def delete_template(
     request: Request,
     template_id: str,
     _api_key: str = Depends(require_api_key),
-):
+) -> dict[str, Any]:
     """Delete a prompt template."""
     templates = load_templates()
     templates = [t for t in templates if t["id"] != template_id]
@@ -1563,7 +1570,7 @@ async def cleanup_gallery(
     gallery_manager: GalleryManagerDep,
     dry_run: bool = Query(True, description="If true, only report without deleting"),
     _api_key: str = Depends(require_api_key),
-):
+) -> dict[str, Any]:
     """Scan and remove black/blank/invalid images from the gallery.
 
     Args:
@@ -1584,7 +1591,7 @@ async def generate_artwork(
     request: Request,
     generation_request: GenerationRequest,
     _api_key: str = Depends(require_api_key),
-):
+) -> GenerationResponse:
     """Start an artwork generation job.
 
     Returns a session ID that can be used to track progress via WebSocket.
@@ -1607,7 +1614,7 @@ async def generate_artwork(
     session_id = str(uuid.uuid4())
 
     # Start generation in background with concurrency control
-    async def generate_task():
+    async def generate_task() -> None:
         global _generation_queue_size
         _generation_queue_size += 1
 
@@ -1632,7 +1639,7 @@ async def generate_artwork(
         finally:
             _generation_queue_size -= 1
 
-    async def _run_generation():
+    async def _run_generation() -> None:
         generator = None
         try:
             gallery_path_local = Path("gallery")
@@ -1768,7 +1775,7 @@ async def generate_artwork(
 
 
 @app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket) -> None:
     """WebSocket endpoint for real-time updates."""
     from .middleware import is_websocket_origin_allowed
 
@@ -1820,7 +1827,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
 
 @app.post("/api/cancel/{session_id}", tags=["generation"])
-async def cancel_generation(session_id: str):
+async def cancel_generation(session_id: str) -> dict[str, Any]:
     """Cancel an in-flight image generation by session ID."""
     from .generation_registry import cancel, is_active
 
@@ -1839,7 +1846,7 @@ async def cancel_generation(session_id: str):
 
 
 @app.get("/privacy", response_class=HTMLResponse, tags=["pages"])
-async def privacy_page(request: Request):
+async def privacy_page(request: Request) -> HTMLResponse:
     """Privacy policy for the Lumira web gallery and studio."""
     return templates.TemplateResponse(
         request,
@@ -1849,7 +1856,7 @@ async def privacy_page(request: Request):
 
 
 @app.get("/health/details", tags=["health"])
-async def health_details():
+async def health_details() -> dict[str, Any]:
     """Detailed health and runtime diagnostics endpoint."""
     from .dependencies import _gallery_manager
 

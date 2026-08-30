@@ -5,8 +5,10 @@ Requires the 'video' optional dependency:
     # or: pip install moviepy>=2.1.1
 """
 
+from collections.abc import Callable
 from pathlib import Path
 from tempfile import gettempdir
+from typing import Any
 from uuid import uuid4
 
 
@@ -187,7 +189,7 @@ def create_zoom_video(
     clip = ImageClip(image_path, duration=duration)
     _ = clip.size  # used for reference, zoom operates on frames directly
 
-    def zoom_effect(get_frame, t):
+    def zoom_effect(get_frame: Callable[[float], Any], t: float) -> Any:
         """Apply zoom effect at time t."""
         # Calculate current zoom level (linear interpolation)
         progress = t / duration

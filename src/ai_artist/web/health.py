@@ -46,7 +46,7 @@ _app_version = "2.0.0"
 
 
 @router.get("/health", response_model=HealthResponse, status_code=status.HTTP_200_OK)
-async def health_check():
+async def health_check() -> HealthResponse:
     """
     Basic health check endpoint.
 
@@ -62,7 +62,7 @@ async def health_check():
 
 
 @router.get("/health/live", response_model=LivenessResponse)
-async def liveness_probe():
+async def liveness_probe() -> LivenessResponse:
     """
     Kubernetes liveness probe.
 
@@ -75,7 +75,7 @@ async def liveness_probe():
 
 
 @router.get("/health/ready", response_model=ReadinessResponse)
-async def readiness_probe():
+async def readiness_probe() -> JSONResponse:
     """
     Kubernetes readiness probe.
 

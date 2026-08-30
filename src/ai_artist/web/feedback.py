@@ -6,7 +6,7 @@ which feeds into the adaptive learning system.
 """
 
 from datetime import UTC, datetime
-from typing import Annotated
+from typing import Annotated, Any
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -223,7 +223,7 @@ async def get_learning_stats() -> LearningStatsResponse:
 
 
 @router.post("/suggestions")
-async def get_suggestions(mood: str | None = None):
+async def get_suggestions(mood: str | None = None) -> dict[str, Any]:
     """
     Get AI suggestions based on learned preferences.
 

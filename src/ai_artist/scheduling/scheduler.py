@@ -56,7 +56,7 @@ def _build_scheduler() -> AsyncIOScheduler:
 class CreationScheduler:
     """Schedule automated artwork creation with full autonomy!"""
 
-    def __init__(self, autonomous_mode: bool = True):
+    def __init__(self, autonomous_mode: bool = True) -> None:
         self.scheduler = _build_scheduler()
         self.autonomous_mode = autonomous_mode
 
@@ -140,7 +140,7 @@ class CreationScheduler:
         hour: int = 9,
         minute: int = 0,
         job_id: str = "daily_creation",
-    ):
+    ) -> None:
         """Schedule daily artwork creation."""
         trigger = CronTrigger(hour=hour, minute=minute)
         self.scheduler.add_job(
@@ -164,7 +164,7 @@ class CreationScheduler:
         minutes: int = 0,
         seconds: int = 0,
         job_id: str = "interval_creation",
-    ):
+    ) -> None:
         """Schedule artwork creation at intervals."""
         trigger = IntervalTrigger(
             hours=hours,
@@ -193,7 +193,7 @@ class CreationScheduler:
         hour: int = 9,
         minute: int = 0,
         job_id: str = "weekly_creation",
-    ):
+    ) -> None:
         """Schedule weekly artwork creation."""
         trigger = CronTrigger(day_of_week=day_of_week, hour=hour, minute=minute)
         self.scheduler.add_job(
@@ -216,7 +216,7 @@ class CreationScheduler:
         job_func: Callable,
         cron_expression: str,
         job_id: str = "custom_creation",
-    ):
+    ) -> None:
         """Schedule artwork creation with custom cron expression."""
         # Parse cron expression (minute hour day month day_of_week)
         parts = cron_expression.split()
@@ -243,7 +243,7 @@ class CreationScheduler:
             cron=cron_expression,
         )
 
-    def remove_job(self, job_id: str):
+    def remove_job(self, job_id: str) -> None:
         """Remove a scheduled job."""
         try:
             self.scheduler.remove_job(job_id)
@@ -270,19 +270,19 @@ class CreationScheduler:
             )
         return jobs
 
-    def start(self):
+    def start(self) -> None:
         """Start the scheduler."""
         if not self.scheduler.running:
             self.scheduler.start()
             logger.info("scheduler_started")
 
-    def shutdown(self, wait: bool = True):
+    def shutdown(self, wait: bool = True) -> None:
         """Shutdown the scheduler."""
         if self.scheduler.running:
             self.scheduler.shutdown(wait=wait)
             logger.info("scheduler_shutdown")
 
-    async def run_once(self, job_func: Callable):
+    async def run_once(self, job_func: Callable) -> None:
         """Run a job immediately once."""
         logger.info("running_job_once")
         try:
@@ -295,12 +295,12 @@ class CreationScheduler:
 class ScheduledArtist:
     """Wrapper for scheduled artwork creation."""
 
-    def __init__(self, artist):
+    def __init__(self, artist: Any) -> None:
         self.artist = artist
         self.scheduler = CreationScheduler()
         logger.info("scheduled_artist_initialized")
 
-    async def create_with_rotation(self):
+    async def create_with_rotation(self) -> None:
         """Create artwork with topic rotation."""
         topic = self.scheduler.get_next_topic()
         logger.info("scheduled_creation_started", topic=topic)
@@ -310,7 +310,7 @@ class ScheduledArtist:
         except Exception as e:
             logger.error("scheduled_creation_failed", topic=topic, error=str(e))
 
-    async def create_batch(self, count: int = 3):
+    async def create_batch(self, count: int = 3) -> None:
         """Create multiple artworks in a batch."""
         logger.info("batch_creation_started", count=count)
         for i in range(count):
@@ -323,7 +323,7 @@ class ScheduledArtist:
                 logger.error("batch_creation_item_failed", index=i, error=str(e))
         logger.info("batch_creation_complete", count=count)
 
-    def schedule_daily(self, hour: int = 9, minute: int = 0):
+    def schedule_daily(self, hour: int = 9, minute: int = 0) -> None:
         """Schedule daily creation."""
         self.scheduler.add_daily_job(
             self.create_with_rotation,
@@ -331,17 +331,19 @@ class ScheduledArtist:
             minute=minute,
         )
 
-    def schedule_interval(self, hours: int = 6):
+    def schedule_interval(self, hours: int = 6) -> None:
         """Schedule creation at intervals."""
         self.scheduler.add_interval_job(
             self.create_with_rotation,
             hours=hours,
         )
 
-    def schedule_batch_daily(self, count: int = 3, hour: int = 9, minute: int = 0):
+    def schedule_batch_daily(
+        self, count: int = 3, hour: int = 9, minute: int = 0
+    ) -> None:
         """Schedule daily batch creation."""
 
-        async def batch_job():
+        async def batch_job() -> None:
             await self.create_batch(count=count)
 
         self.scheduler.add_daily_job(
@@ -351,12 +353,12 @@ class ScheduledArtist:
             job_id=f"daily_batch_{count}",
         )
 
-    def start(self):
+    def start(self) -> None:
         """Start the scheduler."""
         self.scheduler.start()
         logger.info("scheduled_artist_started")
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """Shutdown the scheduler."""
         self.scheduler.shutdown()
         logger.info("scheduled_artist_shutdown")
@@ -411,10 +413,10 @@ class DesireAwareScheduler(CreationScheduler):
 
     def __init__(
         self,
-        mood_system=None,
-        desire_engine=None,
+        mood_system: Any = None,
+        desire_engine: Any = None,
         autonomous_mode: bool = True,
-    ):
+    ) -> None:
         super().__init__(autonomous_mode=autonomous_mode)
         self.mood_system = mood_system
         self.desire_engine = desire_engine
@@ -503,14 +505,14 @@ class DesireAwareScheduler(CreationScheduler):
         job_func: Callable,
         check_interval_minutes: int = 30,
         job_id: str = "desire_driven_creation",
-    ):
+    ) -> None:
         """Add a job that only runs when internal desires warrant it.
 
         Instead of creating at fixed times, this checks every `check_interval_minutes`
         and only triggers creation if should_create_now() returns True.
         """
 
-        async def conditional_job():
+        async def conditional_job() -> None:
             should_create, reason = self.should_create_now()
             if should_create:
                 logger.info(
@@ -540,7 +542,7 @@ class DesireAwareScheduler(CreationScheduler):
         self,
         reflection_func: Callable,
         job_id: str = "daily_reflection",
-    ):
+    ) -> None:
         """Add a job for daily reflection at end of day."""
         # Schedule reflection for 10 PM
         self.add_daily_job(
@@ -556,7 +558,7 @@ class DesireAwareScheduler(CreationScheduler):
         self,
         synthesis_func: Callable,
         job_id: str = "weekly_synthesis",
-    ):
+    ) -> None:
         """Add a job for weekly artistic synthesis."""
         self.add_weekly_job(
             synthesis_func,
@@ -574,11 +576,11 @@ class DesireAwareArtist:
 
     def __init__(
         self,
-        artist,
-        mood_system=None,
-        desire_engine=None,
-        reflection_system=None,
-    ):
+        artist: Any,
+        mood_system: Any = None,
+        desire_engine: Any = None,
+        reflection_system: Any = None,
+    ) -> None:
         self.artist = artist
         self.mood_system = mood_system
         self.desire_engine = desire_engine
@@ -590,7 +592,7 @@ class DesireAwareArtist:
 
         logger.info("desire_aware_artist_initialized")
 
-    async def create_when_inspired(self):
+    async def create_when_inspired(self) -> Any:
         """Create artwork only when internal state warrants it."""
         should, reason = self.scheduler.should_create_now()
 
@@ -627,7 +629,7 @@ class DesireAwareArtist:
             logger.error("inspired_creation_failed", error=str(e))
             return None
 
-    async def perform_daily_reflection(self):
+    async def perform_daily_reflection(self) -> Any:
         """Perform end-of-day reflection."""
         if not self.reflection_system:
             logger.warning("no_reflection_system_available")
@@ -654,7 +656,7 @@ class DesireAwareArtist:
             logger.error("daily_reflection_failed", error=str(e))
             return None
 
-    async def perform_weekly_synthesis(self):
+    async def perform_weekly_synthesis(self) -> Any:
         """Perform weekly artistic synthesis."""
         if not self.reflection_system:
             logger.warning("no_reflection_system_available")
@@ -679,24 +681,24 @@ class DesireAwareArtist:
     def schedule_desire_driven_creation(
         self,
         check_interval_minutes: int = 30,
-    ):
+    ) -> None:
         """Schedule creation that only triggers on strong internal desires."""
         self.scheduler.add_desire_driven_job(
             self.create_when_inspired,
             check_interval_minutes=check_interval_minutes,
         )
 
-    def schedule_reflections(self):
+    def schedule_reflections(self) -> None:
         """Schedule daily and weekly reflections."""
         self.scheduler.add_reflection_job(self.perform_daily_reflection)
         self.scheduler.add_weekly_synthesis_job(self.perform_weekly_synthesis)
 
-    def start(self):
+    def start(self) -> None:
         """Start the scheduler."""
         self.scheduler.start()
         logger.info("desire_aware_artist_started")
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """Shutdown the scheduler."""
         self.scheduler.shutdown()
         logger.info("desire_aware_artist_shutdown")

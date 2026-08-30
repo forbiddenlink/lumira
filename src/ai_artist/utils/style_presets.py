@@ -25,7 +25,7 @@ class StylePreset:
     tags: list[str] | None = None
     mood_affinity: list[str] | None = None  # Moods this style works well with
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.tags is None:
             self.tags = []
         if self.mood_affinity is None:
@@ -57,7 +57,7 @@ class StylePreset:
 class StylePresetsManager:
     """Manage style presets - load, save, and apply."""
 
-    def __init__(self, presets_file: Path | None = None):
+    def __init__(self, presets_file: Path | None = None) -> None:
         """
         Initialize style presets manager.
 
@@ -75,7 +75,7 @@ class StylePresetsManager:
             self._create_default_presets()
             self.save()
 
-    def _create_default_presets(self):
+    def _create_default_presets(self) -> None:
         """Create default style presets inspired by popular styles."""
         default_presets = [
             StylePreset(
@@ -163,7 +163,7 @@ class StylePresetsManager:
         for preset in default_presets:
             self.presets[preset.name] = preset
 
-    def load(self):
+    def load(self) -> None:
         """Load presets from JSON file."""
         try:
             with open(self.presets_file) as f:
@@ -183,7 +183,7 @@ class StylePresetsManager:
             logger.error("style_presets_load_failed", error=str(e))
             self.presets = {}
 
-    def save(self):
+    def save(self) -> None:
         """Save presets to JSON file."""
         try:
             # Ensure directory exists
@@ -202,7 +202,7 @@ class StylePresetsManager:
         except Exception as e:
             logger.error("style_presets_save_failed", error=str(e))
 
-    def add_preset(self, preset: StylePreset, overwrite: bool = False):
+    def add_preset(self, preset: StylePreset, overwrite: bool = False) -> None:
         """Add a new preset."""
         if preset.name in self.presets and not overwrite:
             raise ValueError(
@@ -276,7 +276,7 @@ class StylePresetsManager:
         presets = self.get_presets_for_mood(mood, limit=1)
         return presets[0] if presets else None
 
-    def delete_preset(self, name: str):
+    def delete_preset(self, name: str) -> None:
         """Delete a preset."""
         if name in self.presets:
             del self.presets[name]

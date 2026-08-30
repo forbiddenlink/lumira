@@ -14,7 +14,7 @@ from ai_artist.utils.logging import get_logger, set_request_id
 logger = get_logger(__name__)
 
 
-async def start_scheduler(args):
+async def start_scheduler(args: argparse.Namespace) -> None:
     """Start the scheduler with configured jobs."""
     set_request_id()  # Set request ID for scheduler session
 
@@ -67,7 +67,7 @@ async def start_scheduler(args):
         logger.info("scheduler_stopped")
 
 
-async def run_now(args):
+async def run_now(args: argparse.Namespace) -> None:
     """Run artwork creation immediately."""
     set_request_id()  # Set request ID for this run
 
@@ -83,7 +83,7 @@ async def run_now(args):
         await artist.create_artwork(theme=args.theme)
 
 
-async def list_jobs(args):
+async def list_jobs(args: argparse.Namespace) -> None:
     """List all scheduled jobs."""
     config = load_config(Path("config/config.yaml"))
     artist = AIArtist(config)
@@ -105,7 +105,7 @@ async def list_jobs(args):
         )
 
 
-def main():
+def main() -> None:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
         description="AI Artist Scheduler - Automated artwork creation"

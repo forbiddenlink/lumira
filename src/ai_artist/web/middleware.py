@@ -4,7 +4,7 @@ import secrets
 import time
 from collections.abc import Awaitable, Callable
 
-from fastapi import Request, Response
+from fastapi import FastAPI, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
 
@@ -201,7 +201,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             raise
 
 
-def add_cors_middleware(app, cors_origins: list[str] | None = None):
+def add_cors_middleware(app: FastAPI, cors_origins: list[str] | None = None) -> None:
     """Add CORS middleware with secure defaults.
 
     Args:

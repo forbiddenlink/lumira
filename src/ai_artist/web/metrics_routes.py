@@ -20,7 +20,7 @@ router = APIRouter(tags=["metrics"], dependencies=[Depends(require_api_key)])
 
 
 @router.get("/metrics")
-async def prometheus_metrics():
+async def prometheus_metrics() -> Response:
     """
     Prometheus metrics endpoint.
 

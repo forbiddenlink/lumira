@@ -17,7 +17,7 @@ logger = structlog.get_logger()
 class PromptEmphasis:
     """Handle prompt emphasis with weight adjustments."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Pattern for (text:weight) or (text) for 1.1x emphasis
         self.weight_pattern = re.compile(r"\(([^:)]+)(?::([+-]?\d*\.?\d+))?\)")
         # Default multiplier for () without explicit weight

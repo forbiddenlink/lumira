@@ -6,14 +6,16 @@ with proper headers and helpful error messages.
 
 import os
 from collections.abc import Awaitable, Callable
+from typing import cast
 
-from fastapi import Request, Response
+from fastapi import FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.types import ExceptionHandler
 
 from ..utils.logging import get_logger
 
@@ -189,7 +191,7 @@ class RateLimitHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
-def configure_rate_limiting(app) -> Limiter:
+def configure_rate_limiting(app: FastAPI) -> Limiter:
     """Attach the shared limiter, exception handler, and middleware to `app`.
 
     This is the single wiring point for rate limiting. Previously there was
@@ -206,7 +208,12 @@ def configure_rate_limiting(app) -> Limiter:
         The shared Limiter instance.
     """
     app.state.limiter = limiter
-    app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+    # Same cast app.py uses for its other handlers: Starlette types the
+    # second argument against bare Exception, FastAPI dispatches the
+    # subtype it was registered for.
+    app.add_exception_handler(
+        RateLimitExceeded, cast(ExceptionHandler, rate_limit_exceeded_handler)
+    )
     app.add_middleware(SlowAPIMiddleware)
     logger.info("rate_limiting_configured", strategy="fixed-window")
     return limiter

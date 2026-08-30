@@ -12,7 +12,7 @@ from itertools import product
 class PromptMatrix:
     """Generate prompt combinations from matrix syntax."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Pattern to match {option1|option2|option3}
         self.pattern = re.compile(r"\{([^}]+)\}")
 

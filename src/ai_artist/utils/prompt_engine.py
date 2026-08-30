@@ -21,19 +21,19 @@ class PromptEngine:
     - Prompt matrix: [red|blue] for combinatorial generation
     """
 
-    def __init__(self, wildcards_dir: Path = Path("config/wildcards")):
+    def __init__(self, wildcards_dir: Path = Path("config/wildcards")) -> None:
         self.wildcards_dir = wildcards_dir
         self.wildcards: dict[str, list[str]] = {}
         self.prompt_emphasis = PromptEmphasis()
         self.prompt_matrix = PromptMatrix()
         self._load_wildcards()
 
-    def reload(self):
+    def reload(self) -> None:
         """Reload all wildcards from disk."""
         self.wildcards.clear()
         self._load_wildcards()
 
-    def _load_wildcards(self):
+    def _load_wildcards(self) -> None:
         """Load all wildcard files from directory."""
         if not self.wildcards_dir.exists():
             logger.warning("wildcards_dir_not_found", path=str(self.wildcards_dir))
@@ -57,9 +57,9 @@ class PromptEngine:
     def _process_choices(self, text: str) -> str:
         """Process {a|b|c} syntax."""
 
-        def replace(match):
+        def replace(match: re.Match[str]) -> str:
             choices = match.group(1).split("|")
-            return random.choice(choices).strip()
+            return str(random.choice(choices).strip())
 
         # Recursively replace choices (in case of nested choices)
         while "{" in text and "}" in text:

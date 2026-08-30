@@ -172,7 +172,12 @@ target-version = ["py311"]
 python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
-disallow_untyped_defs = false
+# Every module under src/ai_artist annotates its definitions now, so this is
+# global rather than the package allowlist it started as (issue #61). It is
+# what lets the checker look inside function bodies at all: an unannotated def
+# is skipped entirely, which is how three AttributeError crashes sat unnoticed
+# in AIArtist._initialize().
+disallow_untyped_defs = true
 ignore_missing_imports = true
 exclude = [".history", "scripts/"]
 mypy_path = "src"
@@ -188,37 +193,6 @@ warn_required_dynamic_aliases = true
 [[tool.mypy.overrides]]
 module = "aiofiles.*"
 ignore_missing_imports = true
-
-# Incrementally tighten strictness (issue #61). Everything listed here has no
-# unannotated definitions left; the three packages still missing are
-# ai_artist.scheduling (34), ai_artist.utils (15) and ai_artist.web (124),
-# which come next. Kept as an explicit list rather than a global
-# disallow_untyped_defs so the remainder cannot quietly regress the rest.
-[[tool.mypy.overrides]]
-module = [
-    "ai_artist.main",
-    "ai_artist.api.*",
-    "ai_artist.caching.*",
-    "ai_artist.core.*",
-    "ai_artist.curation.*",
-    "ai_artist.db.*",
-    "ai_artist.export.*",
-    "ai_artist.gallery.*",
-    "ai_artist.inspiration.*",
-    "ai_artist.intelligence.*",
-    "ai_artist.knowledge.*",
-    "ai_artist.learning.*",
-    "ai_artist.memory.*",
-    "ai_artist.models.*",
-    "ai_artist.monitoring.*",
-    "ai_artist.personality.*",
-    "ai_artist.prompts.*",
-    "ai_artist.queue.*",
-    "ai_artist.social.*",
-    "ai_artist.training.*",
-    "ai_artist.trends.*",
-]
-disallow_untyped_defs = true
 
 [dependency-groups]
 dev = [

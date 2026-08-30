@@ -1,6 +1,7 @@
 """API routes for advanced prompt utilities."""
 
 from pathlib import Path
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel
@@ -82,7 +83,9 @@ class ApplyStyleResponse(BaseModel):
 
 @router.post("/emphasis", response_model=EmphasisResponse)
 @limiter.limit("60/minute")
-async def parse_emphasis(request: Request, emphasis_request: EmphasisRequest):
+async def parse_emphasis(
+    request: Request, emphasis_request: EmphasisRequest
+) -> EmphasisResponse:
     """Parse emphasis syntax in prompts.
 
     Converts AUTOMATIC1111-style (text:weight) syntax to Compel format.
@@ -105,7 +108,9 @@ async def parse_emphasis(request: Request, emphasis_request: EmphasisRequest):
 
 @router.post("/matrix", response_model=MatrixResponse)
 @limiter.limit("30/minute")
-async def generate_matrix(request: Request, matrix_request: MatrixRequest):
+async def generate_matrix(
+    request: Request, matrix_request: MatrixRequest
+) -> MatrixResponse:
     """Generate all combinations from prompt matrix syntax.
 
     Uses {option1|option2} syntax to create combinatorial prompts.
@@ -150,7 +155,7 @@ async def generate_matrix(request: Request, matrix_request: MatrixRequest):
 async def list_style_presets(
     request: Request,
     category: str | None = Query(None, description="Filter by category"),
-):
+) -> list[Any]:
     """List all available style presets."""
     try:
         all_presets = style_presets.list_presets()
@@ -180,7 +185,7 @@ async def list_style_presets(
 
 @router.get("/styles/{preset_name}", response_model=StylePresetResponse)
 @limiter.limit("60/minute")
-async def get_style_preset(request: Request, preset_name: str):
+async def get_style_preset(request: Request, preset_name: str) -> StylePresetResponse:
     """Get a specific style preset by name."""
     try:
         preset = style_presets.get_preset(preset_name)
@@ -205,7 +210,9 @@ async def get_style_preset(request: Request, preset_name: str):
 
 @router.post("/styles/apply", response_model=ApplyStyleResponse)
 @limiter.limit("60/minute")
-async def apply_style_preset(request: Request, apply_request: ApplyStyleRequest):
+async def apply_style_preset(
+    request: Request, apply_request: ApplyStyleRequest
+) -> ApplyStyleResponse:
     """Apply a style preset to user prompt.
 
     Combines the user's prompt with the style's template and settings.

@@ -13,7 +13,7 @@ from typing import Any
 
 import aiofiles
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from PIL import Image
 from pydantic import BaseModel, Field, model_validator
 from sqlalchemy.orm import Session
@@ -1080,7 +1080,7 @@ async def _load_portfolio_from_gallery() -> list[dict]:
 
 @router.get("/state", response_model=LumiraStateResponse)
 @limiter.limit("60/minute")
-async def get_lumira_state(request: Request):
+async def get_lumira_state(request: Request) -> LumiraStateResponse:
     """Get Lumira's current state including mood, energy, personality, and experience."""
     state = _get_lumira_state()
     mood_system = state["mood_system"]
@@ -1149,7 +1149,7 @@ async def suggest_prompt(
     request: Request,
     body: PromptSuggestionRequest,
     _auth: GenerationAuthDep,
-):
+) -> PromptSuggestionResponse:
     """Generate a mood-influenced prompt suggestion.
 
     Uses the Anthropic LLM (via CreativeMind) to reinterpret the user's prompt
@@ -1208,7 +1208,7 @@ async def create_artwork(
     request: Request,
     _auth: GenerationAuthDep,
     db: Session = Depends(get_db),
-):
+) -> LumiraCreateResponse:
     """Trigger Lumira to create a new artwork with actual image generation.
 
     Uses CreativeMind (LLM-powered when available) to decide what to create
@@ -1390,7 +1390,7 @@ async def create_artwork(
             )
 
         # Critique informed by intent
-        critique_history = [
+        critique_history: list[dict[str, Any]] = [
             {
                 "critic_name": "Inner Critic",
                 "critique": intent.mood_alignment
@@ -1436,7 +1436,7 @@ async def create_artwork(
         guidance = gen_params.get("guidance_scale", 7.5)
 
         # Start background generation
-        async def generate_task():
+        async def generate_task() -> None:
             generator = None
             from ..db.session import get_session_factory
 
@@ -1655,7 +1655,7 @@ async def create_artwork(
                     # RLAIF: Record critic evaluation for self-improvement
                     critic_score = 0.75  # Default; overwritten if critique available
                     try:
-                        critic_score = (
+                        critic_score = float(
                             critique_history[0]["confidence"]
                             if critique_history
                             else 0.75
@@ -1695,7 +1695,7 @@ async def create_artwork(
                         logger.debug("rlaif_record_failed", error=str(rlaif_err))
 
                     # Grow as a continuous being (XP, semantic learning, disk)
-                    creation_record = {
+                    creation_record: dict[str, Any] = {
                         "id": filename,
                         "details": {
                             "prompt": prompt,
@@ -1797,7 +1797,7 @@ async def create_artwork(
         task = _start_generation_task(session_id, generate_task())
 
         # Add exception handler for the background task
-        def handle_task_exception(task):
+        def handle_task_exception(task: "asyncio.Task[Any]") -> None:
             try:
                 task.result()
             except Exception as e:
@@ -1828,7 +1828,7 @@ async def create_artwork(
 
 @router.post("/evolve", response_model=LumiraEvolveResponse)
 @limiter.limit("10/minute")
-async def evolve_state(request: Request):
+async def evolve_state(request: Request) -> LumiraEvolveResponse:
     """Force Lumira's state to evolve."""
     state = _get_lumira_state()
     mood_system = state["mood_system"]
@@ -1870,7 +1870,7 @@ async def user_request_creation(
     _auth: GenerationAuthDep,
     body: UserCreationRequest,
     db: Session = Depends(get_db),
-):
+) -> LumiraCreateResponse:
     """Ask Lumira to create something specific.
 
     Lumira interprets the request through her current mood and artistic
@@ -1982,7 +1982,7 @@ async def user_request_creation(
         guidance = gen_params.get("guidance_scale", 7.5)
 
         # Start background generation (reuses same pattern as /create)
-        async def generate_task():
+        async def generate_task() -> None:
             generator = None
             from ..db.session import get_session_factory
 
@@ -2182,7 +2182,7 @@ async def user_request_creation(
                     # Taste learning waits for real user feedback (gallery love/like).
 
                     # Grow + series + presence (same continuity as /create)
-                    creation_record = {
+                    creation_record: dict[str, Any] = {
                         "id": filename,
                         "details": {
                             "prompt": prompt,
@@ -2251,7 +2251,7 @@ async def user_request_creation(
 
         task = _start_generation_task(session_id, generate_task())
 
-        def handle_task_exception(task):
+        def handle_task_exception(task: "asyncio.Task[Any]") -> None:
             try:
                 task.result()
             except Exception as e:
@@ -2601,7 +2601,7 @@ async def get_mood_evolution(request: Request) -> MoodEvolutionResponse:
 
 @router.get("/statement", response_model=LumiraStatementResponse)
 @limiter.limit("30/minute")
-async def get_artist_statement(request: Request):
+async def get_artist_statement(request: Request) -> LumiraStatementResponse:
     """Get Lumira's artist statement — evolved when her work has changed her."""
     state = _get_lumira_state()
     profile = state["profile"]
@@ -2637,7 +2637,7 @@ async def get_artist_statement(request: Request):
 
 @router.get("/portfolio", response_model=LumiraPortfolioResponse)
 @limiter.limit("30/minute")
-async def get_portfolio(request: Request, limit: int = 20):
+async def get_portfolio(request: Request, limit: int = 20) -> LumiraPortfolioResponse:
     """Get Lumira's portfolio of creations."""
     portfolio_dicts = await _load_portfolio_from_gallery()
     paintings = [PortfolioPainting.model_validate(p) for p in portfolio_dicts[:limit]]
@@ -2646,7 +2646,7 @@ async def get_portfolio(request: Request, limit: int = 20):
 
 @router.get("/evolution", response_model=LumiraEvolutionResponse)
 @limiter.limit("30/minute")
-async def get_evolution(request: Request):
+async def get_evolution(request: Request) -> LumiraEvolutionResponse:
     """Get Lumira's artistic evolution timeline.
 
     Returns:
@@ -2743,7 +2743,7 @@ class AutonomyStatusResponse(BaseModel):
 
 @router.get("/autonomy-status", response_model=AutonomyStatusResponse)
 @limiter.limit("30/minute")
-async def get_autonomy_status(request: Request):
+async def get_autonomy_status(request: Request) -> AutonomyStatusResponse:
     """Get the autonomy system status including circuit breakers, drives, and resilience.
 
     Returns comprehensive status for monitoring 24/7 autonomous operation.
@@ -2802,7 +2802,7 @@ async def get_autonomy_status(request: Request):
 
 @router.get("/series", response_model=ThematicSeriesResponse)
 @limiter.limit("30/minute")
-async def get_thematic_series(request: Request):
+async def get_thematic_series(request: Request) -> ThematicSeriesResponse:
     """Get Lumira's active and completed thematic series.
 
     Thematic series are connected groups of artworks exploring a common theme,
@@ -2901,7 +2901,7 @@ async def create_soundtrack(
     request: Request,
     _auth: GenerationAuthDep,
     body: MagicaAudioRequest,
-):
+) -> MagicaMediaResponse:
     """Generate a Magica instrumental soundtrack for a prompt/mood."""
     import os
 
@@ -2941,7 +2941,7 @@ async def create_video(
     request: Request,
     _auth: GenerationAuthDep,
     body: MagicaVideoRequest,
-):
+) -> MagicaMediaResponse:
     """Generate a short Magica video from a prompt/mood."""
     import json
     import os
@@ -3023,7 +3023,9 @@ class ArtistStatementResponse(BaseModel):
 
 @router.get("/artist-statement", response_model=ArtistStatementResponse)
 @limiter.limit("10/minute")
-async def get_hierarchical_artist_statement(request: Request, regenerate: bool = False):
+async def get_hierarchical_artist_statement(
+    request: Request, regenerate: bool = False
+) -> ArtistStatementResponse:
     """Get Lumira's artist statement.
 
     The artist statement is synthesized from hierarchical reflections -
@@ -3125,7 +3127,7 @@ async def generate_async(
     request: Request,
     generation_request: AsyncGenerationRequest,
     _auth: GenerationAuthDep,
-):
+) -> AsyncGenerationResponse:
     """Start an async image generation job.
 
     This endpoint enqueues a generation job and returns immediately with a job_id.
@@ -3238,7 +3240,7 @@ async def generate_async(
 
 @router.get("/job/{job_id}", response_model=JobStatusResponse)
 @limiter.limit("60/minute")
-async def get_job_status(request: Request, job_id: str):
+async def get_job_status(request: Request, job_id: str) -> JobStatusResponse:
     """Get the status of a generation job.
 
     Returns current status, progress percentage, and results if complete.
@@ -3275,7 +3277,7 @@ async def get_job_status(request: Request, job_id: str):
 
 @router.delete("/job/{job_id}")
 @limiter.limit("30/minute")
-async def cancel_job(request: Request, job_id: str):
+async def cancel_job(request: Request, job_id: str) -> dict[str, Any]:
     """Cancel a queued job.
 
     Only queued jobs can be cancelled. Jobs that are already started
@@ -3311,7 +3313,7 @@ async def cancel_job(request: Request, job_id: str):
 
 @router.get("/queue/stats", response_model=QueueStatsResponse)
 @limiter.limit("60/minute")
-async def get_queue_stats(request: Request):
+async def get_queue_stats(request: Request) -> QueueStatsResponse:
     """Get queue statistics.
 
     Returns information about all priority queues including:
@@ -3341,7 +3343,7 @@ async def upload_reference_image(
     request: Request,
     _auth: GenerationAuthDep,
     file: UploadFile = File(...),
-):
+) -> ReferenceImageUploadResponse:
     """Upload a reference image for IP-Adapter style transfer.
 
     The reference image will be used to guide the style/composition of
@@ -3447,7 +3449,9 @@ async def upload_reference_image(
 
 @router.get("/reference-images", response_model=ReferenceImageListResponse)
 @limiter.limit("30/minute")
-async def list_reference_images(request: Request, limit: int = 20):
+async def list_reference_images(
+    request: Request, limit: int = 20
+) -> ReferenceImageListResponse:
     """List uploaded reference images.
 
     Returns:
@@ -3481,9 +3485,14 @@ async def list_reference_images(request: Request, limit: int = 20):
     )
 
 
-@router.delete("/reference-image/{reference_id}")
+# response_model=None because the annotation below is a union of a Response
+# and a dict: FastAPI builds its response model from the return annotation, so
+# without this it tries to make a Pydantic field out of JSONResponse.
+@router.delete("/reference-image/{reference_id}", response_model=None)
 @limiter.limit("10/minute")
-async def delete_reference_image(request: Request, reference_id: str):
+async def delete_reference_image(
+    request: Request, reference_id: str
+) -> JSONResponse | dict[str, Any]:
     """Delete a reference image.
 
     Args:
@@ -3530,7 +3539,7 @@ async def create_with_reference(
     _auth: GenerationAuthDep,
     body: CreateWithReferenceRequest,
     db: Session = Depends(get_db),
-):
+) -> LumiraCreateResponse:
     """Create artwork using a reference image for style transfer.
 
     Uses IP-Adapter to condition generation on the reference image's
@@ -3640,7 +3649,7 @@ async def create_with_reference(
         )
 
         # Background generation with reference
-        async def generate_task():
+        async def generate_task() -> None:
             generator = None
             from ..db.session import get_session_factory
 
@@ -3795,7 +3804,7 @@ async def create_with_reference(
 
         task = _start_generation_task(session_id, generate_task())
 
-        def handle_task_exception(task):
+        def handle_task_exception(task: "asyncio.Task[Any]") -> None:
             try:
                 task.result()
             except Exception as e:
@@ -4404,7 +4413,7 @@ class ArtworkContextResponse(BaseModel):
 
 @router.get("/knowledge/stats", response_model=KnowledgeGraphStatsResponse)
 @limiter.limit("30/minute")
-async def get_knowledge_stats(request: Request):
+async def get_knowledge_stats(request: Request) -> KnowledgeGraphStatsResponse:
     """Get knowledge graph statistics.
 
     Returns counts of artworks, subjects, styles, and moods in the graph.
@@ -4426,7 +4435,9 @@ async def get_knowledge_stats(request: Request):
 
 @router.get("/knowledge/suggestions/{mood}", response_model=CreativeSuggestionsResponse)
 @limiter.limit("30/minute")
-async def get_creative_suggestions(request: Request, mood: str):
+async def get_creative_suggestions(
+    request: Request, mood: str
+) -> CreativeSuggestionsResponse:
     """Get creative suggestions for a mood.
 
     Returns subjects and styles that have worked well for this mood,
@@ -4449,7 +4460,9 @@ async def get_creative_suggestions(request: Request, mood: str):
 
 @router.get("/knowledge/artwork/{artwork_id}", response_model=ArtworkContextResponse)
 @limiter.limit("30/minute")
-async def get_artwork_context(request: Request, artwork_id: str):
+async def get_artwork_context(
+    request: Request, artwork_id: str
+) -> ArtworkContextResponse:
     """Get full context for an artwork from the knowledge graph.
 
     Returns all subjects, styles, and moods associated with an artwork.
@@ -4484,7 +4497,9 @@ class SimilarArtworksResponse(BaseModel):
 
 @router.get("/knowledge/similar/{artwork_id}", response_model=SimilarArtworksResponse)
 @limiter.limit("30/minute")
-async def get_similar_artworks(request: Request, artwork_id: str, limit: int = 5):
+async def get_similar_artworks(
+    request: Request, artwork_id: str, limit: int = 5
+) -> SimilarArtworksResponse:
     """Return archive neighbors linked or soft-matched in the knowledge graph."""
     from ..knowledge import get_knowledge_graph
 
@@ -4514,7 +4529,7 @@ async def get_curator_voice(
     artwork_id: str | None = None,
     subject: str | None = None,
     style: str | None = None,
-):
+) -> CuratorVoiceResponse:
     """Compose a short curator voice line for gallery / studio.
 
     Uses knowledge graph when available, else series + taste fallbacks.
@@ -4575,7 +4590,7 @@ class SocialPlatformsResponse(BaseModel):
 
 @router.get("/social/platforms", response_model=SocialPlatformsResponse)
 @limiter.limit("30/minute")
-async def get_social_platforms(request: Request):
+async def get_social_platforms(request: Request) -> SocialPlatformsResponse:
     """Get available social media platforms.
 
     Returns which platforms are configured and ready for posting.
@@ -4601,7 +4616,7 @@ async def post_to_social(
     request: Request,
     post_request: SocialPostRequest,
     _auth: GenerationAuthDep,
-):
+) -> SocialPostResponse:
     """Post artwork to social media platforms.
 
     Posts an artwork to configured social media platforms.
@@ -4793,7 +4808,7 @@ async def generate_preview(
     request: Request,
     body: PreviewRequest,
     _auth: GenerationAuthDep,
-):
+) -> PreviewResponse:
     """Generate a fast preview for concept validation.
 
     Uses Magica (when ``MAGICA_API_KEY`` / studio backend is magica) for a
@@ -4924,7 +4939,7 @@ async def approve_preview(
     request: Request,
     body: PreviewApproveRequest,
     _auth: GenerationAuthDep,
-):
+) -> PreviewApproveResponse:
     """Approve a preview and generate full quality image.
 
     Call this after reviewing a preview to commit to full generation.
@@ -5023,7 +5038,7 @@ async def explore_latent_space(
     request: Request,
     body: ExploreRequest,
     _auth: GenerationAuthDep,
-):
+) -> ExploreResponse:
     """Explore the latent space between two concepts.
 
     Generates interpolated images along the path from concept_a to concept_b
@@ -5071,7 +5086,7 @@ async def explore_latent_space(
 
 @router.get("/dialogue", response_model=DialogueHistoryResponse)
 @limiter.limit("60/minute")
-async def get_dialogue_history(request: Request):
+async def get_dialogue_history(request: Request) -> DialogueHistoryResponse:
     """Get Lumira's recent inner dialogue history.
 
     Returns the deliberation history showing how Lumira's inner voices
@@ -5157,7 +5172,7 @@ async def export_video(
     _auth: GenerationAuthDep,
     body: VideoExportRequest,
     db: Session = Depends(get_db),
-):
+) -> VideoExportResponse:
     """Export images as a video slideshow or Ken Burns zoom.
 
     Requires the 'video' optional dependency: pip install lumira[video]
@@ -5276,7 +5291,7 @@ async def export_video(
 async def download_video(
     request: Request,
     path: str,
-):
+) -> FileResponse:
     """Download a generated video file.
 
     Args:
