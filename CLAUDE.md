@@ -150,7 +150,5 @@ as flat env vars -- verify against `src/ai_artist/utils/config.py` before assumi
 - `[tool.uv] override-dependencies` in `pyproject.toml` pins several packages ahead of their
   direct dependents for stated CVE/compatibility reasons -- read the inline comments before
   changing what looks like a conflicting pin.
-- `node_modules/` exists at the repo root with no `package.json` -- stray JS packages (vite,
-  vitest, msw, next), not a second frontend stack. This is a Python project.
 - Railway deploy uses `Dockerfile.gallery` specifically; the full-ML `Dockerfile`/`Dockerfile.gpu`
   don't fit Railway's no-GPU, size-limited environment. Health check path is `/health`.
