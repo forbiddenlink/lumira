@@ -118,3 +118,6 @@ node_modules/
 codeaudit-*-report.html
 /*-test.png
 /*-results.png
+
+# local symlink to CLAUDE.md, not tracked
+AGENTS.md
