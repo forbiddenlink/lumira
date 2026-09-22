@@ -22,7 +22,7 @@ RUN pip install --user --no-cache-dir -r requirements.txt
 # ============================================
 # Stage 2: CUDA Runtime
 # ============================================
-FROM nvidia/cuda:12.1.0-cudnn8-runtime-ubuntu22.04
+FROM nvidia/cuda:12.2.2-cudnn8-runtime-ubuntu22.04@sha256:2d913b09e6be8387e1a10976933642c73c840c0b735f0bf3c28d97fc9bc422e0
 
 # Install Python 3.11
 RUN apt-get update && apt-get install -y --no-install-recommends \
