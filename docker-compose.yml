@@ -46,7 +46,7 @@ services:
 
   # FalkorDB for graph memory (institutional knowledge)
   falkordb:
-    image: falkordb/falkordb:latest
+    image: falkordb/falkordb:latest@sha256:13996aa523f0dd283f6bd6df6620b094dcea525452417c4d6ef9bef15dc9998d
     ports:
       - "6380:6379"  # Map to 6380 to avoid Redis conflict
     volumes:
@@ -66,7 +66,7 @@ services:
 
   # Redis for job queue
   redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
     ports:
       - "6379:6379"
     volumes:
@@ -116,7 +116,7 @@ services:
 
   # Optional: RQ Dashboard for monitoring
   rq-dashboard:
-    image: eoranged/rq-dashboard:latest
+    image: eoranged/rq-dashboard:latest@sha256:a4300e292b3e6ff65fe662fac01930bb22d10228d7389a6ad06581704464aa84
     ports:
       - "9181:9181"
     environment:
