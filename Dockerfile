@@ -4,7 +4,7 @@
 # ============================================
 # Stage 1: Builder
 # ============================================
-FROM python:3.11-slim AS builder
+FROM python:3.11-slim@sha256:e41613d42d4891e4930f79523f93f81bbc7632584ec65e36ab055f41a800b41e AS builder
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ RUN pip install --user --no-cache-dir -r requirements.txt
 # ============================================
 # Stage 2: Runtime
 # ============================================
-FROM python:3.11-slim
+FROM python:3.11-slim@sha256:e41613d42d4891e4930f79523f93f81bbc7632584ec65e36ab055f41a800b41e
 
 # Create non-root user for security
 RUN groupadd --gid 1000 aiartist \

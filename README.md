@@ -1,6 +1,8 @@
 # Lumira - Autonomous AI Artist
 
-An autonomous AI artist with personality, moods, memory, and creative independence.
+An autonomous AI artist with personality, moods, memory, and creative independence. A
+lightweight "gallery + cloud-generation" build (`Dockerfile.gallery`, no local ML/GPU,
+generation via Replicate/Magica) deploys to Railway; see `docs/DEPLOYMENT.md`.
 
 ## ✨ What Makes Lumira Different
 
@@ -72,23 +74,20 @@ lumira/
 
 | Document | Purpose |
 |----------|---------|
-| **[LUMIRA.md](LUMIRA.md)** | Full personality system & roadmap |
-| **[QUICKSTART.md](QUICKSTART.md)** | Step-by-step setup guide |
-| **[SETUP.md](SETUP.md)** | Detailed installation |
-| **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** | Common issues |
-| **[LORA_GUIDE.md](LORA_GUIDE.md)** | Custom style training |
-| **[docs/PHASE1_IMPLEMENTATION_SUMMARY.md](docs/PHASE1_IMPLEMENTATION_SUMMARY.md)** | ⭐ **All 4 enhancement phases complete** |
-| **[docs/EXTERNAL_TOOLS_EVALUATION.md](docs/EXTERNAL_TOOLS_EVALUATION.md)** | External tool recommendations |
+| **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** | System architecture and design choices |
+| **[docs/QUICKSTART.md](docs/QUICKSTART.md)** | Step-by-step setup guide |
+| **[docs/SETUP.md](docs/SETUP.md)** | Detailed installation |
+| **[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** | Common issues |
+| **[docs/LORA_GUIDE.md](docs/LORA_GUIDE.md)** | Custom style training |
 | **[docs/WEBSOCKET.md](docs/WEBSOCKET.md)** | Real-time updates guide |
 | **[docs/API.md](docs/API.md)** | API documentation |
 | **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** | Production deployment |
+| **[docs/ROADMAP.md](docs/ROADMAP.md)** | What's next |
 | **[docs/](docs/)** | Full technical documentation |
 
 ## 📊 Current Status
 
-**✅ Completed (76% - Production Ready):**
-
-**Personality & Intelligence:**
+See `CLAUDE.md` for the maintained current-state summary (stack, commands, gotchas). Highlights:
 
 - 10-mood personality system with dynamic state
 - 3-layer memory (episodic/semantic/working)
@@ -121,12 +120,8 @@ lumira/
 - Advanced prompt features (Matrix, Emphasis, Style Presets)
 - Comprehensive test coverage (400+ tests)
 
-**📈 In Progress (24%):**
-
-- Type annotations to 100% (currently 85%)
-- Redis caching layer,
-[docs/PHASE1_IMPLEMENTATION_SUMMARY.md](docs/PHASE1_IMPLEMENTATION_SUMMARY.md) for all enhancements,
-and [docs/ADVANCED_PROMPTS.md](docs/ADVANCED_PROMPTS.md) for prompt utilities.
+See [docs/ROADMAP.md](docs/ROADMAP.md) for what's actively planned, and
+[docs/ADVANCED_PROMPTS.md](docs/ADVANCED_PROMPTS.md) for prompt utilities.
 
 ## 🛠️ Tech Stack
 
@@ -155,11 +150,6 @@ and [docs/ADVANCED_PROMPTS.md](docs/ADVANCED_PROMPTS.md) for prompt utilities.
 - Kubernetes health checks
 - Sentry error tracking
 - Comprehensive logging (structlog)
-- Stable Diffusion (diffusers)
-- LoRA for style training
-- FastAPI + WebSocket
-- SQLite
-- CLIP for curation
 
 ## License
 
