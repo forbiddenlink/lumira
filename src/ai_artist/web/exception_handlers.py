@@ -34,12 +34,23 @@ _STATUS_MESSAGES = {
 
 
 def _wants_html(request: Request) -> bool:
-    """Check if the client prefers HTML over JSON."""
-    accept = request.headers.get("accept", "")
-    # API paths always get JSON
-    if str(request.url.path).startswith("/api/"):
+    """Check if the client prefers HTML over JSON.
+
+    Data routes stay JSON. A browser opening an unknown page gets the
+    designed error, including clients that send ``*/*`` rather than
+    ``text/html``.
+    """
+    path = str(request.url.path)
+    if path.startswith(("/api/", "/admin/", "/metrics", "/health", "/static/")):
         return False
-    return "text/html" in accept
+    accept = request.headers.get("accept", "")
+    if request.headers.get("sec-fetch-dest") == "document":
+        return True
+    if "text/html" in accept:
+        return True
+    if "application/json" in accept and "text/html" not in accept:
+        return False
+    return "*/*" in accept or accept == ""
 
 
 def _render_error_html(

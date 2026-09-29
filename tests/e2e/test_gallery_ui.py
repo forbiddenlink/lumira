@@ -34,6 +34,13 @@ class TestGalleryPageLoad:
         page = gallery_page
         expect(page.locator("footer")).to_contain_text("AI")
 
+    def test_welcome_hero_stays_hidden_by_default(self, gallery_page: Page):
+        page = gallery_page
+        expect(page.locator("#welcome-hero")).to_be_hidden()
+        featured = page.locator("#featured-work")
+        # Empty gallery: stage stays hidden. Populated: artwork owns the fold.
+        expect(featured).to_be_attached()
+
 
 class TestGalleryModal:
     """Tests for image modal accessibility and keyboard behavior."""

@@ -305,3 +305,79 @@ def test_maybe_pair_soundtrack_disabled_without_key(monkeypatch, tmp_path):
         )
         is None
     )
+
+
+def test_should_pair_video_for_motion_moods(monkeypatch):
+    from ai_artist.personality.continuity import should_pair_video
+
+    monkeypatch.delenv("LUMIRA_AUTO_VIDEO", raising=False)
+    monkeypatch.setenv("MAGICA_API_KEY", "test-key")
+    assert should_pair_video(mood="energized") is True
+    assert should_pair_video(mood="serene") is False
+
+
+def test_should_pair_video_can_be_disabled(monkeypatch):
+    from ai_artist.personality.continuity import should_pair_video
+
+    monkeypatch.setenv("LUMIRA_AUTO_VIDEO", "0")
+    monkeypatch.setenv("MAGICA_API_KEY", "test-key")
+    assert should_pair_video(mood="energized") is False
+
+
+def test_choose_extra_media_is_xor(monkeypatch):
+    from ai_artist.personality.continuity import choose_extra_media
+
+    monkeypatch.delenv("LUMIRA_AUTO_VIDEO", raising=False)
+    monkeypatch.delenv("LUMIRA_AUTO_SOUNDTRACK", raising=False)
+    monkeypatch.setenv("MAGICA_API_KEY", "test-key")
+    # energized is both a motion mood and a soundtrack mood — video wins.
+    assert (
+        choose_extra_media(
+            mood="energized",
+            drive_status={"emotional_expression": {"intensity": 0.9}},
+        )
+        == "video"
+    )
+    assert (
+        choose_extra_media(
+            mood="serene",
+            drive_status={"emotional_expression": {"intensity": 0.9}},
+        )
+        == "soundtrack"
+    )
+
+
+def test_maybe_pair_video_writes_sidecar(tmp_path, monkeypatch):
+    from ai_artist.personality.continuity import maybe_pair_video
+
+    image = tmp_path / "piece.png"
+    image.write_bytes(b"fake")
+    sidecar = image.with_suffix(".json")
+    sidecar.write_text('{"prompt": "storm"}')
+    monkeypatch.setenv("MAGICA_API_KEY", "test-key")
+
+    video_path = tmp_path / "clip.mp4"
+    video_path.write_bytes(b"video")
+
+    class FakeVideo:
+        def generate_video(self, *args, **kwargs):
+            return video_path
+
+    monkeypatch.setattr(
+        "ai_artist.core.magica_media.MagicaVideoGenerator",
+        FakeVideo,
+    )
+    assert (
+        maybe_pair_video(
+            prompt="a storm over water",
+            mood="chaotic",
+            image_path=image,
+            metadata={},
+            enabled=True,
+            gallery_root=str(tmp_path),
+        )
+        == video_path
+    )
+    updated = sidecar.read_text()
+    assert "video_url" in updated
+    assert str(video_path) in updated

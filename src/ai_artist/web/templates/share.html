@@ -318,15 +318,22 @@
         background: color-mix(in oklab, var(--accent) 60%, transparent);
       }
 
-      .artwork-prompt {
+      .artwork-title {
         font-family: var(--font-display);
-        font-size: clamp(16px, 2.5vw, 20px);
-        line-height: 1.65;
+        font-size: clamp(2.2rem, 5vw, 3.6rem);
+        font-weight: 500;
+        line-height: 1.08;
+        letter-spacing: -0.03em;
         color: var(--text);
+        margin: 0.35rem 0 0;
+      }
+      .artwork-prompt {
+        font-family: var(--font-ui);
+        font-size: 0.95rem;
+        line-height: 1.55;
+        color: var(--muted);
         font-weight: 400;
-        letter-spacing: -0.01em;
-        margin-bottom: 24px;
-        font-style: italic;
+        margin-top: 0.6rem;
       }
 
       .artwork-meta {
@@ -404,7 +411,7 @@
               <circle cx="12" cy="12" r="10" />
               <circle cx="12" cy="12" r="3" />
             </svg>
-            Creative Studio
+            Studio
           </a>
         </div>
         <div
@@ -426,7 +433,12 @@
         </div>
         <div class="artwork-info">
           <div class="artwork-eyebrow">Created by Lumira{% if mood %} · {{ mood }}{% endif %}</div>
-          <p class="artwork-prompt">"{{ prompt }}"</p>
+          <h1 class="artwork-title">{{ display_title or title }}</h1>
+          <p class="featured-proposed" style="margin:0.4rem 0 0;color:var(--muted);font-size:0.9rem;">Title taken from the first words of the prompt.</p>
+          <details style="margin-top:0.9rem;">
+            <summary style="cursor:pointer;min-height:24px;">Prompt</summary>
+            <p class="artwork-prompt" style="margin-top:0.6rem;">{{ prompt }}</p>
+          </details>
           {% if thought_line %}
           <p class="artwork-thought" style="margin:0.75rem 0 0;opacity:0.8;font-style:italic;line-height:1.5;">
             {{ thought_line }}
@@ -476,7 +488,7 @@
           An AI artist with evolving moods, episodic memory, and creative
           independence — request something, or let it surprise you.
         </p>
-        <a href="/lumira" class="btn btn-primary">Enter Creative Studio</a>
+        <a href="/lumira" class="btn btn-primary">Enter the studio</a>
       </div>
     </div>
 

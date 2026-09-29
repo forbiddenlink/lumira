@@ -5,6 +5,7 @@ import contextlib
 import io
 import json
 import random
+import threading
 import time
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -248,6 +249,55 @@ def _maybe_pair_soundtrack(
     )
 
 
+def _maybe_pair_video(
+    *,
+    prompt: str,
+    mood: str | None,
+    image_path: Path,
+    metadata: dict[str, Any],
+    enabled: bool,
+) -> Path | None:
+    """Web wrapper around shared Magica video pairing."""
+    from ..personality.continuity import maybe_pair_video
+
+    metadata.setdefault("metadata", {})
+    return maybe_pair_video(
+        prompt=prompt,
+        mood=mood,
+        image_path=image_path,
+        metadata=metadata,
+        enabled=enabled,
+    )
+
+
+def _recent_creation_items(memory: Any) -> list[dict[str, Any]]:
+    """Recent works from enhanced (or duck-typed) memory."""
+    if memory is None:
+        return []
+    if hasattr(memory, "get_recent_episodes"):
+        with contextlib.suppress(Exception):
+            items = memory.get_recent_episodes(limit=10)
+            if items:
+                return list(items)
+    if hasattr(memory, "recall_recent_creations"):
+        with contextlib.suppress(Exception):
+            items = memory.recall_recent_creations(limit=10)
+            if items:
+                return list(items)
+    return []
+
+
+def _subjects_from_items(items: list[dict[str, Any]]) -> list[str]:
+    subjects: list[str] = []
+    for item in items:
+        raw_details = item.get("details")
+        details: dict[str, Any] = raw_details if isinstance(raw_details, dict) else {}
+        subject = item.get("subject") or details.get("subject")
+        if subject:
+            subjects.append(str(subject))
+    return subjects
+
+
 async def _guard_generation(coro: Any) -> Any:
     """Run a generation coroutine under the process-wide concurrency cap."""
     async with generation_semaphore:
@@ -352,6 +402,7 @@ async def run_scheduled_autonomous_create() -> None:
 
 # Lazy curator singleton (CLIP model loaded on first scoring call)
 _image_curator = None
+_image_curator_lock = threading.Lock()
 
 # Portfolio scan cache — refreshed at most every 30 seconds
 _portfolio_cache: list[dict] | None = None
@@ -359,20 +410,164 @@ _portfolio_cache_ts: float = 0.0
 _PORTFOLIO_CACHE_TTL: float = 30.0
 
 
+def _try_score_image(image: Image.Image, prompt: str) -> float | None:
+    """Score an image against a prompt using CLIP; None when scoring is unavailable."""
+    global _image_curator
+    with _image_curator_lock:
+        try:
+            if _image_curator is None:
+                from ..curation.curator import ImageCurator
+                from ..utils.config import load_config as _lc
+
+                cfg = _lc()
+                _image_curator = ImageCurator(device=cfg.model.device)
+            metrics = _image_curator.evaluate(image, prompt)
+            return round(float(metrics.overall_score), 4)
+        except Exception:
+            return None
+
+
 def _score_image(image: Image.Image, prompt: str) -> float:
     """Score an image against a prompt using CLIP; falls back to 0.8 on failure."""
-    global _image_curator
-    try:
-        if _image_curator is None:
-            from ..curation.curator import ImageCurator
-            from ..utils.config import load_config as _lc
+    scored = _try_score_image(image, prompt)
+    return 0.8 if scored is None else scored
 
-            cfg = _lc()
-            _image_curator = ImageCurator(device=cfg.model.device)
-        metrics = _image_curator.evaluate(image, prompt)
-        return round(float(metrics.overall_score), 4)
-    except Exception:
-        return 0.8
+
+async def _maybe_retry_studio_piece(
+    *,
+    generator: Any,
+    images: list[Any],
+    prompt: str,
+    negative_prompt: str,
+    num_steps: int,
+    guidance: float,
+    on_progress: Any,
+    subject: str,
+    style: str,
+    mood: str,
+    recent_subjects: list[str],
+    session_id: str,
+    session_mode: str,
+    hypothesis: str,
+    ws_manager: Any,
+    allow_repeat: bool = False,
+) -> tuple[list[Any], str, dict[str, Any]]:
+    """After the first picture exists, keep it or take one more pass.
+
+    Returns (images, prompt, session_record). Spend-capped at one retry.
+    """
+    from ..intelligence.studio_session import (
+        judge_finished_work,
+        refine_prompt,
+        retries_allowed,
+    )
+
+    first = images[0]
+    score = await _run_in_thread(_try_score_image, first, prompt)
+    record: dict[str, Any] = {
+        "mode": session_mode,
+        "hypothesis": hypothesis,
+        "iterations": 0,
+        "kept_score": score,
+        "retry_reason": None,
+        "critic_note": "",
+    }
+    if not retries_allowed():
+        record["retry_reason"] = "disabled"
+        return images, prompt, record
+
+    verdict = judge_finished_work(
+        score=score,
+        prompt=prompt,
+        subject=subject,
+        recent_subjects=recent_subjects,
+        allow_repeat=allow_repeat,
+    )
+    record["critic_note"] = verdict.critic_note
+    if not verdict.should_retry:
+        return images, prompt, record
+
+    with contextlib.suppress(Exception):
+        await ws_manager.send_thinking_update(
+            session_id=session_id,
+            thought_type="reflect",
+            content=verdict.critic_note,
+        )
+        await ws_manager.broadcast_inner_dialogue(
+            session_id=session_id,
+            voice="critic",
+            content=verdict.critic_note,
+            metadata={"reason": verdict.reason, "mode": session_mode},
+        )
+
+    new_prompt = refine_prompt(
+        prompt=prompt,
+        subject=subject,
+        style=style,
+        mood=mood,
+        similar_titles=list(verdict.compared_to),
+        reason=verdict.reason,
+    )
+    logger.info(
+        "studio_session_retry",
+        reason=verdict.reason,
+        mode=session_mode,
+        session_id=session_id,
+    )
+    try:
+        retry_images = await _run_in_thread(
+            generator.generate,
+            prompt=new_prompt,
+            negative_prompt=negative_prompt,
+            num_inference_steps=num_steps,
+            guidance_scale=guidance,
+            width=768,
+            height=768,
+            num_images=1,
+            on_progress=on_progress,
+        )
+    except Exception as e:
+        logger.warning("studio_session_retry_failed", error=str(e))
+        record["retry_reason"] = "error"
+        record["critic_note"] = (
+            verdict.critic_note + " The second pass failed. I am keeping the first."
+        )
+        return images, prompt, record
+    if not retry_images:
+        record["retry_reason"] = verdict.reason
+        return images, prompt, record
+
+    # Compare both pictures against the original prompt so CLIP is not
+    # rewarding the rewritten text.
+    retry_score = await _run_in_thread(_try_score_image, retry_images[0], prompt)
+    if retry_score is None:
+        keep_retry = score is None
+    elif score is None:
+        keep_retry = True
+    else:
+        keep_retry = retry_score >= score
+    record["iterations"] = 1
+    record["retry_reason"] = verdict.reason
+    if keep_retry:
+        record["kept_score"] = retry_score
+        record["discarded_score"] = score
+        record["critic_note"] = (
+            verdict.critic_note + " The second pass is the one I am keeping."
+        )
+        with contextlib.suppress(Exception):
+            await ws_manager.send_thinking_update(
+                session_id=session_id,
+                thought_type="create",
+                content="The second pass is the one I am keeping.",
+            )
+        return retry_images, new_prompt, record
+
+    record["kept_score"] = score
+    record["discarded_score"] = retry_score
+    record["critic_note"] = (
+        verdict.critic_note + " The first picture was still stronger. Keeping it."
+    )
+    return images, prompt, record
 
 
 class LumiraStateResponse(BaseModel):
@@ -1254,23 +1449,55 @@ async def create_artwork(
             time_of_day = "night"
 
         # Get recent subjects from memory to avoid repetition
-        recent_subjects = []
-        if memory:
-            try:
-                recent = memory.recall_recent_creations(limit=10)
-                recent_subjects = [
-                    c.get("subject", "") for c in recent if c.get("subject")
-                ]
-            except Exception:
-                pass
+        recent_subjects: list[str] = []
+        recent_items: list[dict[str, Any]] = []
+        session_mode = "surprise"
+        session_hypothesis = ""
+        archive_seed: dict[str, str] | None = None
+        recent_items = _recent_creation_items(memory)
+        recent_subjects = _subjects_from_items(recent_items)
+
+        try:
+            from ..intelligence.desire_engine import get_desire_engine
+            from ..intelligence.studio_session import (
+                choose_session_mode,
+                hypothesis_seed,
+                pick_archive_seed,
+            )
+            from ..personality.hierarchical_reflection import (
+                get_hierarchical_reflection,
+            )
+
+            _drive_status = get_desire_engine(
+                mood_system=mood_system,
+                memory_system=memory,
+                learner=learner,
+            ).get_drive_status()
+            session_mode = choose_session_mode(_drive_status)
+            outer_steer = ""
+            with contextlib.suppress(Exception):
+                outer_steer = get_hierarchical_reflection().get_outer_loop_steer()
+            session_hypothesis = hypothesis_seed(
+                session_mode, mood=mood.value, outer_steer=outer_steer
+            )
+            archive_seed = pick_archive_seed(recent_items, session_mode)
+            if archive_seed:
+                session_hypothesis = (
+                    f"{session_hypothesis} Continue from "
+                    f"'{archive_seed['subject']}' — same family, a new sentence."
+                )
+        except Exception as e:
+            logger.debug("studio_session_mode_skipped", error=str(e))
 
         # Check cache for creative intent (cost optimization)
-        cached_intent = await gen_cache.get_creative_intent(
-            mood=mood.value,
-            energy=getattr(mood_system, "mood_intensity", 0.7),
-            time_of_day=time_of_day,
-            recent_subjects=recent_subjects,
-        )
+        cached_intent = None
+        if not archive_seed:
+            cached_intent = await gen_cache.get_creative_intent(
+                mood=mood.value,
+                energy=getattr(mood_system, "mood_intensity", 0.7),
+                time_of_day=f"{time_of_day}:{session_mode}",
+                recent_subjects=recent_subjects,
+            )
 
         if cached_intent:
             # Reconstruct CreativeIntent from cached data
@@ -1298,7 +1525,14 @@ async def create_artwork(
             )
         else:
             # Occasionally convene the full inner council before choosing
-            decide_context: dict[str, Any] = {}
+            decide_context: dict[str, Any] = {
+                "session_mode": session_mode,
+                "hypothesis": session_hypothesis,
+            }
+            if archive_seed:
+                decide_context["seed_subject"] = archive_seed["subject"]
+                if archive_seed.get("style"):
+                    decide_context["seed_style"] = archive_seed["style"]
             try:
                 from ..intelligence.desire_engine import get_desire_engine
                 from ..personality.continuity import should_deep_deliberate
@@ -1308,7 +1542,11 @@ async def create_artwork(
                     memory_system=memory,
                     learner=learner,
                 ).get_drive_status()
-                if should_deep_deliberate(drive_status=drive_status):
+                # Continuation remix already has a seed; don't let the council
+                # overwrite the archive thread.
+                if not archive_seed and should_deep_deliberate(
+                    drive_status=drive_status
+                ):
                     dialogue = _get_inner_dialogue(session_id=session_id)
                     concept = await dialogue.deliberate(
                         mood=mood.value, clear_history=False
@@ -1346,7 +1584,7 @@ async def create_artwork(
             await gen_cache.set_creative_intent(
                 mood=mood.value,
                 energy=getattr(mood_system, "mood_intensity", 0.7),
-                time_of_day=time_of_day,
+                time_of_day=f"{time_of_day}:{session_mode}",
                 recent_subjects=recent_subjects,
                 intent={
                     "subject": intent.subject,
@@ -1387,6 +1625,13 @@ async def create_artwork(
         if intent.reasoning:
             await ws_manager.send_thinking_update(
                 session_id=session_id, thought_type="decide", content=intent.reasoning
+            )
+
+        if session_hypothesis:
+            await ws_manager.send_thinking_update(
+                session_id=session_id,
+                thought_type="observe",
+                content=f"Hypothesis ({session_mode}): {session_hypothesis}",
             )
 
         # Critique informed by intent
@@ -1491,9 +1736,10 @@ async def create_artwork(
                 )
 
                 # Generate image with mood-influenced parameters (off event loop)
+                work_prompt = prompt
                 images = await _run_in_thread(
                     generator.generate,
-                    prompt=prompt,
+                    prompt=work_prompt,
                     negative_prompt=negative_prompt,
                     num_inference_steps=num_steps,
                     guidance_scale=guidance,
@@ -1502,6 +1748,40 @@ async def create_artwork(
                     num_images=1,
                     on_progress=on_progress,
                 )
+
+                session_record: dict[str, Any] = {
+                    "mode": session_mode,
+                    "hypothesis": session_hypothesis,
+                    "iterations": 0,
+                }
+                if images:
+                    images, work_prompt, session_record = (
+                        await _maybe_retry_studio_piece(
+                            generator=generator,
+                            images=images,
+                            prompt=work_prompt,
+                            negative_prompt=negative_prompt,
+                            num_steps=num_steps,
+                            guidance=guidance,
+                            on_progress=on_progress,
+                            subject=subject,
+                            style=style,
+                            mood=mood.value,
+                            recent_subjects=recent_subjects,
+                            session_id=session_id,
+                            session_mode=session_mode,
+                            hypothesis=session_hypothesis,
+                            ws_manager=ws_manager,
+                            allow_repeat=bool(archive_seed)
+                            or session_mode == "continuation",
+                        )
+                    )
+                    if archive_seed:
+                        session_record["evolved_from"] = {
+                            "subject": archive_seed.get("subject") or "",
+                            "style": archive_seed.get("style") or "",
+                            "source_id": archive_seed.get("source_id") or "",
+                        }
 
                 # Save image
                 if images and len(images) > 0:
@@ -1523,7 +1803,7 @@ async def create_artwork(
 
                         index_artwork_in_knowledge_graph(
                             filename,
-                            prompt=prompt,
+                            prompt=work_prompt,
                             mood=mood.value,
                             subject=subject,
                             style=style,
@@ -1541,13 +1821,13 @@ async def create_artwork(
 
                         curator_note = compose_curator_voice(
                             mood=mood.value,
-                            prompt=prompt,
+                            prompt=work_prompt,
                             artwork_id=filename,
                             subject=subject,
                             style=style,
                         )
                     metadata_json = {
-                        "prompt": prompt,
+                        "prompt": work_prompt,
                         "metadata": {
                             "mood": mood.value,
                             "subject": subject,
@@ -1560,17 +1840,19 @@ async def create_artwork(
                             "artistic_goals": intent.artistic_goals,
                             "has_llm": creative_mind.has_llm,
                             "curator_note": curator_note,
+                            "studio_session": session_record,
                         },
                         "created_at": now.isoformat(),
                         "featured": False,
                         "curator_note": curator_note,
+                        "studio_session": session_record,
                     }
                     metadata_path.write_text(json.dumps(metadata_json, indent=2))
                     try:
                         from ..intelligence.desire_engine import get_desire_engine
-                        from ..personality.continuity import should_pair_soundtrack
+                        from ..personality.continuity import choose_extra_media
 
-                        want_sound = should_pair_soundtrack(
+                        extra = choose_extra_media(
                             mood=mood.value,
                             drive_status=get_desire_engine(
                                 mood_system=mood_system,
@@ -1579,14 +1861,25 @@ async def create_artwork(
                             ).get_drive_status(),
                         )
                     except Exception:
-                        want_sound = False
-                    _maybe_pair_soundtrack(
-                        prompt=prompt,
-                        mood=mood.value,
-                        image_path=save_path,
-                        metadata=metadata_json,
-                        enabled=want_sound,
-                    )
+                        extra = None
+                    if extra == "video":
+                        await _run_in_thread(
+                            _maybe_pair_video,
+                            prompt=work_prompt,
+                            mood=mood.value,
+                            image_path=save_path,
+                            metadata=metadata_json,
+                            enabled=True,
+                        )
+                    elif extra == "soundtrack":
+                        await _run_in_thread(
+                            _maybe_pair_soundtrack,
+                            prompt=work_prompt,
+                            mood=mood.value,
+                            image_path=save_path,
+                            metadata=metadata_json,
+                            enabled=True,
+                        )
 
                     image_url = f"/api/images/file/{now.strftime('%Y/%m/%d')}/archive/{filename}"
 
@@ -1597,7 +1890,7 @@ async def create_artwork(
                             with session_factory() as db_session:
                                 db_image = GeneratedImage(
                                     filename=str(save_path),
-                                    prompt=prompt,
+                                    prompt=work_prompt,
                                     negative_prompt=negative_prompt,
                                     # status is the pipeline state, not the
                                     # mood -- writing the mood here made
@@ -1615,8 +1908,11 @@ async def create_artwork(
                                         "style": style,
                                         "mood": mood.value,
                                         "reasoning": intent.reasoning,
+                                        "studio_session": session_record,
                                     },
-                                    final_score=_score_image(images[0], prompt),
+                                    final_score=await _run_in_thread(
+                                        _score_image, images[0], work_prompt
+                                    ),
                                     tags=[mood.value, subject, style],
                                     created_at=now,
                                 )
@@ -1633,7 +1929,7 @@ async def create_artwork(
                                     vector_mem = get_vector_memory()
                                     vector_mem.add_creation(
                                         creation_id=str(db_image.id),
-                                        prompt=prompt,
+                                        prompt=work_prompt,
                                         subject=subject,
                                         style=style,
                                         mood=mood.value,
@@ -1683,7 +1979,7 @@ async def create_artwork(
                                 "width": 768,
                                 "height": 768,
                             },
-                            prompt=prompt,
+                            prompt=work_prompt,
                             model_id=config.model.base_model,
                         )
                         logger.debug(
@@ -1698,7 +1994,7 @@ async def create_artwork(
                     creation_record: dict[str, Any] = {
                         "id": filename,
                         "details": {
-                            "prompt": prompt,
+                            "prompt": work_prompt,
                             "subject": subject,
                             "style": style,
                             "reasoning": intent.reasoning,
@@ -1747,7 +2043,7 @@ async def create_artwork(
                     await _broadcast_presence_after_creation(
                         session_id=session_id,
                         mood_system=mood_system,
-                        prompt=prompt,
+                        prompt=work_prompt,
                         image_url=image_url,
                     )
 
@@ -2136,7 +2432,8 @@ async def user_request_creation(
                         )
                     except Exception:
                         want_sound = bool(getattr(body, "with_soundtrack", False))
-                    _maybe_pair_soundtrack(
+                    await _run_in_thread(
+                        _maybe_pair_soundtrack,
                         prompt=prompt,
                         mood=mood.value,
                         image_path=save_path,
@@ -2170,7 +2467,9 @@ async def user_request_creation(
                                         "style": style,
                                         "user_request": body.prompt,
                                     },
-                                    final_score=_score_image(images[0], prompt),
+                                    final_score=await _run_in_thread(
+                                        _score_image, images[0], prompt
+                                    ),
                                     tags=[mood.value, subject, style, "user_request"],
                                     created_at=now,
                                 )
@@ -3754,7 +4053,9 @@ async def create_with_reference(
                                         "reference_id": body.reference_id,
                                         "ip_adapter_scale": body.ip_adapter_scale,
                                     },
-                                    final_score=_score_image(images[0], prompt),
+                                    final_score=await _run_in_thread(
+                                        _score_image, images[0], prompt
+                                    ),
                                     tags=[mood.value, subject, style, "reference"],
                                     created_at=now,
                                 )

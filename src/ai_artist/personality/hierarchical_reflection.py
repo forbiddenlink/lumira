@@ -619,6 +619,35 @@ class HierarchicalReflection:
             return self.artist_statements[-1]
         return None
 
+    def get_outer_loop_steer(self) -> str:
+        """Fold weekly/daily reflection into the next studio hypothesis.
+
+        Returns a short first-person steer, or empty when she has not
+        reflected yet. Weekly artistic direction wins; daily intention and
+        the latest statement philosophy fill in.
+        """
+        bits: list[str] = []
+        weekly = self.reflections.get("weekly") or []
+        if weekly and isinstance(weekly[-1], dict):
+            last = weekly[-1]
+            period = str(last.get("period_name") or "").strip()
+            direction = str(last.get("artistic_direction") or "").strip()
+            if period:
+                bits.append(f"This period is {period}.")
+            if direction:
+                bits.append(direction)
+        daily = self.reflections.get("daily") or []
+        if daily and isinstance(daily[-1], dict):
+            intention = str(daily[-1].get("tomorrow_intention") or "").strip()
+            if intention:
+                bits.append(f"Tomorrow I meant to: {intention}")
+        statement = self.get_latest_artist_statement()
+        if statement is not None:
+            philosophy = (statement.philosophy or "").strip()
+            if philosophy:
+                bits.append(philosophy[:240])
+        return " ".join(bits).strip()
+
     # ------------------------------------------------------------------
     # LLM Generation Helpers
     # ------------------------------------------------------------------

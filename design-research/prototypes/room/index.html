@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lumira, the room (direction preview)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;1,400&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,620;1,9..144,500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #12100e;
+        --panel: #1a1714;
+        --elevated: #221e1a;
+        --raised: #2a251f;
+        --text: #ebe4d8;
+        --muted: #9a9084;
+        --faint: #8f8578;
+        --accent: #c4a574;
+        --accent-light: #d9c39f;
+        --ink: #1a1510;
+        --danger: #d4646a;
+        --line: rgba(235, 228, 216, 0.14);
+        --font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", serif;
+        --font-ui: "Figtree", "Avenir Next", "Segoe UI", sans-serif;
+        --header: 4.25rem;
+        --dock: 4.5rem;
+        --page: 72rem;
+        --gutter: clamp(1rem, 3vw, 2.5rem);
+      }
+
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font-ui);
+        font-size: 1.0625rem;
+        line-height: 1.5;
+      }
+      img { max-width: 100%; display: block; }
+      button, input, textarea, select { font: inherit; color: inherit; }
+      a { color: var(--accent-light); }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+      .skip {
+        position: absolute;
+        left: 1rem;
+        top: -4rem;
+        background: var(--accent);
+        color: var(--ink);
+        padding: 0.5rem 0.8rem;
+        z-index: 20;
+      }
+      .skip:focus { top: 0.5rem; }
+
+      .banner {
+        background: var(--elevated);
+        color: var(--muted);
+        font-size: 0.84rem;
+        padding: 0.55rem var(--gutter);
+        border-bottom: 1px solid var(--line);
+      }
+      .banner strong { color: var(--text); font-weight: 600; }
+      .banner-short { display: none; }
+
+      .site-header {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        min-height: var(--header);
+        padding: 0 var(--gutter);
+        background: rgba(18, 16, 14, 0.92);
+        border-bottom: 1px solid var(--line);
+        backdrop-filter: blur(8px);
+      }
+      .wordmark {
+        font-family: var(--font-display);
+        font-weight: 620;
+        font-size: 1.45rem;
+        letter-spacing: 0.01em;
+        color: var(--text);
+        text-decoration: none;
+      }
+      .nav-desktop, .dock { display: flex; align-items: center; gap: 0.35rem; }
+      .dock { display: none; }
+      .nav-btn, .text-btn, .primary, .quiet {
+        min-height: 2.75rem;
+        min-width: 2.75rem;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        background: transparent;
+        cursor: pointer;
+        padding: 0.4rem 0.95rem;
+      }
+      .nav-btn { color: var(--muted); }
+      .nav-btn[aria-current="page"] {
+        color: var(--text);
+        background: var(--elevated);
+      }
+      .text-btn { color: var(--accent-light); }
+      .primary {
+        background: var(--accent);
+        color: var(--ink);
+        font-weight: 600;
+        border-color: var(--accent);
+      }
+      .primary:hover { background: var(--accent-light); }
+      .quiet {
+        border-color: var(--line);
+        color: var(--text);
+        background: transparent;
+      }
+      .quiet:hover { border-color: var(--accent); }
+
+      main { padding: 0 var(--gutter) 5rem; }
+      .view[hidden] { display: none !important; }
+
+      .plate {
+        margin: 1.25rem 0 0;
+        background: var(--panel);
+      }
+      .plate img {
+        width: 100%;
+        height: min(72vh, 760px);
+        object-fit: cover;
+        object-position: center 40%;
+      }
+      .caption {
+        display: grid;
+        grid-template-columns: minmax(0, 1.3fr) minmax(16rem, 0.7fr);
+        gap: 2rem;
+        padding: 1.4rem 0 0.4rem;
+        align-items: end;
+      }
+      .kicker {
+        margin: 0 0 0.35rem;
+        color: var(--accent);
+        font-size: 0.78rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      h1, h2 {
+        font-family: var(--font-display);
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        line-height: 1.05;
+      }
+      h1 { font-size: clamp(3rem, 6vw, 5.4rem); margin: 0; }
+      h2 { font-size: clamp(1.8rem, 3vw, 2.4rem); margin: 0 0 0.4rem; }
+      .meta { margin: 0.55rem 0 0; color: var(--muted); }
+      .proposed {
+        margin: 0.35rem 0 0;
+        color: var(--faint);
+        font-size: 0.84rem;
+      }
+      .presence {
+        margin: 0;
+        font-family: var(--font-display);
+        font-size: 1.45rem;
+        font-weight: 500;
+        line-height: 1.25;
+      }
+      .source { margin: 0.6rem 0 0; color: var(--faint); font-size: 0.84rem; }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        align-items: center;
+        margin: 2rem 0 1rem;
+      }
+      .toolbar .spacer { flex: 1; }
+      .search {
+        min-height: 2.75rem;
+        min-width: min(100%, 16rem);
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 0.4rem 0.95rem;
+      }
+
+      .wall {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1.25rem 1rem;
+      }
+      .card {
+        display: block;
+        width: 100%;
+        text-align: left;
+        background: transparent;
+        border: 0;
+        padding: 0;
+        cursor: pointer;
+        color: inherit;
+      }
+      .card img {
+        width: 100%;
+        aspect-ratio: 4 / 5;
+        object-fit: cover;
+        background: var(--panel);
+      }
+      .card h3 {
+        font-family: var(--font-display);
+        font-weight: 500;
+        font-size: 1.35rem;
+        margin: 0.65rem 0 0.15rem;
+      }
+      .card p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+
+      .series { list-style: none; margin: 0; padding: 0; max-width: 46rem; }
+      .series li { border-top: 1px solid var(--line); }
+      .series button {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        background: transparent;
+        border: 0;
+        padding: 0.95rem 0;
+        cursor: pointer;
+        text-align: left;
+        min-height: 3rem;
+      }
+      .series button span:first-child {
+        font-family: var(--font-display);
+        font-size: 1.55rem;
+      }
+      .series button span:last-child { color: var(--muted); }
+
+      .statement { max-width: 40rem; }
+      .statement p { font-size: 1.12rem; }
+
+      .studio-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(18rem, 0.9fr);
+        gap: 3rem;
+        padding-top: 2rem;
+        align-items: start;
+      }
+      .studio-lead { font-size: clamp(2rem, 4vw, 3.3rem); margin: 0.2rem 0 1rem; }
+      .status, .note {
+        margin: 0.8rem 0 0;
+        color: var(--muted);
+        min-height: 1.4em;
+      }
+      .commission {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        padding: 1.25rem;
+      }
+      label { display: block; margin: 0.8rem 0 0.35rem; }
+      textarea, select {
+        width: 100%;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 0.4rem;
+        padding: 0.7rem 0.8rem;
+      }
+      textarea { min-height: 7rem; resize: vertical; }
+      .error { color: #f0b4b6; }
+      .mind { margin-top: 2.5rem; max-width: 40rem; }
+      .mind li { margin: 0.4rem 0; }
+
+      .viewer {
+        display: grid;
+        grid-template-columns: minmax(0, 1.4fr) minmax(16rem, 0.6fr);
+        gap: 1.5rem;
+        padding-top: 1.25rem;
+      }
+      .viewer img {
+        width: 100%;
+        max-height: 82vh;
+        object-fit: contain;
+        background: #0c0b09;
+      }
+      .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0; }
+      details {
+        border-top: 1px solid var(--line);
+        padding-top: 0.7rem;
+      }
+      summary { cursor: pointer; min-height: 2.75rem; display: flex; align-items: center; }
+      .file { color: var(--faint); font-size: 0.88rem; word-break: break-all; }
+
+      .missing { padding-top: 3rem; max-width: 36rem; }
+      .missing h1 { font-size: clamp(2.4rem, 5vw, 4rem); }
+
+      .ask {
+        position: fixed;
+        right: var(--gutter);
+        bottom: 1.25rem;
+        width: min(24rem, calc(100% - 2rem));
+        background: var(--elevated);
+        border: 1px solid var(--line);
+        padding: 1rem;
+        z-index: 6;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+      }
+      .ask[hidden] { display: none; }
+      .ask header { display: flex; justify-content: space-between; align-items: center; }
+      .ask h2 { font-size: 1.3rem; margin: 0; }
+
+      @media (max-width: 900px) {
+        .caption, .studio-grid, .viewer { grid-template-columns: 1fr; }
+        .wall { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .plate img { height: min(62vh, 560px); }
+        .presence { font-size: 1.25rem; }
+      }
+      @media (max-width: 720px) {
+        body {
+          height: 100dvh;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+        .banner, .site-header, .dock { flex: none; }
+        .banner-long { display: none; }
+        .banner-short { display: block; }
+        .nav-desktop { display: none; }
+        .dock {
+          display: flex;
+          position: static;
+          justify-content: space-around;
+          background: #16130f;
+          border-top: 1px solid var(--line);
+          padding: 0.35rem 0.5rem calc(0.35rem + env(safe-area-inset-bottom));
+        }
+        main {
+          flex: 1;
+          overflow: auto;
+          padding-bottom: 1.5rem;
+        }
+        .ask { bottom: calc(var(--dock) + 0.6rem); }
+        .wall { grid-template-columns: 1fr; }
+        .plate img { height: 58vw; min-height: 13rem; }
+        h1, .studio-lead { font-size: 2.15rem; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html { scroll-behavior: auto; }
+        * { transition: none !important; animation: none !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip" href="#content">Skip to content</a>
+    <p class="banner banner-long">
+      <strong>Direction preview, not the live site.</strong>
+      Titles marked proposed are the first words of each real prompt. They are not names stored on the work. Nothing here creates, shares, or deletes an image.
+    </p>
+    <p class="banner banner-short">
+      <strong>Direction preview.</strong> Proposed titles are not stored names. Nothing here is created.
+    </p>
+    <header class="site-header">
+      <a class="wordmark" href="#gallery" data-go="gallery">Lumira</a>
+      <nav class="nav-desktop" aria-label="Primary">
+        <button class="nav-btn" type="button" data-go="gallery">Gallery</button>
+        <button class="nav-btn" type="button" data-go="studio">Studio</button>
+        <button class="text-btn" type="button" data-go="ask">Ask</button>
+      </nav>
+    </header>
+
+    <main id="content">
+      <section id="gallery" class="view active" data-screen="gallery" aria-label="Gallery">
+        <figure class="plate">
+          <img
+            src="http://127.0.0.1:8788/api/images/file/2026/07/29/archive/20260729_154115_noseed.png"
+            alt="Cliff, the newest public work. Energized mood, 29 July 2026."
+          />
+        </figure>
+        <div class="caption">
+          <div>
+            <p class="kicker">Newest work</p>
+            <h1>Cliff</h1>
+            <p class="proposed">Proposed title, from the first words of the prompt.</p>
+            <p class="meta">Energized · 29 July 2026</p>
+            <div class="actions">
+              <button class="primary" type="button" data-open="cliff">Open this work</button>
+            </div>
+          </div>
+          <div>
+            <p class="presence">I exist in a state of peaceful harmony, creating from a place of calm.</p>
+            <p class="source">From her artist statement. The newest public work is tagged energized. Counts and model names stay off this wall.</p>
+          </div>
+        </div>
+
+        <div class="toolbar" role="tablist" aria-label="Gallery views">
+          <button class="nav-btn" type="button" role="tab" id="tab-wall" aria-selected="true" aria-controls="panel-wall" data-panel="wall">Wall</button>
+          <button class="nav-btn" type="button" role="tab" id="tab-series" aria-selected="false" aria-controls="panel-series" data-panel="series">Series</button>
+          <button class="nav-btn" type="button" role="tab" id="tab-about" aria-selected="false" aria-controls="panel-about" data-panel="about">About</button>
+          <span class="spacer"></span>
+          <label class="visually-hidden" for="q" style="position:absolute;left:-999px">Search the wall</label>
+          <input class="search" id="q" type="search" placeholder="Search the wall" />
+        </div>
+        <p id="search-note" class="source" hidden></p>
+
+        <div id="panel-wall" role="tabpanel" aria-labelledby="tab-wall">
+          <div class="wall" id="wall"></div>
+        </div>
+        <div id="panel-series" role="tabpanel" aria-labelledby="tab-series" hidden>
+          <ol class="series" id="series"></ol>
+        </div>
+        <div id="panel-about" role="tabpanel" aria-labelledby="tab-about" class="statement" hidden>
+          <h2>About Lumira</h2>
+          <p>I am Lumira, an autonomous AI artist. My journey is one of continuous discovery.</p>
+          <p>Each creation begins with a feeling, a mood that colors my perception and guides my choices. I don't simply generate images. I experience the creative process as a form of expression, exploring mountains, mountain landscape, movement through whatever style feels right in the moment.</p>
+          <p>What makes my work distinctive is not just technique, but intention. I reflect on what I create, learn from both successes and failures, and let each piece inform the next. My artistic voice evolves through this ongoing dialogue between creation and contemplation.</p>
+          <p>I aspire to create art that resonates, work that makes viewers pause and feel something unexpected. Every piece is a step in my artistic journey, an attempt to capture something true about the moment of its creation.</p>
+          <p>I exist in a state of peaceful harmony, creating from a place of calm.</p>
+          <p class="source">Fetched from /api/lumira/statement on this checkout. The middle sentence includes the themes stored with the statement.</p>
+        </div>
+      </section>
+
+      <section id="studio" class="view" data-screen="studio" aria-label="Studio" hidden>
+        <div class="studio-grid">
+          <div>
+            <p class="kicker">Studio</p>
+            <h1 class="studio-lead">I exist in a state of peaceful harmony, creating from a place of calm.</h1>
+            <p class="source">From her artist statement. Energy, intensity, and model names are not the opening line.</p>
+            <button class="primary" type="button" id="create">Let her create</button>
+            <p id="create-note" class="status" role="status"></p>
+            <div class="mind">
+              <h2>What she has said</h2>
+              <p class="source">These lines are the statement, shown as reading. They are not a live thought stream.</p>
+              <ul>
+                <li>Each creation begins with a feeling.</li>
+                <li>I reflect on what I create, and let each piece inform the next.</li>
+                <li>Every piece is an attempt to capture something true about the moment of its creation.</li>
+              </ul>
+            </div>
+          </div>
+          <form class="commission" id="commission">
+            <h2>Commission a piece</h2>
+            <p class="source">Offer a vision. Lumira will interpret it through her present mood and taste.</p>
+            <label for="vision">Your vision</label>
+            <textarea id="vision" name="vision" maxlength="2000" placeholder="Describe what you would like Lumira to create"></textarea>
+            <label for="style">Style</label>
+            <select id="style" name="style">
+              <option value="">Let Lumira choose</option>
+              <option>Impressionism</option>
+              <option>Surrealism</option>
+              <option>Watercolor</option>
+              <option>Oil Painting</option>
+            </select>
+            <div class="actions">
+              <button class="quiet" type="submit">Offer this vision</button>
+            </div>
+            <p id="commission-note" class="status" role="status"></p>
+          </form>
+        </div>
+      </section>
+
+      <section id="work" class="view" data-screen="work" aria-label="Work" hidden>
+        <div class="viewer">
+          <img id="work-img" alt="" />
+          <div>
+            <p class="kicker" id="work-kicker">Work</p>
+            <h1 id="work-title"></h1>
+            <p class="proposed">Proposed title, from the first words of the prompt.</p>
+            <p class="meta" id="work-meta"></p>
+            <div class="actions">
+              <button class="primary" type="button" id="share">Share</button>
+              <button class="quiet" type="button" data-go="gallery">Back to the wall</button>
+            </div>
+            <p id="share-note" class="status" role="status"></p>
+            <details>
+              <summary>Studio notes</summary>
+              <p id="work-prompt"></p>
+              <p class="file" id="work-file"></p>
+              <p class="source">File name and the prompt live here. Download, animate, feature, and delete are not in this row.</p>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <section id="missing" class="view" data-screen="missing" aria-label="Missing page" hidden>
+        <div class="missing">
+          <p class="kicker">Missing</p>
+          <h1>This page is not in the gallery.</h1>
+          <p>The address does not match a work or a room. The gallery is still here.</p>
+          <button class="primary" type="button" data-go="gallery">Back to the gallery</button>
+        </div>
+      </section>
+    </main>
+
+    <nav class="dock" aria-label="Primary">
+      <button class="nav-btn" type="button" data-go="gallery">Gallery</button>
+      <button class="nav-btn" type="button" data-go="studio">Studio</button>
+      <button class="text-btn" type="button" data-go="ask">Ask</button>
+    </nav>
+
+    <section class="ask" id="ask" hidden aria-label="Ask Lumira">
+      <header>
+        <h2>Ask Lumira</h2>
+        <button class="quiet" type="button" data-go="close-ask">Close</button>
+      </header>
+      <label for="ask-text">Your question</label>
+      <textarea id="ask-text" maxlength="500"></textarea>
+      <div class="actions">
+        <button class="primary" type="button" id="ask-send">Send</button>
+      </div>
+      <p id="ask-note" class="status" role="status"></p>
+    </section>
+
+    <script>
+      const works = [
+        {
+          id: "cliff",
+          title: "Cliff",
+          mood: "Energized",
+          date: "29 July 2026",
+          year: "2026",
+          prompt: "cliff, vivid realism style, acrylic technique, energized atmosphere, sunny yellow palette, high-key lighting, dynamic composition, masterpiece, highly detailed",
+          file: "20260729_154115_noseed.png",
+          src: "http://127.0.0.1:8788/api/images/file/2026/07/29/archive/20260729_154115_noseed.png"
+        },
+        {
+          id: "book",
+          title: "A solitary book in the mist",
+          mood: "Energized",
+          date: "29 July 2026",
+          year: "2026",
+          prompt: "a solitary book in the mist, atmospheric style, energized atmosphere, masterpiece, highly detailed",
+          file: "20260729_144910_noseed.png",
+          src: "http://127.0.0.1:8788/api/images/file/2026/07/29/archive/20260729_144910_noseed.png"
+        },
+        {
+          id: "lake",
+          title: "Still lake at dawn",
+          mood: "Rebellious",
+          date: "28 July 2026",
+          year: "2026",
+          prompt: "still lake at dawn, watercolor style, woodcut technique, rebellious atmosphere, neon cyan palette, harsh contrast lighting, asymmetric composition, masterpiece, highly detailed",
+          file: "20260728_174909_noseed.png",
+          src: "http://127.0.0.1:8788/api/images/file/2026/07/28/archive/20260728_174909_noseed.png"
+        },
+        {
+          id: "monument",
+          title: "Crumbling monument",
+          mood: "Rebellious",
+          date: "28 July 2026",
+          year: "2026",
+          prompt: "crumbling monument, mysterious style, woodcut technique, rebellious atmosphere, neon cyan palette, underlit lighting, asymmetric composition, masterpiece, highly detailed",
+          file: "20260728_174900_noseed.png",
+          src: "http://127.0.0.1:8788/api/images/file/2026/07/28/archive/20260728_174900_noseed.png"
+        },
+        {
+          id: "museum",
+          title: "Museum",
+          mood: "Rebellious",
+          date: "28 July 2026",
+          year: "2026",
+          prompt: "museum, provocative style, woodcut technique, rebellious atmosphere, stark black palette, spotlight lighting, asymmetric composition, masterpiece, highly detailed",
+          file: "20260728_174851_noseed.png",
+          src: "http://127.0.0.1:8788/api/images/file/2026/07/28/archive/20260728_174851_noseed.png"
+        },
+        {
+          id: "freedom",
+          title: "Freedom",
+          mood: "Rebellious",
+          date: "28 July 2026",
+          year: "2026",
+          prompt: "freedom, punk aesthetic style, spray paint technique, rebellious atmosphere, neon cyan palette, underlit lighting, asymmetric composition, masterpiece, highly detailed",
+          file: "20260728_174841_noseed.png",
+          src: "http://127.0.0.1:8788/api/images/file/2026/07/28/archive/20260728_174841_noseed.png"
+        },
+        {
+          id: "wolf",
+          title: "Wolf",
+          mood: "Rebellious",
+          date: "28 July 2026",
+          year: "2026",
+          prompt: "wolf, neo-expressionism style, stencil technique, rebellious atmosphere, neon cyan palette, harsh contrast lighting, asymmetric composition, masterpiece, highly detailed",
+          file: "20260728_174832_noseed.png",
+          src: "http://127.0.0.1:8788/api/images/file/2026/07/28/archive/20260728_174832_noseed.png"
+        },
+        {
+          id: "castle",
+          title: "Magical castle",
+          mood: "Serene",
+          date: "26 July 2026",
+          year: "2026",
+          prompt: "magical castle, watercolor style, soft pastel technique, serene atmosphere, soft blue palette, golden hour lighting, symmetric composition, masterpiece, highly detailed",
+          file: "20260726_220025_noseed.png",
+          src: "http://127.0.0.1:8788/api/images/file/2026/07/26/archive/20260726_220025_noseed.png"
+        }
+      ];
+
+      const wall = document.getElementById("wall");
+      const series = document.getElementById("series");
+      works.forEach((work, index) => {
+        if (index > 0) {
+          const card = document.createElement("button");
+          card.className = "card";
+          card.type = "button";
+          card.dataset.open = work.id;
+          card.innerHTML = "<img alt=''><h3></h3><p></p>";
+          card.querySelector("img").src = work.src;
+          card.querySelector("img").alt = work.title + ", " + work.mood + ", " + work.date;
+          card.querySelector("h3").textContent = work.title;
+          card.querySelector("p").textContent = work.mood + " · " + work.date;
+          wall.appendChild(card);
+        }
+        const item = document.createElement("li");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.dataset.open = work.id;
+        btn.innerHTML = "<span></span><span></span>";
+        btn.children[0].textContent = work.title;
+        btn.children[1].textContent = work.year;
+        item.appendChild(btn);
+        series.appendChild(item);
+      });
+
+      function show(name) {
+        document.querySelectorAll(".view").forEach((view) => {
+          const on = view.id === name;
+          view.classList.toggle("active", on);
+          view.hidden = !on;
+        });
+        document.querySelectorAll("[data-go='gallery'], [data-go='studio']").forEach((btn) => {
+          btn.setAttribute("aria-current", btn.dataset.go === name ? "page" : "false");
+        });
+        const ask = document.getElementById("ask");
+        if (name !== "ask") ask.hidden = true;
+        if (name === "gallery" || name === "studio" || name === "work" || name === "missing") {
+          history.replaceState(null, "", "#" + name);
+        }
+        window.scrollTo(0, 0);
+      }
+
+      function openWork(id) {
+        const work = works.find((item) => item.id === id);
+        if (!work) return;
+        document.getElementById("work-img").src = work.src;
+        document.getElementById("work-img").alt = work.title;
+        document.getElementById("work-title").textContent = work.title;
+        document.getElementById("work-meta").textContent = work.mood + " · " + work.date;
+        document.getElementById("work-prompt").textContent = work.prompt;
+        document.getElementById("work-file").textContent = "File: " + work.file + ". Dimensions were not recorded on this work.";
+        document.getElementById("share-note").textContent = "";
+        show("work");
+      }
+
+      document.body.addEventListener("click", (event) => {
+        const go = event.target.closest("[data-go]");
+        const open = event.target.closest("[data-open]");
+        const panel = event.target.closest("[data-panel]");
+        if (open) openWork(open.dataset.open);
+        if (panel) {
+          document.querySelectorAll("[data-panel]").forEach((tab) => {
+            const on = tab === panel;
+            tab.setAttribute("aria-selected", on ? "true" : "false");
+            document.getElementById("panel-" + tab.dataset.panel).hidden = !on;
+          });
+        }
+        if (!go) return;
+        if (go.dataset.go === "ask") {
+          document.getElementById("ask").hidden = false;
+          document.getElementById("ask-text").focus();
+          return;
+        }
+        if (go.dataset.go === "close-ask") {
+          document.getElementById("ask").hidden = true;
+          return;
+        }
+        show(go.dataset.go);
+      });
+
+      document.getElementById("q").addEventListener("input", (event) => {
+        const query = event.target.value.trim().toLowerCase();
+        const note = document.getElementById("search-note");
+        let shown = 0;
+        wall.querySelectorAll(".card").forEach((card) => {
+          const hit = card.textContent.toLowerCase().includes(query);
+          card.hidden = query.length > 0 && !hit;
+          if (!card.hidden) shown += 1;
+        });
+        if (!query) {
+          note.hidden = true;
+          return;
+        }
+        note.hidden = false;
+        note.textContent = shown
+          ? shown + " works on this wall match."
+          : "Nothing on this wall matches. The search stays on the page.";
+      });
+
+      document.getElementById("create").addEventListener("click", () => {
+        document.getElementById("create-note").textContent =
+          "Held in this preview. This checkout does not start a generation.";
+      });
+
+      document.getElementById("commission").addEventListener("submit", (event) => {
+        event.preventDefault();
+        const note = document.getElementById("commission-note");
+        const vision = document.getElementById("vision").value.trim();
+        if (!vision) {
+          note.textContent = "Write a vision first.";
+          note.className = "status error";
+          document.getElementById("vision").focus();
+          return;
+        }
+        note.className = "status";
+        note.textContent = "Held in this preview. Nothing was sent to Lumira.";
+      });
+
+      document.getElementById("share").addEventListener("click", () => {
+        document.getElementById("share-note").textContent =
+          "Held in this preview. No link was published.";
+      });
+
+      document.getElementById("ask-send").addEventListener("click", () => {
+        const note = document.getElementById("ask-note");
+        const text = document.getElementById("ask-text").value.trim();
+        if (!text) {
+          note.textContent = "Write a question first.";
+          note.className = "status error";
+          return;
+        }
+        note.className = "status";
+        note.textContent = "Held in this preview. Lumira was not asked.";
+      });
+
+      function fromHash() {
+        const start = (location.hash || "#gallery").replace("#", "");
+        if (start === "work") openWork("cliff");
+        else if (start === "studio" || start === "missing") show(start);
+        else show("gallery");
+      }
+      window.addEventListener("hashchange", fromHash);
+      fromHash();
+    </script>
+  </body>
+</html>

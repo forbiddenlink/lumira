@@ -1,5 +1,8 @@
 # Development Roadmap
 
+The phase descriptions and counts below are historical milestones. For current
+priorities and verification status, see **Next Immediate Steps**.
+
 ## Project Vision
 
 Build an autonomous AI artist that creates unique artwork with style consistency, automated scheduling, and continuous improvement through LoRA fine-tuning.
@@ -156,8 +159,8 @@ Build an autonomous AI artist that creates unique artwork with style consistency
 
 **Goals**:
 
-- [ ] Docker containerization
-- [ ] CI/CD pipeline (GitHub Actions)
+- [x] Docker containerization (including the lightweight gallery image)
+- [x] CI/CD pipeline (GitHub Actions)
 - [ ] Infrastructure as Code (Terraform)
 - [ ] Cloud deployment (AWS/GCP/Azure)
 - [ ] CDN for image delivery
@@ -209,19 +212,44 @@ Build an autonomous AI artist that creates unique artwork with style consistency
 
 ## Next Immediate Steps
 
-1. **Validate Lumira 2.0 in production-like environment**
-   - Start FalkorDB: `docker-compose up falkordb -d`
-   - Load FLUX Schnell for previews (optional, ~12GB)
-   - Test preview → approve flow via studio UI
+### Reliability work completed locally (2026-09-18)
 
-2. **Operational monitoring**
-   - Use `/monitoring` dashboard for health, queue, and metrics
-   - Wire Prometheus/Grafana to `/metrics` in production
+- Daily image counts and dollar totals no longer reset one another in the
+  in-memory fallback; Redis reads use the authoritative micro-dollar counter.
+- LLM calls atomically reserve estimated cost before contacting the provider.
+  Returned token usage adjusts the original reservation. Failed calls or missing
+  usage retain the estimate; uncertain Redis reservations block the LLM call.
+  Concurrent first requests wait for Redis initialization to finish instead of
+  prematurely switching to independent local counters.
+- Image scoring runs in worker threads, with serialized access to the shared
+  curator, so model loading and scoring do not block the web request loop.
+- Regression checks cover concurrent spending, usage reconciliation, UTC-day
+  rollover, provider failures, and worker-thread scoring. Reservations and
+  reconciliation were also checked against temporary real Redis with a mocked
+  provider.
 
-3. **Deferred creative mediums** (future phases)
-   - Video generation (Kling/Runway)
-   - Audio pairing (Suno)
-   - 3D generation (TripoSR)
+Budget figures remain estimates using the existing token pricing model, not
+provider billing guarantees. Without Redis, limits are process-local and reset
+when that process restarts. Actual usage can exceed the pre-call estimate.
+
+### Remaining validation and release work
+
+1. **Verify the intended live deployment**
+   - Confirm the target environment and an explicit spending allowance before
+     a paid generation check.
+   - Check health, authenticated creation, saved artwork, and restart persistence.
+   - Keep unattended creation opt-in while checking the spending ledger.
+
+2. **Verify optional integrations when needed**
+   - FalkorDB graph queries require a running graph service.
+   - Local CLIP/FLUX checks require downloaded models and suitable hardware.
+   - Magica audio/video paths exist; paid output quality is not yet validated by
+     these local checks. 3D generation remains deferred.
+
+3. **Prepare the release**
+   - Review the accumulated uncommitted studio, gallery, and persistence changes.
+   - Commit the verified changes and confirm CI before deployment.
+   - Verify monitoring and alerts against the selected deployment.
 
 ---
 

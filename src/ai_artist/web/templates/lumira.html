@@ -169,10 +169,20 @@
         top: 0;
       }
 
-      /* Focus styles for accessibility */
+      /* Focus styles for accessibility.
+         Class rules use transition:all, which animates outline-width from 0.
+         Limit the transition on keyboard focus so the ring is there immediately. */
       :focus-visible {
         outline: 2px solid var(--accent);
         outline-offset: 2px;
+      }
+      a:focus-visible,
+      button:focus-visible,
+      input:focus-visible,
+      select:focus-visible,
+      textarea:focus-visible,
+      [tabindex]:focus-visible {
+        transition-property: background-color, color, border-color, box-shadow, transform, opacity;
       }
 
       /* Remove outline for mouse users */
@@ -358,6 +368,10 @@
         grid-template-columns: 1fr 1fr;
         gap: 0.65rem;
         margin-bottom: 0;
+      }
+      .stats-grid[hidden],
+      #intensity-text[hidden] {
+        display: none !important;
       }
 
       .stat-card {
@@ -1355,7 +1369,7 @@
 
       .btn-preview:hover {
         background: var(--accent);
-        color: #000;
+        color: var(--accent-ink);
       }
 
       /* Inner dialogue panel */
@@ -1529,7 +1543,6 @@
       }
 
       .semantic-search-input:focus {
-        outline: none;
         border-color: var(--accent);
         background: rgba(255, 255, 255, 0.08);
       }
@@ -1698,7 +1711,17 @@
           width: 100%;
           border-right: none;
           border-bottom: 1px solid var(--border);
-          max-height: 50vh;
+          max-height: none;
+          overflow: visible;
+        }
+        .mind-panel .controls {
+          position: static;
+          margin-bottom: 0;
+          bottom: auto;
+          background: transparent;
+        }
+        .gallery-panel {
+          overflow: visible;
         }
         .masonry-grid {
           column-count: 1;
@@ -1879,7 +1902,6 @@
           box-shadow 0.2s var(--ease-out);
       }
       .request-textarea:focus {
-        outline: none;
         border-color: color-mix(in oklab, var(--accent) 55%, var(--border-strong));
         box-shadow: 0 0 0 3px var(--accent-soft);
       }
@@ -1992,7 +2014,6 @@
         background-position: right 0.75rem center;
       }
       .request-select:focus {
-        outline: none;
         border-color: var(--accent);
         box-shadow: 0 0 0 3px var(--focus-ring);
       }
@@ -2067,9 +2088,9 @@
         margin-top: 0.5rem;
       }
       .btn-request {
-        background: var(--accent);
-        color: #1a1510;
-        border: none;
+        background: transparent;
+        color: var(--text-main);
+        border: 1px solid var(--border);
         padding: 0.85rem 1.35rem;
         border-radius: var(--radius-md);
         font-family: var(--font-ui);
@@ -2086,6 +2107,7 @@
       .btn-request:hover {
         transform: translateY(-1px);
         background: var(--accent-hover);
+        color: var(--accent-ink);
         box-shadow: 0 8px 24px var(--accent-glow);
       }
       .btn-request:disabled {
@@ -2616,11 +2638,7 @@
             id="intensity-text"
             role="status"
             aria-live="polite"
-            style="
-              font-size: 0.7rem;
-              color: var(--text-muted);
-              margin-top: 0.2rem;
-            "
+            hidden
           ></div>
           <div
             id="feeling-text"
@@ -2718,8 +2736,8 @@
             </div>
           </div>
 
-          <!-- Stats -->
-          <div class="stats-grid" role="group" aria-label="Statistics">
+          <!-- Counts stay out of the opening. The nodes remain for the studio script. -->
+          <div class="stats-grid" role="group" aria-label="Statistics" hidden>
             <div class="stat-card">
               <div class="stat-label" id="energy-label">Energy</div>
               <div
@@ -2875,7 +2893,7 @@
           data-action="triggerCreate"
           aria-describedby="create-desc"
         >
-          LET HER CREATE
+          Let her create
         </button>
         <span id="create-desc" hidden
           >Trigger Lumira to create a new artwork</span
@@ -3580,15 +3598,22 @@
 
       // WebSocket connection
       var wsUrl = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws';
+      var liveLinkDropped = false;
       var wsConnection = createReconnectingWebSocket(wsUrl, {
         onopen: function() {
-          addLog("SYSTEM", "Connected to Lumira's consciousness");
+          if (liveLinkDropped) {
+            addLog("SYSTEM", "The live link is back.");
+            liveLinkDropped = false;
+          }
         },
         onmessage: function(data) {
           handleWebSocketMessage(data);
         },
         onclose: function() {
-          addLog("SYSTEM", "Connection lost, reconnecting...");
+          if (!liveLinkDropped) {
+            addLog("SYSTEM", "The live link dropped. Trying again.");
+            liveLinkDropped = true;
+          }
         },
         onerror: function(error) {
           console.error("WebSocket error:", error);
@@ -3854,7 +3879,10 @@
 
         var feelingEl = document.getElementById("feeling-text");
         if (feelingEl && data.feeling) {
-          feelingEl.textContent = data.feeling;
+          feelingEl.textContent = String(data.feeling).replace(
+            /\s*\(Energy:[\s\S]*\)\s*$/,
+            "",
+          );
         }
 
         // Update intensity ring animation class
@@ -6219,7 +6247,7 @@
             if (!_generationAvailable) {
               addLog(
                 "SYSTEM",
-                "I can think and remember, but creation is locked until auth is configured (LUMIRA_DEV_MODE=1 or RAILWAY_API_KEY).",
+                "I can think and remember. Making a new piece is locked until this studio has a key.",
               );
             }
             if (_authRequired && !sessionStorage.getItem("lumira_api_key")) {

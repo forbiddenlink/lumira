@@ -75,11 +75,17 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        :root {
+            --bg-dark: #12100e;
+            --text-main: #ebe4d8;
+            --text-muted: #9a9084;
+            --accent: #c4a574;
+        }
         body {
             font-family: 'Figtree', system-ui, sans-serif;
-            background: #0a0a0a;
+            background: var(--bg-dark);
             min-height: 100vh;
-            color: #fff;
+            color: var(--text-main);
         }
 
         body::before {
@@ -107,12 +113,12 @@
         }
 
         h1 {
+            font-family: "Fraunces", Georgia, serif;
             font-size: 3rem;
             margin-bottom: 10px;
-            font-weight: 700;
-            letter-spacing: -1.5px;
-            color: #ffffff;
-            text-transform: lowercase;
+            font-weight: 500;
+            letter-spacing: -0.03em;
+            color: var(--text-main);
         }
 
         .subtitle {
@@ -122,11 +128,7 @@
         }
 
         .stats {
-            display: flex;
-            gap: 16px;
-            justify-content: center;
-            margin-bottom: 40px;
-            flex-wrap: wrap;
+            display: none;
         }
 
         .stat-card {
@@ -530,14 +532,14 @@
             Lumira
         </a>
         <div class="site-nav-links">
-            <a href="/" class="site-nav-link">Modern Gallery</a>
-            <a href="/lumira" class="site-nav-link primary">Creative Studio</a>
+            <a href="/" class="site-nav-link">Gallery</a>
+            <a href="/lumira" class="site-nav-link primary">Studio</a>
         </div>
     </nav>
     <div class="container">
         <header>
             <h1>Lumira</h1>
-            <p class="subtitle">classic gallery view</p>
+            <p class="subtitle">Archive. Every file, in the order it was made.</p>
         </header>
 
         <main id="main-content">
