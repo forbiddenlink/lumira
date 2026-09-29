@@ -430,6 +430,12 @@ class CreativeMind:
         # Additional context
         if context.get("theme"):
             parts.append(f"\nSUGGESTED THEME: {context['theme']}")
+        if context.get("session_mode"):
+            hypothesis = context.get("hypothesis") or ""
+            parts.append(
+                "\nSESSION HYPOTHESIS "
+                f"({context['session_mode']}): {hypothesis}".rstrip()
+            )
         if context.get("seed_subject"):
             parts.append(
                 f"\nINNER COUNCIL SEED (honor this pull unless it contradicts mood): "

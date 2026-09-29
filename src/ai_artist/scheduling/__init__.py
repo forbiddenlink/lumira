@@ -14,6 +14,7 @@ from .scheduler import (
     DesireAwareArtist,
     DesireAwareScheduler,
     ScheduledArtist,
+    autonomous_create_enabled,
 )
 
 __all__ = [
@@ -22,6 +23,7 @@ __all__ = [
     "ScheduledArtist",
     "DesireAwareScheduler",
     "DesireAwareArtist",
+    "autonomous_create_enabled",
     # Resilience
     "CircuitBreaker",
     "CircuitState",

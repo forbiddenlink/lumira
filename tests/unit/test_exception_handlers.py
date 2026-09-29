@@ -73,7 +73,7 @@ class TestExceptionHandlers:
 
         assert response.status_code == 500
         assert "Something Went Wrong" in response.text
-        assert "Creative Studio" in response.text
+        assert "Studio" in response.text
 
     def test_validation_exception_remains_json(self):
         app = self._build_app()

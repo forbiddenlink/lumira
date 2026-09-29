@@ -17,7 +17,7 @@ services:
       - PYTHONUNBUFFERED=1
       - HF_HOME=/app/models/cache
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-}
       - UNSPLASH_ACCESS_KEY=${UNSPLASH_ACCESS_KEY:-}
       - UNSPLASH_SECRET_KEY=${UNSPLASH_SECRET_KEY:-}
       - REDIS_URL=redis://redis:6379
@@ -47,8 +47,6 @@ services:
   # FalkorDB for graph memory (institutional knowledge)
   falkordb:
     image: falkordb/falkordb:latest
-    ports:
-      - "6380:6379"  # Map to 6380 to avoid Redis conflict
     volumes:
       - falkordb_data:/data
     deploy:
@@ -67,8 +65,6 @@ services:
   # Redis for job queue
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes

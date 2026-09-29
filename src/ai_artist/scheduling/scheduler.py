@@ -31,6 +31,21 @@ def _persist_enabled() -> bool:
     }
 
 
+def autonomous_create_enabled() -> bool:
+    """Whether the web process should paint on its own clock.
+
+    Disabled by default: provider credentials authorize access, not unattended
+    spending. Explicit ``LUMIRA_AUTONOMOUS_CREATE=1`` enables it. ``TESTING=1``
+    always disables so CI never spends or loops.
+    """
+    if os.getenv("TESTING", "").strip() == "1":
+        return False
+    flag = (os.getenv("LUMIRA_AUTONOMOUS_CREATE") or "").strip().lower()
+    if flag in {"0", "false", "no", "off"}:
+        return False
+    return flag in {"1", "true", "yes", "on"}
+
+
 def _build_scheduler() -> AsyncIOScheduler:
     """Build the AsyncIOScheduler with durable defaults.
 

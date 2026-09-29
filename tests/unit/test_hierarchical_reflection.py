@@ -195,6 +195,24 @@ class TestHierarchicalReflection:
         assert len(reflection_system2.reflections["session"]) == 1
         assert len(reflection_system2.artist_statements) == 1
 
+    def test_outer_loop_empty_when_she_has_not_reflected(self, reflection_system):
+        assert reflection_system.get_outer_loop_steer() == ""
+
+    def test_outer_loop_uses_weekly_and_daily(self, reflection_system):
+        reflection_system.reflections["weekly"].append(
+            {
+                "period_name": "Blue Period",
+                "artistic_direction": "Lean into withheld light.",
+            }
+        )
+        reflection_system.reflections["daily"].append(
+            {"tomorrow_intention": "paint the harbor from memory"}
+        )
+        steer = reflection_system.get_outer_loop_steer()
+        assert "Blue Period" in steer
+        assert "withheld light" in steer
+        assert "harbor from memory" in steer
+
 
 class TestPeriodNameGeneration:
     """Tests for period name generation."""

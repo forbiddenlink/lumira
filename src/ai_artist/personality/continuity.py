@@ -6,12 +6,12 @@ statement growth, and multimodal impulses.
 
 from __future__ import annotations
 
-import json
 import os
 import random
 from pathlib import Path
 from typing import Any
 
+from ..utils.json_store import load_json_object, write_json_object
 from ..utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -22,18 +22,14 @@ STATEMENT_EVOLVED_FILE = Path("data/lumira_evolved_statement.json")
 
 
 def save_json(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(payload, indent=2))
-    tmp.replace(path)
+    write_json_object(path, payload)
 
 
 def load_json(path: Path) -> dict[str, Any] | None:
     if not path.exists():
         return None
     try:
-        data = json.loads(path.read_text())
-        return data if isinstance(data, dict) else None
+        return load_json_object(path)
     except Exception as e:
         logger.warning("continuity_load_failed", path=str(path), error=str(e))
         return None
@@ -84,6 +80,60 @@ def should_pair_soundtrack(
     if mood_l in emotional_moods and intensity >= 0.45:
         return True
     return bool(intensity >= 0.7 and random.random() < 0.55)
+
+
+_MOTION_MOODS = {
+    "energized",
+    "playful",
+    "bold",
+    "chaotic",
+    "restless",
+}
+
+
+def should_pair_video(
+    *,
+    mood: str | None,
+    drive_status: dict[str, Any] | None = None,
+    explicit: bool = False,
+) -> bool:
+    """Pair a short Magica video when the mood wants motion.
+
+    ``LUMIRA_AUTO_VIDEO=0`` disables. ``=1`` forces (still needs a Magica key).
+    Unset means mood/drive decides. Soundtrack and video are XOR'd by
+    :func:`choose_extra_media` so one piece spends at most one extra media call.
+    """
+    if explicit:
+        return True
+    flag = os.getenv("LUMIRA_AUTO_VIDEO", "").strip().lower()
+    if flag in {"0", "false", "no", "off"}:
+        return False
+    if not os.environ.get("MAGICA_API_KEY"):
+        return False
+    if flag in {"1", "true", "yes", "on"}:
+        return True
+    mood_l = (mood or "").lower()
+    if mood_l in _MOTION_MOODS:
+        return True
+    exploration = (drive_status or {}).get("exploration") or {}
+    try:
+        intensity = float(exploration.get("intensity") or 0)
+    except (TypeError, ValueError):
+        intensity = 0.0
+    return bool(intensity >= 0.75 and random.random() < 0.4)
+
+
+def choose_extra_media(
+    *,
+    mood: str | None,
+    drive_status: dict[str, Any] | None = None,
+) -> str | None:
+    """Pick at most one extra medium: ``video``, ``soundtrack``, or none."""
+    if should_pair_video(mood=mood, drive_status=drive_status):
+        return "video"
+    if should_pair_soundtrack(mood=mood, drive_status=drive_status):
+        return "soundtrack"
+    return None
 
 
 def note_creation_for_statement(
@@ -178,7 +228,7 @@ def maybe_pair_soundtrack(
         payload = metadata
         if sidecar.exists():
             try:
-                existing = json.loads(sidecar.read_text())
+                existing = load_json_object(sidecar)
                 if isinstance(existing, dict):
                     if isinstance(nest, dict):
                         existing.setdefault("metadata", {})
@@ -193,11 +243,96 @@ def maybe_pair_soundtrack(
                     payload = existing
             except Exception:
                 payload = metadata
-        sidecar.write_text(json.dumps(payload, indent=2, default=str))
+        write_json_object(sidecar, payload)
         logger.info("soundtrack_paired", image=str(image_path), audio=str(path))
         return path
     except Exception as e:
         logger.warning("soundtrack_pairing_failed", error=str(e))
+        return None
+
+
+def _write_media_sidecar(
+    image_path: Path,
+    metadata: dict[str, Any],
+    fields: dict[str, Any],
+) -> None:
+    """Merge media URLs into nested and top-level sidecar JSON."""
+    nest = metadata.get("metadata")
+    if isinstance(nest, dict):
+        nest.update(fields)
+    else:
+        metadata.update(fields)
+
+    sidecar = image_path.with_suffix(".json")
+    payload = metadata
+    if sidecar.exists():
+        try:
+            existing = load_json_object(sidecar)
+            if isinstance(existing, dict):
+                nested = existing.get("metadata")
+                if isinstance(nested, dict):
+                    nested.update(fields)
+                existing.update(fields)
+                payload = existing
+        except Exception:
+            payload = metadata
+    write_json_object(sidecar, payload)
+
+
+def maybe_pair_video(
+    *,
+    prompt: str,
+    mood: str | None,
+    image_path: Path,
+    metadata: dict[str, Any],
+    enabled: bool,
+    gallery_root: str = "gallery",
+) -> Path | None:
+    """Optionally generate a short Magica video next to a new artwork.
+
+    Failures are logged and swallowed so the still succeeds. Budget-capped
+    by ``LUMIRA_MAGICA_DAILY_MAX_VIDEO``.
+    """
+    if not enabled and os.getenv("LUMIRA_AUTO_VIDEO", "").strip().lower() not in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }:
+        return None
+    if not os.environ.get("MAGICA_API_KEY"):
+        return None
+    try:
+        from ..core.magica_media import MagicaVideoGenerator
+
+        video_prompt = (
+            f"Slow camera move across this scene: {prompt[:200]}. "
+            f"Mood: {mood or 'energized'}."
+        )
+        path = MagicaVideoGenerator().generate_video(
+            video_prompt,
+            duration_seconds=5,
+            aspect_ratio="1:1",
+            mood=mood,
+            gallery_root=gallery_root,
+        )
+        try:
+            video_url = (
+                f"/api/images/file/{path.relative_to(Path(gallery_root)).as_posix()}"
+            )
+        except ValueError:
+            video_url = str(path)
+
+        fields = {
+            "video": str(path),
+            "video_path": str(path),
+            "video_url": video_url,
+        }
+        _write_media_sidecar(image_path, metadata, fields)
+        logger.info("video_paired", image=str(image_path), video=str(path))
+        return path
+    except Exception as e:
+        logger.warning("video_pairing_failed", error=str(e))
         return None
 
 
@@ -264,20 +399,30 @@ def apply_cli_presence_after_creation(
 
     if image_path is not None and (prompt or subject):
         try:
-            want_sound = should_pair_soundtrack(
+            extra = choose_extra_media(
                 mood=mood_value,
                 drive_status=drive_status,
             )
             meta = metadata if metadata is not None else {}
-            maybe_pair_soundtrack(
-                prompt=prompt or f"{subject}, {style}".strip(", "),
-                mood=mood_value,
-                image_path=Path(image_path),
-                metadata=meta,
-                enabled=want_sound,
-            )
+            pair_prompt = prompt or f"{subject}, {style}".strip(", ")
+            if extra == "video":
+                maybe_pair_video(
+                    prompt=pair_prompt,
+                    mood=mood_value,
+                    image_path=Path(image_path),
+                    metadata=meta,
+                    enabled=True,
+                )
+            elif extra == "soundtrack":
+                maybe_pair_soundtrack(
+                    prompt=pair_prompt,
+                    mood=mood_value,
+                    image_path=Path(image_path),
+                    metadata=meta,
+                    enabled=True,
+                )
         except Exception as e:
-            logger.debug("cli_soundtrack_presence_failed", error=str(e))
+            logger.debug("cli_extra_media_presence_failed", error=str(e))
 
 
 async def apply_cli_presence_before_creation(

@@ -98,6 +98,16 @@
         font-size: 0.85rem;
       }
 
+      header a {
+        color: var(--accent-light);
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        padding: 0 0.15rem;
+      }
+
       /* A ledger, not a grid of shadowed SaaS cards: hairline rules and
          typographic hierarchy carry the structure. */
       section {
@@ -272,6 +282,7 @@
       <header>
         <h1>{{ title }}</h1>
         <p class="subtitle" id="refreshed">Not yet refreshed</p>
+        <p class="subtitle"><a href="/">Gallery</a> · <a href="/lumira">Studio</a></p>
       </header>
 
       <!-- Only shown once a data call is refused: the shell itself carries no
@@ -391,8 +402,12 @@
           var key = storedKey();
           if (key) headers["X-API-Key"] = key;
           var response = await fetch(path, { headers: headers });
-          if (response.status === 401 || response.status === 403) {
-            var err = new Error("Not authorised");
+          if (response.status === 401 || response.status === 403 || response.status === 503) {
+            var err = new Error(
+              response.status === 503
+                ? "This console is locked until an API key is configured."
+                : "Not authorised"
+            );
             err.needsKey = true;
             throw err;
           }
@@ -404,7 +419,7 @@
 
         function handleFailure(stateId, error) {
           if (error && error.needsKey) {
-            showAuth("This console needs a valid API key to read data.");
+            showAuth(error.message || "This console needs a valid API key to read data.");
             setState(stateId, "Awaiting API key.", false);
             return;
           }

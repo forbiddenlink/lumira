@@ -27,6 +27,8 @@ def _reset_budget(monkeypatch):
 
     monkeypatch.setattr(spend_guard, "_redis_checked", True)
     monkeypatch.setattr(spend_guard, "_redis_client", fakeredis.FakeStrictRedis())
+    # fakeredis without its Lua extra falls back to the in-process ledger.
+    monkeypatch.setattr(spend_guard, "_memory_ledger", spend_guard._InMemoryLedger())
     monkeypatch.delenv("LUMIRA_AI_KILL_SWITCH", raising=False)
     monkeypatch.delenv("LUMIRA_DAILY_SPEND_USD_MAX", raising=False)
     yield

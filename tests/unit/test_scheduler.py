@@ -402,3 +402,50 @@ class TestDesireAwareArtist:
         jobs = artist.list_jobs()
         # Should have daily + weekly
         assert len(jobs) == 2
+
+
+class TestAutonomousCreateEnabled:
+    def test_testing_flag_disables(self, monkeypatch):
+        from ai_artist.scheduling.scheduler import autonomous_create_enabled
+
+        monkeypatch.setenv("TESTING", "1")
+        monkeypatch.setenv("MAGICA_API_KEY", "gx_test")
+        monkeypatch.setenv("LUMIRA_AUTONOMOUS_CREATE", "1")
+        # TESTING wins even over an explicit on — e2e must never paint.
+        assert autonomous_create_enabled() is False
+
+    def test_explicit_off(self, monkeypatch):
+        from ai_artist.scheduling.scheduler import autonomous_create_enabled
+
+        monkeypatch.delenv("TESTING", raising=False)
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.setenv("LUMIRA_AUTONOMOUS_CREATE", "0")
+        monkeypatch.setenv("MAGICA_API_KEY", "gx_test")
+        assert autonomous_create_enabled() is False
+
+    def test_explicit_on(self, monkeypatch):
+        from ai_artist.scheduling.scheduler import autonomous_create_enabled
+
+        monkeypatch.delenv("TESTING", raising=False)
+        monkeypatch.setenv("LUMIRA_AUTONOMOUS_CREATE", "1")
+        assert autonomous_create_enabled() is True
+
+    def test_defaults_off_even_when_a_generator_key_is_present(self, monkeypatch):
+        from ai_artist.scheduling.scheduler import autonomous_create_enabled
+
+        monkeypatch.delenv("TESTING", raising=False)
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.delenv("LUMIRA_AUTONOMOUS_CREATE", raising=False)
+        monkeypatch.setenv("MAGICA_API_KEY", "gx_test")
+        monkeypatch.delenv("REPLICATE_API_TOKEN", raising=False)
+        assert autonomous_create_enabled() is False
+
+    def test_defaults_off_without_a_generator(self, monkeypatch):
+        from ai_artist.scheduling.scheduler import autonomous_create_enabled
+
+        monkeypatch.delenv("TESTING", raising=False)
+        monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+        monkeypatch.delenv("LUMIRA_AUTONOMOUS_CREATE", raising=False)
+        monkeypatch.delenv("MAGICA_API_KEY", raising=False)
+        monkeypatch.delenv("REPLICATE_API_TOKEN", raising=False)
+        assert autonomous_create_enabled() is False

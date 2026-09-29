@@ -70,10 +70,8 @@ admin/dashboard.html, which moved there from the repo root so package-data ships
 - References to steal from: A24, Are.na/Cargo, Botto.
 
 ## Known gap (not drift — a judgement call left open)
-The gallery homepage still opens on the "Meet Lumira" welcome card rather than on artwork, which
-sits against principle 1. It is dismissible and now clamped to 5 lines on mobile, but the desktop
-first viewport is still mostly prose. Shortening or repositioning it is a taste decision nobody
-has made yet.
+None currently. The gallery homepage stages the newest work as a full plate.
+Meet Lumira is opt-in via `/?about=1`. Decisions for the room layout live in DESIGN.md.
 
 ## Deep references
 - src/ai_artist/web/templates/lumira.html + gallery_modern.html — token :root blocks (canonical = lumira.html names)

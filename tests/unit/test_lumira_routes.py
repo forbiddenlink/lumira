@@ -560,3 +560,206 @@ class TestLumiraBatchCreate:
 
         assert response.job_ids == ["rq-job-1"]
         assert "could not be fully queued" in response.message.lower()
+
+
+@pytest.mark.asyncio
+async def test_maybe_retry_studio_piece_retries_slop(monkeypatch):
+    """A slop-stuffed prompt should get one more pass; the second picture is kept."""
+    from unittest.mock import AsyncMock
+
+    from PIL import Image
+
+    from ai_artist.web.lumira_routes import _maybe_retry_studio_piece
+
+    first = Image.new("RGB", (8, 8), "red")
+    second = Image.new("RGB", (8, 8), "blue")
+    generator = MagicMock()
+    generator.generate = MagicMock(return_value=[second])
+    ws = MagicMock()
+    ws.send_thinking_update = AsyncMock()
+    ws.broadcast_inner_dialogue = AsyncMock()
+    monkeypatch.setattr(
+        "ai_artist.web.lumira_routes._try_score_image", lambda *a, **k: None
+    )
+
+    images, prompt, record = await _maybe_retry_studio_piece(
+        generator=generator,
+        images=[first],
+        prompt="a forest, masterpiece, 8k, trending on artstation, ultra detailed",
+        negative_prompt="",
+        num_steps=4,
+        guidance=1.0,
+        on_progress=None,
+        subject="forest",
+        style="oil",
+        mood="serene",
+        recent_subjects=[],
+        session_id="sess-1",
+        session_mode="surprise",
+        hypothesis="paint honestly",
+        ws_manager=ws,
+    )
+
+    generator.generate.assert_called_once()
+    assert images[0] is second
+    assert record["iterations"] == 1
+    assert record["retry_reason"] == "slop"
+    assert "masterpiece" not in prompt.lower()
+    ws.broadcast_inner_dialogue.assert_awaited()
+
+
+@pytest.mark.asyncio
+async def test_maybe_retry_studio_piece_can_be_disabled(monkeypatch):
+    """LUMIRA_SESSION_RETRY=0 must not spend a second generation."""
+    from PIL import Image
+
+    from ai_artist.web.lumira_routes import _maybe_retry_studio_piece
+
+    generator = MagicMock()
+    ws = MagicMock()
+    monkeypatch.setenv("LUMIRA_SESSION_RETRY", "0")
+    images, prompt, record = await _maybe_retry_studio_piece(
+        generator=generator,
+        images=[Image.new("RGB", (4, 4), "black")],
+        prompt="masterpiece, 8k, trending on artstation, ultra detailed",
+        negative_prompt="",
+        num_steps=4,
+        guidance=1.0,
+        on_progress=None,
+        subject="forest",
+        style="oil",
+        mood="serene",
+        recent_subjects=[],
+        session_id="sess-2",
+        session_mode="surprise",
+        hypothesis="",
+        ws_manager=ws,
+    )
+    generator.generate.assert_not_called()
+    assert record["retry_reason"] == "disabled"
+    assert record["iterations"] == 0
+    assert "masterpiece" in prompt
+
+
+@pytest.mark.asyncio
+async def test_maybe_retry_keeps_first_when_retry_generate_raises(monkeypatch):
+    """A failed second Magica call must not discard the first paid picture."""
+    from unittest.mock import AsyncMock
+
+    from PIL import Image
+
+    from ai_artist.web.lumira_routes import _maybe_retry_studio_piece
+
+    first = Image.new("RGB", (8, 8), "red")
+    generator = MagicMock()
+    generator.generate = MagicMock(side_effect=RuntimeError("magica down"))
+    ws = MagicMock()
+    ws.send_thinking_update = AsyncMock()
+    ws.broadcast_inner_dialogue = AsyncMock()
+    monkeypatch.setattr(
+        "ai_artist.web.lumira_routes._try_score_image", lambda *a, **k: None
+    )
+
+    images, prompt, record = await _maybe_retry_studio_piece(
+        generator=generator,
+        images=[first],
+        prompt="a forest, masterpiece, 8k, trending on artstation, ultra detailed",
+        negative_prompt="",
+        num_steps=4,
+        guidance=1.0,
+        on_progress=None,
+        subject="forest",
+        style="oil",
+        mood="serene",
+        recent_subjects=[],
+        session_id="sess-3",
+        session_mode="surprise",
+        hypothesis="",
+        ws_manager=ws,
+    )
+    assert images[0] is first
+    assert record["retry_reason"] == "error"
+    assert "masterpiece" in prompt
+
+
+@pytest.mark.asyncio
+async def test_maybe_retry_keeps_first_when_retry_scores_worse(monkeypatch):
+    """If CLIP can score both, the weaker second pass is discarded."""
+    from threading import get_ident
+    from unittest.mock import AsyncMock
+
+    from PIL import Image
+
+    from ai_artist.web.lumira_routes import _maybe_retry_studio_piece
+
+    first = Image.new("RGB", (8, 8), "red")
+    second = Image.new("RGB", (8, 8), "blue")
+    generator = MagicMock()
+    generator.generate = MagicMock(return_value=[second])
+    ws = MagicMock()
+    ws.send_thinking_update = AsyncMock()
+    ws.broadcast_inner_dialogue = AsyncMock()
+
+    event_loop_thread = get_ident()
+
+    def _score(image: Image.Image, prompt: str) -> float:
+        assert get_ident() != event_loop_thread
+        return 0.9 if image is first else 0.2
+
+    monkeypatch.setattr("ai_artist.web.lumira_routes._try_score_image", _score)
+
+    images, _prompt, record = await _maybe_retry_studio_piece(
+        generator=generator,
+        images=[first],
+        prompt="another mountain at dusk",
+        negative_prompt="",
+        num_steps=4,
+        guidance=1.0,
+        on_progress=None,
+        subject="mountain",
+        style="oil",
+        mood="serene",
+        recent_subjects=["mountain"],
+        session_id="sess-4",
+        session_mode="surprise",
+        hypothesis="",
+        ws_manager=ws,
+    )
+    assert images[0] is first
+    assert record["kept_score"] == 0.9
+    assert record["discarded_score"] == 0.2
+
+
+@pytest.mark.asyncio
+async def test_maybe_retry_allow_repeat_does_not_retry_remix(monkeypatch):
+    """Continuation remix of a recent subject should not spend a second pass."""
+    from PIL import Image
+
+    from ai_artist.web.lumira_routes import _maybe_retry_studio_piece
+
+    generator = MagicMock()
+    first = Image.new("RGB", (4, 4), "navy")
+    monkeypatch.setattr(
+        "ai_artist.web.lumira_routes._try_score_image", lambda *a, **k: 0.81
+    )
+    images, _prompt, record = await _maybe_retry_studio_piece(
+        generator=generator,
+        images=[first],
+        prompt="another mountain at dusk",
+        negative_prompt="",
+        num_steps=4,
+        guidance=1.0,
+        on_progress=None,
+        subject="mountain",
+        style="oil",
+        mood="serene",
+        recent_subjects=["mountain"],
+        session_id="sess-5",
+        session_mode="continuation",
+        hypothesis="continue the mountain thread",
+        ws_manager=MagicMock(),
+        allow_repeat=True,
+    )
+    generator.generate.assert_not_called()
+    assert images[0] is first
+    assert record["iterations"] == 0

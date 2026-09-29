@@ -256,3 +256,21 @@ def test_build_context_prompt_tolerates_list_suggest_parameters():
     text = cm._build_context_prompt({})
     assert "CURRENT STATE" in text
     assert "Learner-suggested params" not in text
+
+
+def test_build_context_prompt_includes_session_hypothesis():
+    """Studio session mode should show up as creative intent for the LLM."""
+    mood_sys = create_mock_mood_system(Mood.MELANCHOLIC)
+    cm = CreativeMind(
+        mood_system=mood_sys,
+        memory_system=create_mock_memory(),
+        learner=create_mock_learner(),
+    )
+    text = cm._build_context_prompt(
+        {
+            "session_mode": "introspective",
+            "hypothesis": "What does my melancholic uncertainty look like?",
+        }
+    )
+    assert "SESSION HYPOTHESIS (introspective)" in text
+    assert "melancholic uncertainty" in text

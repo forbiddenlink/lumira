@@ -7,6 +7,7 @@ load_dotenv()
 
 import asyncio
 import contextlib
+import io
 import json
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
@@ -28,11 +29,14 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, HTMLResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel, Field
 from starlette.datastructures import UploadFile as StarletteUploadFile
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from ..gallery.manager import GalleryManager
 from ..utils.config import WebConfig
+from ..utils.json_store import load_json_value, write_json_value
 from ..utils.logging import get_logger
 from .admin import router as admin_router
 from .admin import shell_router as admin_shell_router
@@ -77,6 +81,9 @@ ERROR_INVALID_FILE_TYPE = "Invalid file type"
 ERROR_IMAGE_NOT_FOUND = "Image not found"
 ERROR_ACCESS_DENIED = "Access denied"
 METADATA_FILE_SUFFIX = ".json"
+MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+MAX_UPLOAD_PIXELS = 40_000_000
+ALLOWED_UPLOAD_FORMATS = {"JPEG", "PNG", "WEBP"}
 
 # Concurrency control for image generation. Shared with lumira_routes so the
 # VRAM-exhaustion bound is global across every generation entry point.
@@ -94,6 +101,37 @@ _background_tasks: set = set()
 # backstop rationale and configure_rate_limiting() for the app wiring.
 
 logger = get_logger(__name__)
+
+
+async def _read_validated_image_upload(
+    image_file: StarletteUploadFile,
+) -> bytes:
+    """Read, validate, and normalize one admin image upload as PNG bytes."""
+    if not image_file.content_type or not image_file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail=ERROR_INVALID_FILE_TYPE)
+
+    image_data = await image_file.read(MAX_UPLOAD_BYTES + 1)
+    if not image_data or len(image_data) > MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=413, detail="Image exceeds the 20 MB upload limit"
+        )
+
+    try:
+        with Image.open(io.BytesIO(image_data)) as image:
+            image.verify()
+        with Image.open(io.BytesIO(image_data)) as image:
+            if image.format not in ALLOWED_UPLOAD_FORMATS:
+                raise HTTPException(status_code=400, detail=ERROR_INVALID_FILE_TYPE)
+            if image.width * image.height > MAX_UPLOAD_PIXELS:
+                raise HTTPException(
+                    status_code=413, detail="Image exceeds the 40 megapixel limit"
+                )
+            normalized = image.convert("RGB")
+            output = io.BytesIO()
+            normalized.save(output, format="PNG", optimize=True)
+            return output.getvalue()
+    except (UnidentifiedImageError, Image.DecompressionBombError, OSError) as e:
+        raise HTTPException(status_code=400, detail=ERROR_INVALID_FILE_TYPE) from e
 
 
 ExceptionHandler = Callable[[Request, Exception], Response | Awaitable[Response]]
@@ -323,15 +361,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             job_id="lumira_weekly_synthesis",
         )
 
-        # Optional: true autonomous creation from the web process
-        # LUMIRA_AUTONOMOUS_CREATE=1 and interval minutes (default 120).
+        # Autonomous creation stays opt-in even when provider credentials exist.
         import os as _os
 
-        auto_create = _os.getenv("LUMIRA_AUTONOMOUS_CREATE", "").lower() in (
-            "1",
-            "true",
-            "yes",
-        )
+        from ..scheduling.scheduler import autonomous_create_enabled
+
+        auto_create = autonomous_create_enabled()
         try:
             auto_interval = max(
                 15, int(_os.getenv("LUMIRA_AUTONOMOUS_INTERVAL_MIN", "120"))
@@ -477,6 +512,10 @@ Connect to `/ws` for real-time generation progress updates.
 # Add exception handlers
 # FastAPI accepts subtype-specific handlers at runtime; cast for static typing.
 app.add_exception_handler(
+    StarletteHTTPException,
+    cast(ExceptionHandler, http_exception_handler),
+)
+app.add_exception_handler(
     HTTPException,
     cast(ExceptionHandler, http_exception_handler),
 )
@@ -567,6 +606,35 @@ async def root(request: Request) -> HTMLResponse:
     )
 
 
+_TELEMETRY_MARKERS = (
+    "energy:",
+    "intensity:",
+    "taste shift",
+    "dreamshaper",
+    "tastes learned",
+)
+
+
+def _work_title(prompt: str | None) -> str:
+    """First clause of a prompt, used until a title is saved."""
+    raw = (prompt or "").strip()
+    if not raw:
+        return "Untitled"
+    clause = raw.split(",")[0].strip() or raw
+    clause = clause[:72].strip()
+    return clause[:1].upper() + clause[1:]
+
+
+def _visitor_text(text: str | None) -> str | None:
+    """Drop console lines from a public caption."""
+    if not text or not text.strip():
+        return None
+    lowered = text.lower()
+    if any(marker in lowered for marker in _TELEMETRY_MARKERS):
+        return None
+    return text.strip()
+
+
 @app.get("/share/{share_id}", response_class=HTMLResponse, tags=["pages"])
 async def share_page(
     request: Request, share_id: str, gallery_path: GalleryPathDep
@@ -645,11 +713,17 @@ async def share_page(
                     subject=nested.get("subject") or gen_params.get("subject"),
                     style=nested.get("style") or gen_params.get("style"),
                 )
+        display_title = _work_title(image.prompt)
+        mood_name = str(mood).strip() if mood else ""
+        public_note = _visitor_text(curator_note)
+        if public_note is None and mood_name:
+            public_note = f"Painted while she was {mood_name}."
         return templates.TemplateResponse(
             request,
             "share.html",
             {
-                "title": f"Artwork by Lumira — {(image.prompt or 'AI Art')[:60]}",
+                "title": display_title,
+                "display_title": display_title,
                 "image_url": image_url,
                 "prompt": image.prompt or "AI-generated artwork",
                 "share_id": share_id,
@@ -657,8 +731,8 @@ async def share_page(
                 "share_url": share_url,
                 "soundtrack_url": soundtrack_url,
                 "mood": mood,
-                "thought_line": thought_line,
-                "curator_note": curator_note,
+                "thought_line": _visitor_text(thought_line),
+                "curator_note": public_note,
                 "reasoning": reasoning,
                 "thinking_steps": thinking_steps,
             },
@@ -1294,20 +1368,19 @@ async def upload_image(
         metadata_value if isinstance(metadata_value, str) else None
     )
 
-    # Validate file type
-    if not image_file.content_type or not image_file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail=ERROR_INVALID_FILE_TYPE)
-
-    # Read image data
-    image_data = await image_file.read()
+    image_data = await _read_validated_image_upload(image_file)
 
     # Parse metadata if provided
-    metadata = {}
+    metadata: dict[str, Any] = {}
     if metadata_str:
         try:
             metadata = json.loads(metadata_str)
         except json.JSONDecodeError as e:
             raise HTTPException(status_code=400, detail="Invalid metadata JSON") from e
+        if not isinstance(metadata, dict):
+            raise HTTPException(
+                status_code=400, detail="Metadata must be a JSON object"
+            )
 
     # Generate filename based on timestamp if not provided
     import hashlib
@@ -1375,22 +1448,18 @@ async def upload_batch(
 
     for idx, image_file in enumerate(images):
         try:
-            # Read and validate
-            if not image_file.content_type or not image_file.content_type.startswith(
-                "image/"
-            ):
-                errors.append({"index": idx, "error": "Invalid file type"})
-                continue
-
-            image_data = await image_file.read()
+            image_data = await _read_validated_image_upload(image_file)
 
             # Check for corresponding metadata
-            metadata = {}
+            metadata: dict[str, Any] = {}
             metadata_key = f"metadata_{idx}"
             metadata_value = form.get(metadata_key)
             if isinstance(metadata_value, str):
                 with contextlib.suppress(json.JSONDecodeError):
                     metadata = json.loads(metadata_value)
+            if not isinstance(metadata, dict):
+                errors.append({"index": idx, "error": "Metadata must be a JSON object"})
+                continue
 
             # Generate filename
             import hashlib
@@ -1447,22 +1516,13 @@ TEMPLATES_FILE = Path("config/prompt_templates.json")
 
 def load_templates() -> list[dict]:
     """Load templates from JSON file."""
-    if not TEMPLATES_FILE.exists():
-        TEMPLATES_FILE.parent.mkdir(parents=True, exist_ok=True)
-        return []
-    try:
-        with open(TEMPLATES_FILE) as f:
-            templates: list[dict] = json.load(f)
-            return templates
-    except json.JSONDecodeError:
-        return []
+    templates = load_json_value(TEMPLATES_FILE)
+    return templates if isinstance(templates, list) else []
 
 
 def save_templates(templates: list[dict]) -> None:
     """Save templates to JSON file."""
-    TEMPLATES_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(TEMPLATES_FILE, "w") as f:
-        json.dump(templates, f, indent=2)
+    write_json_value(TEMPLATES_FILE, templates)
 
 
 @app.get("/api/templates", response_model=list[PromptTemplate], tags=["templates"])

@@ -76,10 +76,23 @@
         border: 0;
       }
 
-      /* Focus visible for keyboard users */
+      /* Focus visible for keyboard users.
+         Class rules use transition:all, which animates outline-width from 0.
+         Limit the transition on keyboard focus so the ring is there immediately. */
       :focus-visible {
         outline: 2px solid var(--accent, #c4a574);
         outline-offset: 2px;
+      }
+      a:focus-visible,
+      button:focus-visible,
+      input:focus-visible,
+      select:focus-visible,
+      textarea:focus-visible,
+      [tabindex]:focus-visible {
+        transition-property: background-color, color, border-color, box-shadow, transform, opacity;
+      }
+      :focus:not(:focus-visible) {
+        outline: none;
       }
 
       .skip-link {
@@ -203,6 +216,9 @@
         flex-wrap: wrap;
         min-width: 0;
       }
+      .stat {
+        display: none;
+      }
 
       .stat {
         text-align: center;
@@ -272,7 +288,6 @@
       }
 
       .search-input:focus {
-        outline: none;
         border-color: var(--accent);
         box-shadow: 0 0 0 4px rgba(196, 165, 116, 0.1);
       }
@@ -309,7 +324,8 @@
       }
 
       .sort-select:focus-visible {
-        outline: none;
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
         border-color: var(--accent);
         box-shadow: 0 0 0 4px rgba(196, 165, 116, 0.2);
       }
@@ -529,15 +545,16 @@
       }
 
       .gallery-item-prompt {
-        font-size: 15px;
+        font-family: var(--font-display);
+        font-size: 1.15rem;
+        font-weight: 500;
         color: var(--text-main);
-        line-height: 1.6;
+        line-height: 1.35;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
         margin-bottom: 12px;
-        font-weight: 500;
       }
 
       .gallery-item-meta {
@@ -647,7 +664,6 @@
 
       .filter-input:focus,
       .filter-select:focus {
-        outline: none;
         border-color: var(--accent);
         box-shadow: 0 0 0 3px rgba(196, 165, 116, 0.12);
       }
@@ -1054,8 +1070,31 @@
       .modal-btn:hover {
         background: var(--accent);
         border-color: var(--accent);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 16px var(--glow);
+        color: var(--accent-ink);
+      }
+      .modal-btn-primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--accent-ink);
+      }
+      .modal-actions {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .work-notes {
+        margin-top: 0.5rem;
+        color: var(--text-muted);
+      }
+      .work-notes summary {
+        cursor: pointer;
+        min-height: 24px;
+        color: var(--text-main);
+      }
+      .work-notes-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 0.75rem;
       }
 
       .modal-close {
@@ -1683,7 +1722,6 @@
         transition: all 0.2s;
       }
       .template-form-input:focus {
-        outline: none;
         border-color: var(--accent);
         box-shadow: 0 0 0 3px rgba(196, 165, 116, 0.15);
       }
@@ -1817,16 +1855,15 @@
            scrolls sideways within itself. Its buttons keep it keyboard
            reachable, so this stays out of scrollable-region-focusable. */
         .gallery-view-tabs {
-          overflow-x: auto;
-          scrollbar-width: none;
-        }
-
-        .gallery-view-tabs::-webkit-scrollbar {
-          display: none;
+          flex-wrap: wrap;
+          overflow: visible;
+          padding-left: 24px;
+          padding-right: 24px;
         }
 
         .view-tab {
-          flex: 0 0 auto;
+          flex: 0 1 auto;
+          min-height: 44px;
         }
 
         .gallery-container {
@@ -2002,15 +2039,15 @@
 
       /* === CREATION REQUEST FAB & PANEL === */
       .creation-fab {
-        position: fixed;
-        bottom: 40px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 999;
+        position: relative;
+        z-index: 5;
         display: flex;
         align-items: center;
+        justify-content: flex-end;
         gap: 0;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        width: min(1400px, 100%);
+        margin: 0.75rem auto 0;
+        padding: 0 1.25rem;
       }
 
       .creation-fab-btn {
@@ -2089,7 +2126,6 @@
         transition: border-color 0.2s;
       }
       .creation-panel-input:focus {
-        outline: none;
         border-color: var(--accent);
         box-shadow: 0 0 0 3px rgba(196, 165, 116, 0.15);
       }
@@ -2110,7 +2146,6 @@
         max-width: 140px;
       }
       .creation-panel-select:focus {
-        outline: none;
         border-color: var(--accent);
       }
 
@@ -2139,12 +2174,21 @@
 
       @media (max-width: 768px) {
         .creation-fab {
-          left: 16px;
-          right: 16px;
-          bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+          position: relative;
+          left: auto;
+          right: auto;
+          bottom: auto;
           transform: none;
-          justify-content: center;
+          justify-content: flex-start;
           width: auto;
+          margin: 0.75rem 1rem 0;
+        }
+        .creation-panel.open {
+          position: static;
+          flex-wrap: wrap;
+          border-left: 1px solid var(--border);
+          border-radius: 8px;
+          max-width: 100%;
         }
         .creation-panel {
           flex-wrap: wrap;
@@ -2193,9 +2237,9 @@
 
       /* Welcome hero for first-time visitors — compact so art stays above the fold */
       .live-atelier {
-        margin: 0 auto 1.5rem;
-        max-width: 1100px;
-        padding: 0 1.25rem;
+        margin: 0;
+        max-width: none;
+        padding: 0 0 0.25rem;
       }
       .live-atelier-inner {
         border-top: 1px solid rgba(212, 175, 120, 0.25);
@@ -2212,24 +2256,25 @@
         margin-right: 0.55rem;
       }
       .live-atelier-mood #atelier-mood {
-        font-family: Georgia, "Times New Roman", serif;
+        font-family: var(--font-display);
         font-size: 1.15rem;
         text-transform: capitalize;
       }
-      .live-atelier-desire, .live-atelier-thought {
-        font-size: 0.95rem;
-        line-height: 1.45;
-        opacity: 0.88;
-        max-width: 52rem;
+      .live-atelier-desire {
+        font-family: var(--font-display);
+        font-size: clamp(1.2rem, 2vw, 1.55rem);
+        font-weight: 500;
+        line-height: 1.35;
+        color: var(--text-main);
+        max-width: 40rem;
+      }
+      .live-atelier-thought,
+      .live-atelier-meta,
+      .live-atelier-mood {
+        display: none;
       }
       .live-atelier-meta {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem 1.25rem;
-        align-items: center;
-        font-size: 0.8rem;
-        opacity: 0.75;
-        margin-top: 0.25rem;
+        display: none;
       }
       .live-atelier-link {
         display: inline-flex;
@@ -2238,6 +2283,90 @@
         color: inherit;
         text-decoration: underline;
         text-underline-offset: 3px;
+      }
+
+      .featured-work {
+        max-width: 1400px;
+        margin: 0 auto 1.75rem;
+        padding: 0 1.25rem;
+      }
+      .featured-work[hidden] {
+        display: none !important;
+      }
+      .featured-work-frame {
+        display: block;
+        width: 100%;
+        padding: 0;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background: var(--bg-elevated);
+        cursor: pointer;
+        overflow: hidden;
+        min-height: 24px;
+      }
+      .featured-work-frame:hover {
+        border-color: color-mix(in oklab, var(--accent) 45%, var(--border));
+      }
+      .featured-work-frame img {
+        display: block;
+        width: 100%;
+        height: min(58vh, 640px);
+        object-fit: cover;
+        object-position: center 40%;
+        background: var(--bg-dark);
+      }
+      .featured-work-meta {
+        display: grid;
+        grid-template-columns: minmax(0, 1.4fr) minmax(16rem, 0.7fr);
+        gap: 1.5rem 2rem;
+        align-items: end;
+        padding-top: 1.1rem;
+      }
+      .featured-proposed {
+        margin: 0.45rem 0 0;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+      }
+      .featured-open {
+        margin-top: 0.85rem;
+        min-height: 24px;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: var(--text-main);
+        font: inherit;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        cursor: pointer;
+      }
+      @media (max-width: 900px) {
+        .featured-work-meta {
+          grid-template-columns: 1fr;
+        }
+        .featured-work-frame img {
+          height: min(52vh, 420px);
+        }
+      }
+      .featured-work-kicker {
+        font-size: 0.7rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--text-faint);
+        margin: 0.85rem 0 0.25rem;
+      }
+      .featured-work-title {
+        font-family: var(--font-display);
+        font-size: clamp(2.4rem, 6vw, 4.6rem);
+        font-weight: 500;
+        letter-spacing: -0.03em;
+        line-height: 1.05;
+        color: var(--text-main);
+        margin: 0;
+      }
+      .featured-work-mood {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        margin: 0.3rem 0 0;
       }
       .ai-disclosure-link {
         display: inline-flex;
@@ -2758,6 +2887,7 @@
         margin: 0 auto;
         padding: 20px 48px 0;
         display: flex;
+        flex-wrap: wrap;
         gap: 4px;
         border-bottom: 1px solid var(--border);
         position: relative;
@@ -3064,7 +3194,89 @@
       </div>
     </div>
 
-    <!-- Welcome hero (first-time visitors) -->
+    <div class="creation-fab" id="creation-fab">
+      <button
+        class="creation-fab-btn"
+        id="creation-fab-btn"
+        data-action="toggleCreationPanel"
+        title="Ask Lumira for a piece"
+      >
+        Ask
+      </button>
+      <div class="creation-panel" id="creation-panel">
+        <input
+          type="text"
+          class="creation-panel-input"
+          id="fab-prompt"
+          placeholder="Describe what you'd like Lumira to create..."
+          maxlength="500"
+          aria-label="Describe what you'd like Lumira to create"
+        />
+        <select class="creation-panel-select" id="fab-style">
+          <option value="">Any style</option>
+          <option value="photorealistic">Photorealistic</option>
+          <option value="digital_art">Digital Art</option>
+          <option value="oil_painting">Oil Painting</option>
+          <option value="watercolor">Watercolor</option>
+          <option value="anime">Anime</option>
+          <option value="concept_art">Concept Art</option>
+          <option value="abstract">Abstract</option>
+          <option value="minimalist">Minimalist</option>
+          <option value="surreal">Surreal</option>
+          <option value="impressionist">Impressionist</option>
+          <option value="gothic">Gothic</option>
+          <option value="cyberpunk">Cyberpunk</option>
+        </select>
+        <button
+          class="creation-panel-submit"
+          id="fab-submit"
+          data-action="submitGalleryCreation"
+        >
+          Create
+        </button>
+        <a href="/lumira" class="fab-more-link">More options in the studio</a>
+      </div>
+    </div>
+
+    <!-- Latest work owns the first viewport; Meet Lumira is opt-in via ?about=1 -->
+    <section class="featured-work" id="featured-work" hidden>
+      <button
+        type="button"
+        class="featured-work-frame"
+        id="featured-work-frame"
+        data-action="openFeaturedWork"
+        aria-label="Open latest work"
+      >
+        <img id="featured-work-image" alt="" />
+      </button>
+      <div class="featured-work-meta">
+        <div>
+          <p class="featured-work-kicker">Newest work</p>
+          <h2 id="featured-work-title" class="featured-work-title"></h2>
+          <p class="featured-proposed">Title taken from the first words of the prompt.</p>
+          <p id="featured-work-mood" class="featured-work-mood"></p>
+          <button type="button" class="featured-open" data-action="openFeaturedWork">Open</button>
+        </div>
+        <section class="live-atelier" id="live-atelier" aria-label="Lumira right now">
+          <div class="live-atelier-inner">
+            <div class="live-atelier-mood">
+              <span class="live-atelier-label">Now</span>
+              <span id="atelier-mood">listening</span>
+            </div>
+            <div class="live-atelier-desire" id="atelier-desire">She is in the studio.</div>
+            <div class="live-atelier-thought" id="atelier-thought" aria-live="polite"></div>
+            <div class="live-atelier-meta">
+              <span id="atelier-series"></span>
+              <span id="atelier-next"></span>
+              <span id="taste-shift-chip" class="taste-chip" style="display:none"></span>
+              <a href="/lumira" class="live-atelier-link">Enter the studio</a>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- Welcome hero (opt-in: /?about=1) -->
     <div class="welcome-hero" id="welcome-hero" style="display: none">
       <div class="welcome-hero-inner" id="welcome-hero-inner">
         <div class="welcome-hero-text" id="welcome-hero-text">
@@ -3080,24 +3292,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Always-on atelier presence -->
-    <section class="live-atelier" id="live-atelier" aria-label="Lumira right now">
-      <div class="live-atelier-inner">
-        <div class="live-atelier-mood">
-          <span class="live-atelier-label">Now</span>
-          <span id="atelier-mood">listening</span>
-        </div>
-        <div class="live-atelier-desire" id="atelier-desire">Checking what Lumira wants to make…</div>
-        <div class="live-atelier-thought" id="atelier-thought" aria-live="polite"></div>
-        <div class="live-atelier-meta">
-          <span id="atelier-series"></span>
-          <span id="atelier-next"></span>
-          <span id="taste-shift-chip" class="taste-chip" style="display:none"></span>
-          <a href="/lumira" class="live-atelier-link">Enter the studio</a>
-        </div>
-      </div>
-    </section>
 
     <!-- Main Content -->
     <main id="main-content">
@@ -3539,51 +3733,6 @@
       </div>
     </div>
 
-    <!-- Creation Request FAB -->
-    <div class="creation-fab" id="creation-fab">
-      <button
-        class="creation-fab-btn"
-        id="creation-fab-btn"
-        data-action="toggleCreationPanel"
-        title="Request a creation from Lumira"
-      >
-        Ask Lumira
-      </button>
-      <div class="creation-panel" id="creation-panel">
-        <input
-          type="text"
-          class="creation-panel-input"
-          id="fab-prompt"
-          placeholder="Describe what you'd like Lumira to create..."
-          maxlength="500"
-          aria-label="Describe what you'd like Lumira to create"
-        />
-        <select class="creation-panel-select" id="fab-style">
-          <option value="">Any style</option>
-          <option value="photorealistic">Photorealistic</option>
-          <option value="digital_art">Digital Art</option>
-          <option value="oil_painting">Oil Painting</option>
-          <option value="watercolor">Watercolor</option>
-          <option value="anime">Anime</option>
-          <option value="concept_art">Concept Art</option>
-          <option value="abstract">Abstract</option>
-          <option value="minimalist">Minimalist</option>
-          <option value="surreal">Surreal</option>
-          <option value="impressionist">Impressionist</option>
-          <option value="gothic">Gothic</option>
-          <option value="cyberpunk">Cyberpunk</option>
-        </select>
-        <button
-          class="creation-panel-submit"
-          id="fab-submit"
-          data-action="submitGalleryCreation"
-        >
-          Create
-        </button>
-        <a href="/lumira" class="fab-more-link">More options →</a>
-      </div>
-    </div>
-
     <!-- Scroll to top -->
     <button
       class="scroll-top"
@@ -3931,32 +4080,13 @@
 
           const desireEl = document.getElementById('atelier-desire');
           if (desireEl) {
-            if (feeling) desireEl.textContent = feeling;
-            else if (statement) desireEl.textContent = statement;
+            desireEl.textContent = featuredMood()
+              ? visitorLine(featuredMood(), true)
+              : visitorLine(mood, false);
           }
 
           if (autoRes.status === 'fulfilled' && autoRes.value.ok) {
             const auto = await autoRes.value.json();
-            const drives = auto.drives || {};
-            const driveNames = Object.keys(drives);
-            if (driveNames.length && desireEl && !feeling) {
-              const ranked = driveNames
-                .map(function(n) {
-                  var d = drives[n] || {};
-                  return {
-                    n: n,
-                    v: d.intensity || d.value || 0,
-                    reason: d.reasoning || d.reason || ''
-                  };
-                })
-                .sort(function(a,b){ return b.v - a.v; });
-              var top = ranked[0];
-              if (top) {
-                desireEl.textContent = top.reason
-                  ? top.reason
-                  : ('Drawn toward ' + top.n.replace(/_/g, ' '));
-              }
-            }
             const nextEl = document.getElementById('atelier-next');
             if (nextEl) {
               if (auto.autonomous_create_enabled && auto.next_run) {
@@ -5255,6 +5385,7 @@
             sortImages();
           }
           renderGallery();
+          stageFeaturedWork(allImages);
         } catch (error) {
           console.error("Failed to load images:", error);
           document.getElementById("gallery").innerHTML =
@@ -5778,7 +5909,7 @@
           }
 
           // Mood badge
-          const cardMood = ((image.metadata && image.metadata.mood) || '').toLowerCase();
+          const cardMood = String(imageMood(image) || "").toLowerCase();
           if (cardMood) {
             const moodBadge = document.createElement("div");
             moodBadge.className = "card-mood-badge";
@@ -5849,7 +5980,7 @@
           const img = document.createElement("img");
           img.className = "loading";
           img.src = `/api/images/file/${image.path}`;
-          img.alt = image.prompt;
+          img.alt = workTitle(image.prompt);
           img.loading = "lazy";
           img.onload = function() { this.className = "loaded"; };
 
@@ -5860,7 +5991,8 @@
 
           const prompt = document.createElement("div");
           prompt.className = "gallery-item-prompt";
-          prompt.textContent = image.prompt;
+          prompt.textContent = workTitle(image.prompt);
+          if (image.prompt) prompt.title = image.prompt;
 
           const meta = document.createElement("div");
           meta.className = "gallery-item-meta";
@@ -5953,11 +6085,11 @@
 
         const imagePath = `/api/images/file/${image.path}`;
         modalImage.src = imagePath;
-        modalImage.alt = image.prompt || image.filename || "Artwork";
+        modalImage.alt = workTitle(image.prompt);
 
         const modalTitle = document.getElementById("modal-title");
         if (modalTitle) {
-          modalTitle.textContent = (image.prompt || "Artwork").slice(0, 120);
+          modalTitle.textContent = workTitle(image.prompt);
         }
 
         // Update counter
@@ -5970,55 +6102,50 @@
         // Create action buttons
         const soundtrackUrl = image.metadata && image.metadata.soundtrack_url;
         const videoUrl = image.metadata && image.metadata.video_url;
+        const safePath = escapeHtml(imagePath);
+        const safeName = escapeHtml(image.filename || "");
         modalActions.innerHTML = `
-                <button class="modal-btn" data-action="loveModalImage" style="width: 100%;">
-                    <span>♥</span> ${image._loved ? "Loved" : "Love — teach Lumira"}
+                <button class="modal-btn modal-btn-primary" data-action="shareArtwork">
+                    Share
                 </button>
-                <button class="modal-btn" data-action="shareArtwork" style="width: 100%;">
-                    <span>↗</span> Share
+                <button class="modal-btn" data-action="loveModalImage">
+                    ${image._loved ? "Loved" : "Love"}
                 </button>
-                <button class="modal-btn" data-action="shareModalImageAsLumira" style="width: 100%;">
-                    <span>✦</span> Share as Lumira
-                </button>
-                <button class="modal-btn" data-action="animateModalImage" style="width: 100%;">
-                    <span>▶</span> Animate
-                </button>
-                <button class="modal-btn" data-action="toggleFeaturedInModal" style="width: 100%;">
-                    <span>${image.featured ? "⭐" : "☆"}</span> ${image.featured ? "Unfeature" : "Feature"}
-                </button>
-                <a class="modal-btn" href="${imagePath}?download=1" download="${image.filename}" style="width: 100%;">
-                    <span>⬇</span> Download
-                </a>
-                <button class="modal-btn" data-action="deleteImageFromModal" style="width: 100%; background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #ef4444;">
-                    <span>🗑</span> Delete
-                </button>
+                <details class="work-notes">
+                  <summary>File and tools</summary>
+                  <div class="work-notes-actions">
+                    <button class="modal-btn" data-action="shareModalImageAsLumira">Share as Lumira</button>
+                    <button class="modal-btn" data-action="animateModalImage">Animate</button>
+                    <button class="modal-btn" data-action="toggleFeaturedInModal">${image.featured ? "Unfeature" : "Feature"}</button>
+                    <a class="modal-btn" href="${safePath}?download=1" download="${safeName}">Download</a>
+                    <button class="modal-btn" data-action="deleteImageFromModal" style="border-color: var(--danger); color: var(--danger);">Delete</button>
+                  </div>
+                </details>
                 <div class="modal-media">
-                  ${soundtrackUrl ? `<audio controls preload="metadata" src="${soundtrackUrl}"></audio>` : ""}
-                  ${videoUrl ? `<video controls preload="metadata" src="${videoUrl}"></video>` : ""}
+                  ${soundtrackUrl ? `<audio controls preload="metadata" src="${escapeHtml(soundtrackUrl)}"></audio>` : ""}
+                  ${videoUrl ? `<video controls preload="metadata" src="${escapeHtml(videoUrl)}"></video>` : ""}
                 </div>
             `;
 
+        var recordedWidth = image.metadata && image.metadata.width;
+        var recordedHeight = image.metadata && image.metadata.height;
+        var dimensionLine = recordedWidth && recordedHeight
+          ? escapeHtml(recordedWidth) + " × " + escapeHtml(recordedHeight)
+          : "Dimensions were not recorded.";
         modalInfoContent.innerHTML = `
-                <h3>${image.prompt}</h3>
-                ${image.featured ? "<p><strong>Status:</strong> ⭐ Featured</p>" : ""}
-                <p><strong>Created:</strong> ${new Date(
-                  image.created_at,
-                ).toLocaleString("en-US", {
-                  dateStyle: "full",
-                  timeStyle: "short",
-                })}</p>
-                <p><strong>File:</strong> ${image.filename}</p>
-                ${
-                  image.metadata && Object.keys(image.metadata).length > 0
-                    ? `
-                    <p><strong>Dimensions:</strong> ${image.metadata.width || "N/A"} × ${image.metadata.height || "N/A"}</p>
-                    ${image.metadata.model ? `<p><strong>Model:</strong> ${image.metadata.model}</p>` : ""}
-                    ${image.metadata.seed ? `<p><strong>Seed:</strong> ${image.metadata.seed}</p>` : ""}
-                    ${image.metadata.steps ? `<p><strong>Steps:</strong> ${image.metadata.steps}</p>` : ""}
-                    ${image.metadata.guidance_scale ? `<p><strong>Guidance:</strong> ${image.metadata.guidance_scale}</p>` : ""}
-                `
-                    : ""
-                }
+                <h3>${escapeHtml(workTitle(image.prompt))}</h3>
+                <p>${escapeHtml(imageMood(image) || "Mood not recorded")}</p>
+                <p>${escapeHtml(new Date(image.created_at).toLocaleDateString("en-US", {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                }))}</p>
+                <details class="work-notes">
+                  <summary>Prompt and file</summary>
+                  <p>${escapeHtml(image.prompt || "")}</p>
+                  <p>File: ${safeName}</p>
+                  <p>${dimensionLine}</p>
+                </details>
                 ${getCreationStoryHTML(image)}
             `;
       }
@@ -6283,7 +6410,7 @@
         const btn = document.getElementById("creation-fab-btn");
         const isOpen = panel.classList.toggle("open");
         btn.classList.toggle("open", isOpen);
-        btn.textContent = isOpen ? "×" : "Ask Lumira";
+        btn.textContent = isOpen ? "Close" : "Ask";
         if (isOpen) {
           document.getElementById("fab-prompt").focus();
         }
@@ -6376,9 +6503,94 @@
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
 
-      // Welcome hero for first-time visitors
+      function escapeHtml(value) {
+        return String(value == null ? "" : value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function workTitle(prompt) {
+        var raw = String(prompt || "").trim();
+        if (!raw) return "Untitled";
+        var clause = raw.split(",")[0].trim() || raw;
+        if (clause.length > 72) clause = clause.slice(0, 72).trim();
+        return clause.charAt(0).toUpperCase() + clause.slice(1);
+      }
+
+      function imageMood(image) {
+        var meta = (image && image.metadata) || {};
+        var nested = meta.metadata && typeof meta.metadata === "object" ? meta.metadata : {};
+        return meta.mood || nested.mood || "";
+      }
+
+      function featuredMood() {
+        return imageMood(window._featuredImage);
+      }
+
+      function visitorLine(mood, fromWork) {
+        var name = String(mood || "").trim().toLowerCase();
+        if (!name) return "She is in the studio.";
+        if (fromWork) {
+          return "She is " + name + ", and the newest work carries that mood.";
+        }
+        return "She is " + name + ".";
+      }
+
+      function stageFeaturedWork(images) {
+        var stage = document.getElementById("featured-work");
+        var img = document.getElementById("featured-work-image");
+        var title = document.getElementById("featured-work-title");
+        var moodEl = document.getElementById("featured-work-mood");
+        var frame = document.getElementById("featured-work-frame");
+        if (!stage || !img) return;
+        if (!images || !images.length) {
+          stage.hidden = true;
+          window._featuredImage = null;
+          return;
+        }
+        var pick = images[0];
+        if (!pick || !pick.path) {
+          stage.hidden = true;
+          window._featuredImage = null;
+          return;
+        }
+        window._featuredImage = pick;
+        img.src = "/api/images/file/" + pick.path;
+        var caption = workTitle(pick.prompt || pick.filename);
+        img.alt = caption;
+        if (title) title.textContent = caption;
+        var mood = imageMood(pick);
+        var when = pick.created_at
+          ? new Date(pick.created_at).toLocaleDateString("en-US", {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            })
+          : "";
+        if (moodEl) {
+          moodEl.textContent = [mood, when].filter(Boolean).join(" · ");
+        }
+        var desireEl = document.getElementById("atelier-desire");
+        if (desireEl) {
+          desireEl.textContent = mood
+            ? visitorLine(mood, true)
+            : visitorLine(window._lumiraMood, false);
+        }
+        if (frame) {
+          frame.setAttribute("aria-label", "Open " + caption);
+        }
+        stage.hidden = false;
+      }
+
+      function openFeaturedWork() {
+        if (window._featuredImage) openModal(window._featuredImage);
+      }
+
       function dismissHero() {
         var hero = document.getElementById("welcome-hero");
+        if (!hero) return;
         hero.style.transition = "opacity 0.4s ease, transform 0.4s ease";
         hero.style.opacity = "0";
         hero.style.transform = "translateY(-10px)";
@@ -6386,7 +6598,7 @@
         localStorage.setItem("lumira_hero_dismissed", "1");
       }
 
-      if (!localStorage.getItem("lumira_hero_dismissed")) {
+      if (new URLSearchParams(window.location.search).get("about") === "1") {
         document.getElementById("welcome-hero").style.display = "";
       }
 
@@ -7005,6 +7217,7 @@
           "hideProgressPanel",
           "hideTemplateForm",
           "navigateModal",
+          "openFeaturedWork",
           "resetZoom",
           "saveTemplate",
           "scrollToTop",

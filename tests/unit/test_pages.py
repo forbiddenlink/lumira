@@ -36,7 +36,16 @@ class TestPages:
         assert response.status_code == 404
         assert "Artwork Not Found" in response.text
         assert "error-glyph" in response.text
-        assert "Creative Studio" in response.text
+        assert "Studio" in response.text
+
+    def test_unknown_page_uses_designed_error(self):
+        client = TestClient(app)
+        response = client.get("/this-room-does-not-exist", headers={"accept": "*/*"})
+
+        assert response.status_code == 404
+        assert "text/html" in response.headers["content-type"]
+        assert "Page Not Found" in response.text
+        assert "Gallery" in response.text
 
     def test_share_page_renders_copy_link_and_absolute_meta(self, tmp_path):
         db_path = tmp_path / "share_page.db"
