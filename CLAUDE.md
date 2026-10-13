@@ -4,7 +4,7 @@ Autonomous AI artist system -- not a tool, an artist with personality, moods, me
 creative independence. Python 3.11+, FastAPI, Stable Diffusion XL/FLUX; creates artwork based
 on emotional states, learns from experience, evolves its style. A lightweight "gallery +
 cloud-generation" build (`Dockerfile.gallery`, no local ML/GPU, generation via Replicate/Magica)
-deploys to Railway (`railway.toml`).
+deploys to Railway (`.railway/railway.ts`, Infrastructure as Code).
 
 ## Stack
 
@@ -119,8 +119,8 @@ test (matrix: Python 3.11/3.12 x ubuntu/macos, excludes slow+e2e) -> integration
 
 ## Env vars
 
-Names confirmed via `os.getenv`/`os.environ` in source plus deploy vars documented in
-`railway.toml`:
+Names confirmed via `os.getenv`/`os.environ` in source plus the deploy vars set on the Railway
+service:
 
 - `RAILWAY_API_KEY` -- fail-closed auth on generation/admin routes (gallery browsing stays public without it; those routes return 503)
 - `MAGICA_API_KEY`, `MAGICA_BASE_URL`, `REPLICATE_API_TOKEN`, `ANTHROPIC_API_KEY` -- generation and AI providers

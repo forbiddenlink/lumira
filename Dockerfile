@@ -69,7 +69,7 @@ exec gosu aiartist "$@"' > /app/entrypoint.sh \
 EXPOSE 8000
 
 # Health check - Railway sets PORT, fallback to 8000
-# Note: Railway's healthcheckPath in railway.toml handles this, so we disable Docker healthcheck
+# Note: Railway's healthcheckPath in .railway/railway.ts handles this, so we disable Docker healthcheck
 # HEALTHCHECK NONE means Railway's external healthcheck will be used instead
 
 # Use entrypoint to handle volume permissions (runs as root, then switches to aiartist)
