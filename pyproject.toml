@@ -143,6 +143,11 @@ override-dependencies = [
     # out to be incompatible at load time, ImageCurator._load_aesthetic_model
     # catches it, logs aesthetic_model_load_failed and scores without it.
     "transformers>=5.5.0",
+    # GHSA oauthlib fix is in 4.0.0; tweepy caps oauthlib<4 in every release.
+    # The 4.0.0 breaking changes are server-side only (RevocationEndpoint JSONP,
+    # DeviceCodeGrant). Lumira's only consumers are tweepy and kubernetes via
+    # requests-oauthlib, which use the client-side oauth1/oauth2 APIs.
+    "oauthlib>=4.0.0",
 ]
 
 [tool.ruff]
