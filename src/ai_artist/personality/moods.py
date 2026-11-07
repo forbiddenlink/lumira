@@ -599,11 +599,8 @@ class MoodSystem:
                 )
 
         # Low quality work can shift toward introspective/contemplative
-        elif score > 0 and score < 0.4:
-            if random.random() > 0.6:
-                self.current_mood = random.choice(
-                    [Mood.INTROSPECTIVE, Mood.CONTEMPLATIVE]
-                )
+        elif 0 < score < 0.4 and random.random() > 0.6:
+            self.current_mood = random.choice([Mood.INTROSPECTIVE, Mood.CONTEMPLATIVE])
 
     def _shift_mood(self) -> None:
         """Shift to a new mood organically."""
