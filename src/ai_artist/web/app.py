@@ -649,7 +649,7 @@ def _visitor_text(text: str | None) -> str | None:
 
 
 @app.get("/share/{share_id}", response_class=HTMLResponse, tags=["pages"])
-async def share_page(
+def share_page(
     request: Request, share_id: str, gallery_path: GalleryPathDep
 ) -> HTMLResponse:
     """Serve shared image page.
@@ -951,7 +951,7 @@ async def auth_mode() -> dict[str, Any]:
 
 @app.get("/api/images", response_model=list[ImageMetadata], tags=["images"])
 @limiter.limit("60/minute")
-async def list_images(
+def list_images(
     request: Request,
     response: Response,
     gallery_manager: GalleryManagerDep,

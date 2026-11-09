@@ -56,7 +56,7 @@ async def admin_dashboard(request: Request) -> HTMLResponse:
 
 
 @router.get("/stats")
-async def get_statistics(
+def get_statistics(
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """Get system statistics.
@@ -130,7 +130,7 @@ async def get_statistics(
 
 
 @router.get("/performance")
-async def get_performance_metrics(
+def get_performance_metrics(
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """Get performance metrics.
@@ -258,7 +258,7 @@ async def get_system_info() -> dict[str, Any]:
 
 
 @router.delete("/artworks/{artwork_id}")
-async def delete_artwork(
+def delete_artwork(
     artwork_id: str,
     db: Session = Depends(get_db),
 ) -> dict[str, str]:
