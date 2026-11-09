@@ -247,3 +247,11 @@ def test_share_page_has_comments_section(client, tmp_path, monkeypatch):
     assert 'id="comment-form"' in r.text
     assert 'var shareId = "pub2";' in r.text
     monkeypatch.setattr(db_session_module, "_session_factory", None)
+
+
+def test_terms_and_privacy_give_a_working_contact(client):
+    """Both pages promise removal on request, so both must say how to ask."""
+    for path in ("/terms", "/privacy"):
+        r = client.get(path)
+        assert r.status_code == 200
+        assert "mailto:purplegumdropz@gmail.com" in r.text, path
