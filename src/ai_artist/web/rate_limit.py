@@ -17,6 +17,7 @@ from slowapi.util import get_remote_address
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ExceptionHandler
 
+from ..utils.config import running_on_railway
 from ..utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -37,6 +38,22 @@ if not RATE_LIMIT_ENABLED:
     )
 
 
+def client_ip(request: Request) -> str:
+    """Best client IP for rate limiting and logs.
+
+    On Railway the edge proxy appends the connecting address to
+    X-Forwarded-For, so the RIGHTMOST entry is the one the client cannot
+    forge; anything to its left is client-supplied. Off Railway there is no
+    trusted proxy, so the socket peer is used and the header is ignored.
+    """
+    if running_on_railway():
+        forwarded = request.headers.get("x-forwarded-for", "")
+        hops = [h.strip() for h in forwarded.split(",") if h.strip()]
+        if hops:
+            return hops[-1]
+    return get_remote_address(request)
+
+
 # Single shared Limiter for the whole app. Previously app.py and
 # lumira_routes.py each constructed their own bare `Limiter(...)` instance,
 # which meant two independent limiter states existed side by side (only one
@@ -45,7 +62,7 @@ if not RATE_LIMIT_ENABLED:
 # single instance so there is exactly one limiter, one default-limits
 # backstop, and one piece of state to reason about.
 limiter = Limiter(
-    key_func=get_remote_address,
+    key_func=client_ip,
     # Generous default backstop so routes without an explicit @limiter.limit
     # are still capped. Set well above any legitimate polling rate; stricter
     # per-route decorators (e.g. 5/minute on generation) bind first, so this
@@ -88,7 +105,7 @@ def get_rate_limit_key(request: Request) -> str:
     if api_key:
         # Hash the API key to avoid logging sensitive data
         return f"apikey:{hash(api_key) % 10000:04d}"
-    remote_addr = get_remote_address(request)
+    remote_addr = client_ip(request)
     return str(remote_addr) if remote_addr else "unknown"
 
 
@@ -150,7 +167,7 @@ def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Res
         "rate_limit_exceeded",
         path=request.url.path,
         method=request.method,
-        client=get_remote_address(request),
+        client=client_ip(request),
         limit=str(exc.detail) if hasattr(exc, "detail") else "unknown",
     )
     return create_rate_limit_error_response(request, exc)
@@ -176,7 +193,7 @@ class RateLimitHeadersMiddleware(BaseHTTPMiddleware):
         if limiter:
             # Try to get rate limit info from limiter state
             # The exact headers depend on the request's rate limit configuration
-            get_remote_address(request)
+            client_ip(request)
 
             # Add headers if we have limit info in response
             # slowapi stores current window info in the response headers after processing

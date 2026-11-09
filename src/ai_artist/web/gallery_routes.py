@@ -9,7 +9,6 @@ from typing import Annotated, Any, cast
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 from sqlalchemy import String, and_, case, func, or_
 from sqlalchemy.orm import Session
 
@@ -24,12 +23,12 @@ from ..db.models import (
 from ..db.session import get_db
 from ..utils.logging import get_logger
 from .dependencies import GalleryPathDep, GenerationAuthDep
-from .rate_limit import RATE_LIMIT_ENABLED
+from .rate_limit import RATE_LIMIT_ENABLED, client_ip
 
 logger = get_logger(__name__)
 
 # Rate limiter
-limiter = Limiter(key_func=get_remote_address, enabled=RATE_LIMIT_ENABLED)
+limiter = Limiter(key_func=client_ip, enabled=RATE_LIMIT_ENABLED)
 
 # Create router
 router = APIRouter(prefix="/api/gallery", tags=["gallery"])

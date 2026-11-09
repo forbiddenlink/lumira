@@ -6,18 +6,17 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 
 from ..utils.logging import get_logger
 from ..utils.prompt_emphasis import PromptEmphasis
 from ..utils.prompt_matrix import PromptMatrix
 from ..utils.style_presets import StylePresetsManager
-from .rate_limit import RATE_LIMIT_ENABLED
+from .rate_limit import RATE_LIMIT_ENABLED, client_ip
 
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/api/prompt", tags=["prompt"])
-limiter = Limiter(key_func=get_remote_address, enabled=RATE_LIMIT_ENABLED)
+limiter = Limiter(key_func=client_ip, enabled=RATE_LIMIT_ENABLED)
 
 # Initialize utilities
 prompt_emphasis = PromptEmphasis()

@@ -98,3 +98,34 @@ class TestDevModeNeverOnRailway:
         monkeypatch.setenv("DEBUG", "true")
         monkeypatch.setenv("LUMIRA_DEV_MODE", "1")
         assert WebConfig.from_env().dev_mode is False
+
+
+class TestClientIp:
+    """Rate-limit identity must not be forgeable through X-Forwarded-For."""
+
+    @staticmethod
+    def _request(xff: str | None, peer: str = "10.0.0.9"):
+        from starlette.requests import Request
+
+        headers = [(b"x-forwarded-for", xff.encode())] if xff else []
+        return Request({"type": "http", "headers": headers, "client": (peer, 1234)})
+
+    def test_railway_uses_rightmost_hop(self, monkeypatch):
+        from ai_artist.web.rate_limit import client_ip
+
+        monkeypatch.setenv("RAILWAY_ENVIRONMENT_NAME", "production")
+        req = self._request("6.6.6.6, 203.0.113.7")
+        assert client_ip(req) == "203.0.113.7"
+
+    def test_local_ignores_forwarded_header(self, monkeypatch):
+        from ai_artist.web.rate_limit import client_ip
+
+        monkeypatch.delenv("RAILWAY_ENVIRONMENT_NAME", raising=False)
+        monkeypatch.delenv("RAILWAY_ENVIRONMENT", raising=False)
+        assert client_ip(self._request("6.6.6.6")) == "10.0.0.9"
+
+    def test_railway_without_header_falls_back_to_peer(self, monkeypatch):
+        from ai_artist.web.rate_limit import client_ip
+
+        monkeypatch.setenv("RAILWAY_ENVIRONMENT_NAME", "production")
+        assert client_ip(self._request(None)) == "10.0.0.9"
