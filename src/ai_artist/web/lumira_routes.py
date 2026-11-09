@@ -4157,7 +4157,7 @@ async def create_with_reference(
 
 @router.post("/img2img", response_model=LumiraCreateResponse)
 @limiter.limit(RateLimits.IMG2IMG)
-async def img2img_generation(
+def img2img_generation(
     request: Request,
     _auth: GenerationAuthDep,
     img2img_request: Img2ImgRequest,
@@ -4351,7 +4351,7 @@ async def img2img_generation(
 
 @router.post("/variations", response_model=VariationsResponse)
 @limiter.limit(RateLimits.VARIATIONS)
-async def generate_variations(
+def generate_variations(
     request: Request,
     _auth: GenerationAuthDep,
     var_request: VariationsRequest,
@@ -5487,7 +5487,7 @@ class VideoExportResponse(BaseModel):
 
 @router.post("/export/video", response_model=VideoExportResponse)
 @limiter.limit("5/minute")
-async def export_video(
+def export_video(
     request: Request,
     _auth: GenerationAuthDep,
     body: VideoExportRequest,

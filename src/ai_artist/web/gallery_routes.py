@@ -302,7 +302,7 @@ def image_to_response(image: GeneratedImage) -> GalleryImageResponse:
 
 @router.get("/public", response_model=GalleryListResponse)
 @limiter.limit("60/minute")
-async def list_public_images(
+def list_public_images(
     request: Request,
     db: DbSession,
     page: int = Query(1, ge=1),
@@ -363,7 +363,7 @@ async def list_public_images(
 
 @router.get("/image/{share_id}", response_model=GalleryImageResponse)
 @limiter.limit("120/minute")
-async def get_image_by_share_id(
+def get_image_by_share_id(
     request: Request,
     share_id: str,
     db: DbSession,
@@ -395,7 +395,7 @@ async def get_image_by_share_id(
 
 @router.post("/image/{share_id}/like", response_model=LikeResponse)
 @limiter.limit("30/minute")
-async def toggle_like(
+def toggle_like(
     request: Request,
     share_id: str,
     db: DbSession,
@@ -488,7 +488,7 @@ async def toggle_like(
 
 @router.get("/image/{share_id}/like-status")
 @limiter.limit("120/minute")
-async def get_like_status(
+def get_like_status(
     request: Request,
     share_id: str,
     db: DbSession,
@@ -524,7 +524,7 @@ async def get_like_status(
 
 @router.post("/image/{share_id}/comment", response_model=CommentResponse)
 @limiter.limit("10/minute")
-async def add_comment(
+def add_comment(
     request: Request,
     share_id: str,
     comment: CommentCreate,
@@ -569,7 +569,7 @@ async def add_comment(
 
 @router.get("/image/{share_id}/comments", response_model=CommentListResponse)
 @limiter.limit("60/minute")
-async def get_comments(
+def get_comments(
     request: Request,
     share_id: str,
     db: DbSession,
@@ -624,7 +624,7 @@ async def get_comments(
 
 @router.post("/image/{share_id}/share", response_model=ShareResponse)
 @limiter.limit("30/minute")
-async def track_share(
+def track_share(
     request: Request,
     share_id: str,
     share_req: ShareRequest,
@@ -666,7 +666,7 @@ async def track_share(
 
 @router.post("/publish", response_model=PublishResponse)
 @limiter.limit("10/minute")
-async def publish_to_gallery(
+def publish_to_gallery(
     request: Request,
     publish_req: PublishRequest,
     db: DbSession,
@@ -703,7 +703,7 @@ async def publish_to_gallery(
 
 @router.delete("/image/{share_id}")
 @limiter.limit("10/minute")
-async def unpublish_from_gallery(
+def unpublish_from_gallery(
     request: Request,
     share_id: str,
     db: DbSession,
@@ -730,7 +730,7 @@ async def unpublish_from_gallery(
 
 @router.get("/stats")
 @limiter.limit("30/minute")
-async def get_gallery_stats(
+def get_gallery_stats(
     request: Request,
     db: DbSession,
 ) -> dict[str, Any]:
@@ -808,7 +808,7 @@ class CollectionDetailResponse(CollectionResponse):
 
 @router.get("/collections", response_model=list[CollectionResponse])
 @limiter.limit("60/minute")
-async def list_collections(
+def list_collections(
     request: Request,
     db: DbSession,
     limit: int = Query(default=20, le=100),
@@ -854,7 +854,7 @@ async def list_collections(
 
 @router.post("/collections", response_model=CollectionResponse)
 @limiter.limit("10/minute")
-async def create_collection(
+def create_collection(
     request: Request,
     collection_req: CollectionCreate,
     db: DbSession,
@@ -907,7 +907,7 @@ async def create_collection(
 
 @router.get("/collections/{collection_id}", response_model=CollectionDetailResponse)
 @limiter.limit("60/minute")
-async def get_collection(
+def get_collection(
     request: Request,
     collection_id: int,
     db: DbSession,
@@ -992,7 +992,7 @@ class SearchResponse(BaseModel):
 
 @router.post("/search", response_model=SearchResponse)
 @limiter.limit("60/minute")
-async def advanced_search(
+def advanced_search(
     request: Request,
     filters: SearchFilters,
     db: DbSession,
@@ -1101,7 +1101,7 @@ async def advanced_search(
 
 @router.get("/trending")
 @limiter.limit("60/minute")
-async def get_trending(
+def get_trending(
     request: Request,
     db: DbSession,
     time_window: str = Query(default="week", pattern="^(day|week|month|all)$"),

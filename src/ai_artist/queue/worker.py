@@ -16,6 +16,43 @@ from ..utils.logging import get_logger
 logger = get_logger(__name__)
 
 
+def _record_image(save_path: Path, metadata: dict[str, Any]) -> None:
+    """Insert the GeneratedImage row so worker output shows in the gallery.
+
+    The gallery lists DB rows, so a file with no row is invisible. A failed
+    insert is logged, not raised: the image and its JSON sidecar are already
+    on disk and the job result still reports them.
+    """
+    try:
+        from ..db.models import GeneratedImage
+        from ..db.session import get_session_factory
+
+        params = {
+            k: metadata[k]
+            for k in ("width", "height", "num_inference_steps", "guidance_scale")
+            if k in metadata
+        }
+        params["job_id"] = metadata.get("job_id")
+        params["source"] = "worker"
+        with get_session_factory()() as db_session:
+            db_session.add(
+                GeneratedImage(
+                    filename=str(save_path),
+                    prompt=metadata.get("prompt", ""),
+                    negative_prompt=metadata.get("negative_prompt", ""),
+                    model_id=metadata.get("model_id", "unknown"),
+                    seed=metadata.get("seed"),
+                    generation_params=params,
+                    # Not run through the critic, so not "curated".
+                    status="pending",
+                    tags=[],
+                )
+            )
+            db_session.commit()
+    except Exception as e:
+        logger.error("worker_image_db_save_failed", path=str(save_path), error=str(e))
+
+
 def generate_image(prompt: str, params: dict[str, Any]) -> dict[str, Any]:
     """Worker function for image generation.
 
@@ -201,6 +238,7 @@ def generate_image(prompt: str, params: dict[str, Any]) -> dict[str, Any]:
             }
             metadata_path = save_path.with_suffix(".json")
             metadata_path.write_text(json.dumps(metadata, indent=2))
+            _record_image(save_path, metadata)
 
             logger.info(
                 "image_saved",
