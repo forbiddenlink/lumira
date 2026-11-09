@@ -16,6 +16,7 @@ KEY = "test-secret-key"
 
 OWNER_ROUTES = [
     ("delete", "/api/gallery/image/abc123"),
+    ("delete", "/api/gallery/comments/999999"),
     ("post", "/api/gallery/collections"),
     ("post", "/api/lumira/evolve"),
     ("delete", "/api/lumira/job/some-job"),
@@ -132,3 +133,33 @@ class TestClientIp:
 
         monkeypatch.setenv("RAILWAY_ENVIRONMENT_NAME", "production")
         assert client_ip(self._request(None)) == "10.0.0.9"
+
+
+def test_owner_can_delete_comment(client, auth_enabled, tmp_path, monkeypatch):
+    from ai_artist.db import session as db_session_module
+    from ai_artist.db.models import Base, GalleryComment, GeneratedImage
+    from ai_artist.db.session import create_session_factory, set_session_factory
+
+    monkeypatch.setattr(db_session_module, "_session_factory", None)
+    factory = create_session_factory(tmp_path / "c.db")
+    Base.metadata.create_all(factory.kw["bind"])
+    set_session_factory(factory)
+    with factory() as s:
+        img = GeneratedImage(filename="g/x.png", prompt="p", model_id="m", tags=[])
+        s.add(img)
+        s.flush()
+        s.add(GalleryComment(image_id=img.id, session_id="s", text="spam"))
+        s.commit()
+        cid = s.query(GalleryComment).one().id
+
+    r = client.delete(f"/api/gallery/comments/{cid}", headers={"X-API-Key": KEY})
+    assert r.status_code == 200, r.text
+    with factory() as s:
+        assert s.query(GalleryComment).count() == 0
+    assert (
+        client.delete(
+            f"/api/gallery/comments/{cid}", headers={"X-API-Key": KEY}
+        ).status_code
+        == 404
+    )
+    monkeypatch.setattr(db_session_module, "_session_factory", None)
