@@ -30,5 +30,8 @@ pillow>=12.3.0
 numpy>=2.4.6
 opencv-python-headless>=4.13.0.90
 
+# Error tracking: init_sentry() no-ops without this, even with SENTRY_DSN set
+sentry-sdk[fastapi]>=2.0.0
+
 # Cloud image generation (no local GPU needed)
 replicate>=1.0.0

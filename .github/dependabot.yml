@@ -40,6 +40,7 @@ updates:
     labels:
       - "dependencies"
       - "javascript"
+  - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
