@@ -764,6 +764,14 @@ def delete_comment(
     if not comment:
         raise HTTPException(status_code=404, detail="Comment not found")
 
+    image = (
+        db.query(GeneratedImage)
+        .filter(GeneratedImage.id == cast(Any, comment).image_id)
+        .first()
+    )
+    if image is not None:
+        image_obj = cast(Any, image)
+        image_obj.comment_count = max(int(image_obj.comment_count or 0) - 1, 0)
     db.delete(comment)
     db.commit()
     logger.info("comment_deleted", comment_id=comment_id)
