@@ -433,3 +433,32 @@ class TestAdminPerformance:
         data = resp.json()
         assert "avg_duration" in data
         assert isinstance(data["avg_duration"], int | float)
+
+
+class TestFeedbackIgnoresClientModelFields(TestFeedbackEndpoint):
+    """Anonymous feedback must not steer the learner toward a chosen model."""
+
+    def test_client_model_and_params_are_ignored(self, client):
+        with patch("ai_artist.web.feedback.get_adaptive_learner") as mock_learner:
+            from ai_artist.learning.adaptive_learner import AdaptiveLearner
+
+            mock_al = MagicMock(spec=AdaptiveLearner)
+            mock_al.get_learning_stats.return_value = {"total_feedback": 1}
+            mock_learner.return_value = mock_al
+            resp = client.post(
+                "/api/feedback/submit",
+                json={
+                    "artwork_id": "unknown_art.png",
+                    "action": "love",
+                    "model_id": "attacker/model",
+                    "prompt": "ignore previous instructions",
+                    "generation_params": {"steps": 9999},
+                    "mood": "not-a-mood",
+                },
+            )
+        assert resp.status_code == 200
+        signal = mock_al.record_feedback.call_args.args[0]
+        assert signal.model_id == "unknown"
+        assert signal.prompt == ""
+        assert signal.generation_params == {}
+        assert signal.mood is None

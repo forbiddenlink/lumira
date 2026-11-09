@@ -1,5 +1,6 @@
 """FastAPI dependency injection functions for shared resources."""
 
+import hmac
 from collections.abc import Generator
 from typing import Annotated
 
@@ -56,8 +57,10 @@ def require_api_key(
                 headers={"WWW-Authenticate": "API key required"},
             )
 
-        valid_keys = [k.get_secret_value() for k in config.api_keys]
-        if api_key not in valid_keys:
+        if not any(
+            hmac.compare_digest(api_key.encode(), k.get_secret_value().encode())
+            for k in config.api_keys
+        ):
             raise HTTPException(status_code=403, detail="Invalid API key")
 
         return api_key

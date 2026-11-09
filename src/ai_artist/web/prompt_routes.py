@@ -4,20 +4,19 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from slowapi import Limiter
-from slowapi.util import get_remote_address
 
 from ..utils.logging import get_logger
 from ..utils.prompt_emphasis import PromptEmphasis
 from ..utils.prompt_matrix import PromptMatrix
 from ..utils.style_presets import StylePresetsManager
-from .rate_limit import RATE_LIMIT_ENABLED
+from .rate_limit import RATE_LIMIT_ENABLED, client_ip
 
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/api/prompt", tags=["prompt"])
-limiter = Limiter(key_func=get_remote_address, enabled=RATE_LIMIT_ENABLED)
+limiter = Limiter(key_func=client_ip, enabled=RATE_LIMIT_ENABLED)
 
 # Initialize utilities
 prompt_emphasis = PromptEmphasis()
@@ -25,10 +24,16 @@ prompt_matrix = PromptMatrix()
 style_presets = StylePresetsManager(Path("config/style_presets.json"))
 
 
+# Hard server-side ceiling on matrix expansion. The client may ask for fewer,
+# never more: the route is public and parse_prompt materializes every string.
+MAX_MATRIX_COMBINATIONS = 500
+MAX_PROMPT_CHARS = 2000
+
+
 class EmphasisRequest(BaseModel):
     """Request model for emphasis parsing."""
 
-    prompt: str
+    prompt: str = Field(max_length=MAX_PROMPT_CHARS)
 
 
 class EmphasisResponse(BaseModel):
@@ -42,8 +47,8 @@ class EmphasisResponse(BaseModel):
 class MatrixRequest(BaseModel):
     """Request model for prompt matrix generation."""
 
-    prompt: str
-    max_combinations: int = 100
+    prompt: str = Field(max_length=MAX_PROMPT_CHARS)
+    max_combinations: int = Field(default=100, ge=1, le=MAX_MATRIX_COMBINATIONS)
 
 
 class MatrixResponse(BaseModel):
@@ -67,8 +72,8 @@ class StylePresetResponse(BaseModel):
 class ApplyStyleRequest(BaseModel):
     """Request model for applying style preset."""
 
-    preset_name: str
-    user_prompt: str
+    preset_name: str = Field(max_length=100)
+    user_prompt: str = Field(max_length=MAX_PROMPT_CHARS)
 
 
 class ApplyStyleResponse(BaseModel):

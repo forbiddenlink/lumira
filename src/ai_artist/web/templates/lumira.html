@@ -3395,10 +3395,16 @@
       // studio never locks up on a hung/never-returning backend.
       var LUMIRA_GENERATION_TIMEOUT_MS = 120000;
 
+      // Every caller is an owner-only write, so ask for the key here, at the
+      // first action that needs it, instead of on page load.
       function lumiraApiHeaders(extra) {
         var headers = Object.assign({ "Content-Type": "application/json" }, extra || {});
         if (_authRequired) {
           var key = sessionStorage.getItem("lumira_api_key");
+          if (!key) {
+            key = window.prompt("This action needs the studio key:");
+            if (key) sessionStorage.setItem("lumira_api_key", key);
+          }
           if (key) headers["X-API-Key"] = key;
         }
         return headers;
@@ -4372,7 +4378,7 @@
       }
 
       function forceEvolve() {
-        fetch("/api/lumira/evolve", { method: "POST" })
+        fetch("/api/lumira/evolve", { method: "POST", headers: lumiraApiHeaders() })
           .then(function (res) {
             return res.json();
           })
@@ -5794,6 +5800,11 @@
                   addLog("LUMIRA", "Opened share intent with her voice");
                   return null;
                 }
+                // Publishes to every connected account at once: confirm first.
+                if (!window.confirm("Post this artwork to " + configured.join(", ") + " now?")) {
+                  addLog("LUMIRA", "Social post cancelled");
+                  return null;
+                }
                 return fetch("/api/lumira/social/post", {
                   method: "POST",
                   headers: lumiraApiHeaders(),
@@ -6249,10 +6260,6 @@
                 "SYSTEM",
                 "I can think and remember. Making a new piece is locked until this studio has a key.",
               );
-            }
-            if (_authRequired && !sessionStorage.getItem("lumira_api_key")) {
-              var key = window.prompt("Enter API key for generation:");
-              if (key) sessionStorage.setItem("lumira_api_key", key);
             }
           })
           .catch(function () {});

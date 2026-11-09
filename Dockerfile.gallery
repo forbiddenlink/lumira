@@ -57,14 +57,13 @@ ENV PYTHONPATH=/app/src
 ENV PYTHONUNBUFFERED=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends gosu && rm -rf /var/lib/apt/lists/* \
-    && echo '#!/bin/sh\n\
-mkdir -p /app/gallery/2026 || true\n\
-chown -R aiartist:aiartist /app/gallery 2>/dev/null || true\n\
-exec gosu aiartist "$@"' > /app/entrypoint.sh \
-    && chmod +x /app/entrypoint.sh
+    && install -m 0755 scripts/docker-entrypoint-gallery.sh /app/entrypoint.sh
 
 EXPOSE 8000
 
 ENTRYPOINT ["/app/entrypoint.sh"]
 
+# No --proxy-headers: trusting every hop's X-Forwarded-For lets a client
+# forge its IP. rate_limit.client_ip reads the rightmost entry instead, which
+# Railway's edge appends and the client cannot set.
 CMD ["sh", "-c", "uvicorn ai_artist.web.app:app --host 0.0.0.0 --port ${PORT:-8000}"]

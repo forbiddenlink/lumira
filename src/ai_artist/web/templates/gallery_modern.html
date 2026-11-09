@@ -3744,7 +3744,7 @@
     </button>
 
     <!-- Toast notification -->
-    <div class="toast" id="toast"></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <!-- Keyboard shortcuts help modal -->
     <div
@@ -4184,10 +4184,17 @@
           if (!configured.length && avail.configured) {
             configured = Object.keys(avail.configured).filter(function(k){ return !!avail.configured[k]; });
           }
-          if (configured.length) {
+          var canPost = !_authRequired || !!sessionStorage.getItem('lumira_api_key');
+          // Posting publishes to every connected account at once, so the owner
+          // confirms each time; cancelling falls through to the link share.
+          if (
+            configured.length &&
+            canPost &&
+            window.confirm('Post this artwork to ' + configured.join(', ') + ' now?')
+          ) {
             var res = await fetch('/api/lumira/social/post', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: lumiraApiHeaders(),
               body: JSON.stringify({
                 artwork_id: image.filename,
                 image_path: image.path,
@@ -4200,7 +4207,7 @@
             var data = await res.json();
             if (!res.ok) throw new Error(data.detail || 'Post failed');
             var ok = (data.successful_platforms || []).join(', ') || 'posted';
-            alert('Shared as Lumira: ' + ok);
+            showToast('Shared as Lumira: ' + ok);
             return;
           }
         } catch (e) {
@@ -4303,7 +4310,7 @@
               updateModalContent();
             }
           } else {
-            alert('Could not record love — try again.');
+            showToast('Could not record love. Try again.', 'error');
           }
         } catch (e) {
           console.warn('love failed', e);
@@ -4318,7 +4325,7 @@
         try {
           const res = await fetch('/api/lumira/video', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: lumiraWriteHeaders(),
             body: JSON.stringify({
               prompt: image.prompt || 'cinematic motion of the artwork',
               mood: (image.metadata && image.metadata.mood) || window._lumiraMood || null,
@@ -4332,7 +4339,7 @@
           image.metadata.video_url = data.url;
           if (typeof updateModalContent === 'function') updateModalContent();
         } catch (e) {
-          alert('Animate failed: ' + e.message);
+          showToast('Animate failed: ' + e.message, 'error');
         } finally {
           if (btn) { btn.disabled = false; btn.innerHTML = '<span>▶</span> Animate'; }
         }
@@ -6448,7 +6455,7 @@
         try {
           const resp = await fetch("/api/lumira/request", {
             method: "POST",
-            headers: lumiraApiHeaders(),
+            headers: lumiraWriteHeaders(),
             body: JSON.stringify(body),
           });
 
@@ -6805,14 +6812,20 @@
         return headers;
       }
 
+      // Ask for the key only when the visitor starts an owner-only action,
+      // never on page load: the gallery is public.
+      function lumiraWriteHeaders(extra) {
+        if (_authRequired && !sessionStorage.getItem("lumira_api_key")) {
+          var key = window.prompt("This action needs the studio key:");
+          if (key) sessionStorage.setItem("lumira_api_key", key);
+        }
+        return lumiraApiHeaders(extra);
+      }
+
       fetch("/api/auth-mode")
         .then(function (res) { return res.json(); })
         .then(function (data) {
           _authRequired = !!data.auth_required;
-          if (_authRequired && !sessionStorage.getItem("lumira_api_key")) {
-            var key = window.prompt("Enter API key to create artwork:");
-            if (key) sessionStorage.setItem("lumira_api_key", key);
-          }
         })
         .catch(function () {});
 
@@ -7085,7 +7098,7 @@
         const cancelBtn = document.getElementById("cancel-btn");
         if (cancelBtn) cancelBtn.disabled = true;
 
-        fetch(`/api/cancel/${sessionId}`, { method: "POST" })
+        fetch(`/api/cancel/${sessionId}`, { method: "POST", headers: lumiraApiHeaders() })
           .then(function (res) {
             if (!res.ok) {
               return res.json().then(function (err) {
