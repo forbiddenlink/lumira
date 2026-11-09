@@ -20,6 +20,11 @@ if [ -d "$PERSIST" ]; then
         [ -L "/app/$d" ] || ln -s "$PERSIST/$d" "/app/$d"
     done
     chown -R aiartist:aiartist "$PERSIST"
+    # Proof in the deploy log that state lives on the volume, since SSH into
+    # the container is not always reachable.
+    echo "volume: data -> $(readlink /app/data) ($(ls "$PERSIST/data" | wc -l) files), gallery -> $(readlink /app/gallery)"
+else
+    echo "volume: none mounted at $PERSIST; data and gallery are ephemeral"
 fi
 
 mkdir -p /app/gallery /app/data
