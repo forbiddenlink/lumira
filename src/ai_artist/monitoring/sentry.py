@@ -4,6 +4,7 @@ Provides automatic error tracking, performance monitoring, and alerting.
 Only activates if SENTRY_DSN is configured.
 """
 
+import logging
 from typing import Any
 
 from ..utils.logging import get_logger
@@ -58,8 +59,10 @@ def init_sentry(
                 AsyncioIntegration(),
                 SqlalchemyIntegration(),
                 LoggingIntegration(
-                    level=None,  # Capture all log levels
-                    event_level="error",  # Only send errors and above as events
+                    level=logging.INFO,  # Breadcrumbs from INFO and above
+                    # Must be a logging int: the string "error" raises
+                    # "Unknown level" and aborts init.
+                    event_level=logging.ERROR,
                 ),
             ],
             # Additional options
