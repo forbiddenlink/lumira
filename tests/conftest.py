@@ -30,3 +30,22 @@ def _default_dev_mode_web_config():
 
     set_web_config(WebConfig(dev_mode=True))
     yield
+
+
+# app.py calls load_dotenv() at import, so a developer's real provider keys
+# reach the test process. Paths that only check "is a key set" (for example
+# continuity.maybe_pair_video, which the CLI create flow calls with
+# enabled=True) would then start real, billed Magica/Replicate runs and hang
+# the test on a 900s poll. Tests that need a key set a fake one themselves.
+_PAID_PROVIDER_KEYS = (
+    "MAGICA_API_KEY",
+    "REPLICATE_API_TOKEN",
+    "ANTHROPIC_API_KEY",
+    "OPENAI_API_KEY",
+)
+
+
+@pytest.fixture(autouse=True)
+def _no_real_provider_keys(monkeypatch):
+    for name in _PAID_PROVIDER_KEYS:
+        monkeypatch.delenv(name, raising=False)
