@@ -46,7 +46,7 @@ services:
 
   # FalkorDB for graph memory (institutional knowledge)
   falkordb:
-    image: falkordb/falkordb:latest@sha256:725b74d400124862c9e0f318c56bfb3c55b97cd7f301d9dfe8685980fb3c8195
+    image: falkordb/falkordb:latest@sha256:bef8acb1d8ed9ff8d2ea251767e75c6c05cfa759f7c6bc7e1c122f27d0ea4d7f
     volumes:
       - falkordb_data:/data
     deploy:
