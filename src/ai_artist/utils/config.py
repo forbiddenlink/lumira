@@ -239,8 +239,21 @@ class WebConfig(BaseModel):
         dev_mode = (
             os.getenv("LUMIRA_DEV_MODE", "").lower() in ("1", "true", "yes") or debug
         )
+        # dev_mode is an auth bypass. Never honor it on Railway, where a
+        # stray DEBUG=true would open every generation and admin route.
+        if dev_mode and running_on_railway():
+            dev_mode = False
 
         return cls(api_keys=api_keys, debug=debug, dev_mode=dev_mode)
+
+
+def running_on_railway() -> bool:
+    """True inside a Railway deployment (Railway injects these variables)."""
+    import os
+
+    return bool(
+        os.getenv("RAILWAY_ENVIRONMENT_NAME") or os.getenv("RAILWAY_ENVIRONMENT")
+    )
 
 
 class ObservabilityConfig(BaseModel):
@@ -259,6 +272,18 @@ class ObservabilityConfig(BaseModel):
     # Performance monitoring
     enable_performance_logging: bool = True
     log_slow_operations_threshold: float = 1.0  # seconds
+
+    @classmethod
+    def from_env(cls) -> "ObservabilityConfig":
+        """Build from SENTRY_* env vars, for deploys that ship no config.yaml."""
+        import os
+
+        dsn = os.getenv("SENTRY_DSN")
+        default_env = "production" if running_on_railway() else "development"
+        return cls(
+            sentry_dsn=SecretStr(dsn) if dsn else None,
+            sentry_environment=os.getenv("SENTRY_ENVIRONMENT", default_env),
+        )
 
 
 class Config(BaseSettings):

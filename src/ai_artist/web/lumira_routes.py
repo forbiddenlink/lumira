@@ -30,7 +30,7 @@ from ..utils.config import load_config
 from ..utils.logging import get_logger
 from ..utils.negative_prompts import get_negative_prompt_library
 from ..utils.prompt_quality import is_trivial_prompt, normalize_prompt_key
-from .dependencies import GenerationAuthDep
+from .dependencies import GenerationAuthDep, get_web_config, require_api_key
 from .generation_registry import (
     generation_semaphore,
     notify_cancelled,
@@ -379,8 +379,16 @@ async def run_scheduled_autonomous_create() -> None:
 
         port = os.getenv("PORT") or os.getenv("LUMIRA_PORT") or "8780"
         base = f"http://127.0.0.1:{port}"
+        # /create is key-gated; the loopback call authenticates like any
+        # client instead of exempting localhost.
+        headers: dict[str, str] = {}
+        keys = get_web_config().api_keys
+        if keys:
+            headers["X-API-Key"] = keys[0].get_secret_value()
         async with httpx.AsyncClient(timeout=600.0) as client:
-            resp = await client.post(f"{base}/api/lumira/create", json={})
+            resp = await client.post(
+                f"{base}/api/lumira/create", json={}, headers=headers
+            )
             if resp.status_code >= 400:
                 raise RuntimeError(
                     f"create failed: {resp.status_code} {resp.text[:200]}"
@@ -1788,7 +1796,7 @@ async def create_artwork(
                     now = datetime.now()
                     date_path = gallery_path / now.strftime("%Y/%m/%d") / "archive"
                     date_path.mkdir(parents=True, exist_ok=True)
-                    filename = f"{now.strftime('%Y%m%d_%H%M%S')}_noseed.png"
+                    filename = f"{now.strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}_noseed.png"
                     save_path = date_path / filename
 
                     # Save the image file
@@ -2124,7 +2132,9 @@ async def create_artwork(
 
 @router.post("/evolve", response_model=LumiraEvolveResponse)
 @limiter.limit("10/minute")
-async def evolve_state(request: Request) -> LumiraEvolveResponse:
+async def evolve_state(
+    request: Request, _auth: GenerationAuthDep
+) -> LumiraEvolveResponse:
     """Force Lumira's state to evolve."""
     state = _get_lumira_state()
     mood_system = state["mood_system"]
@@ -2368,7 +2378,7 @@ async def user_request_creation(
                     now = datetime.now()
                     date_path = gallery_path / now.strftime("%Y/%m/%d") / "archive"
                     date_path.mkdir(parents=True, exist_ok=True)
-                    filename = f"{now.strftime('%Y%m%d_%H%M%S')}_noseed.png"
+                    filename = f"{now.strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}_noseed.png"
                     save_path = date_path / filename
 
                     images[0].save(save_path)
@@ -3346,9 +3356,16 @@ async def get_hierarchical_artist_statement(
     # Check if we have a recent statement
     latest = reflection_system.get_latest_artist_statement()
 
+    if regenerate:
+        # The route is public; forcing a fresh (LLM-backed, appended) statement
+        # is an owner action.
+        require_api_key(request.headers.get("X-API-Key"))
+
     if latest is None or regenerate:
-        # Generate a new statement
-        statement = reflection_system.generate_artist_statement(memory_system=memory)
+        # Generate a new statement off the event loop: it may call the LLM.
+        statement = await asyncio.to_thread(
+            reflection_system.generate_artist_statement, memory_system=memory
+        )
     else:
         statement = latest
 
@@ -3576,7 +3593,9 @@ async def get_job_status(request: Request, job_id: str) -> JobStatusResponse:
 
 @router.delete("/job/{job_id}")
 @limiter.limit("30/minute")
-async def cancel_job(request: Request, job_id: str) -> dict[str, Any]:
+async def cancel_job(
+    request: Request, job_id: str, _auth: GenerationAuthDep
+) -> dict[str, Any]:
     """Cancel a queued job.
 
     Only queued jobs can be cancelled. Jobs that are already started
@@ -3790,7 +3809,7 @@ async def list_reference_images(
 @router.delete("/reference-image/{reference_id}", response_model=None)
 @limiter.limit("10/minute")
 async def delete_reference_image(
-    request: Request, reference_id: str
+    request: Request, reference_id: str, _auth: GenerationAuthDep
 ) -> JSONResponse | dict[str, Any]:
     """Delete a reference image.
 
@@ -3998,7 +4017,7 @@ async def create_with_reference(
                     now = datetime.now()
                     date_path = gallery_path / now.strftime("%Y/%m/%d") / "archive"
                     date_path.mkdir(parents=True, exist_ok=True)
-                    filename = f"{now.strftime('%Y%m%d_%H%M%S')}_ref.png"
+                    filename = f"{now.strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}_ref.png"
                     save_path = date_path / filename
 
                     images[0].save(save_path)

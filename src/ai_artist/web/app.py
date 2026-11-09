@@ -259,6 +259,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
         alembic_cfg = Config("alembic.ini")
         alembic_cfg.set_main_option("sqlalchemy.url", f"sqlite:///{db_path}")
+        # Keep alembic.ini's logging config away from the running server; it
+        # would disable uvicorn's already-created loggers.
+        alembic_cfg.attributes["configure_logger"] = False
         alembic_upgrade(alembic_cfg, "head")
         logger.info("database_migrated", db_path=str(db_path))
     except Exception as e:
@@ -276,7 +279,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # Try to load web config from config file or environment
     try:
-        from ..utils.config import load_config
+        from ..utils.config import (
+            ObservabilityConfig,
+            load_config,
+            running_on_railway,
+        )
 
         config_path = Path("config/config.yaml")
         if config_path.exists():
@@ -286,15 +293,21 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         else:
             # Load from environment variables (e.g., RAILWAY_API_KEY)
             web_config = WebConfig.from_env()
-            observability_config = None
+            observability_config = ObservabilityConfig.from_env()
 
         # Env override takes precedence over file config for the dev-mode
         # toggle: an operator (or the test harness) can enable the
         # unauthenticated dev bypass via LUMIRA_DEV_MODE without editing YAML.
         import os as _os
 
-        if _os.getenv("LUMIRA_DEV_MODE", "").lower() in ("1", "true", "yes"):
+        if (
+            _os.getenv("LUMIRA_DEV_MODE", "").lower() in ("1", "true", "yes")
+            and not running_on_railway()
+        ):
             web_config = web_config.model_copy(update={"dev_mode": True})
+        elif web_config.dev_mode and running_on_railway():
+            # A config.yaml with dev_mode: true must not open prod either.
+            web_config = web_config.model_copy(update={"dev_mode": False})
 
         set_web_config(web_config)
         logger.info(
@@ -1887,7 +1900,9 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
 
 
 @app.post("/api/cancel/{session_id}", tags=["generation"])
-async def cancel_generation(session_id: str) -> dict[str, Any]:
+async def cancel_generation(
+    session_id: str, _api_key: str = Depends(require_api_key)
+) -> dict[str, Any]:
     """Cancel an in-flight image generation by session ID."""
     from .generation_registry import cancel, is_active
 

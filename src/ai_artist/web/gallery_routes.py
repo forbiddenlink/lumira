@@ -23,7 +23,7 @@ from ..db.models import (
 )
 from ..db.session import get_db
 from ..utils.logging import get_logger
-from .dependencies import GalleryPathDep
+from .dependencies import GalleryPathDep, GenerationAuthDep
 from .rate_limit import RATE_LIMIT_ENABLED
 
 logger = get_logger(__name__)
@@ -172,6 +172,12 @@ def _sanitize_text(text: str) -> str:
         return html.escape(text)
 
 
+def _refuse_rejected(image: GeneratedImage) -> None:
+    """Publishing is public, so it must never surface work the curator rejected."""
+    if image.status == "rejected":
+        raise HTTPException(status_code=404, detail="Image not found")
+
+
 def _resolve_image_for_publish(
     db: Session,
     gallery_path: str,
@@ -183,6 +189,7 @@ def _resolve_image_for_publish(
         image = db.query(GeneratedImage).filter(GeneratedImage.id == image_id).first()
         if not image:
             raise HTTPException(status_code=404, detail="Image not found")
+        _refuse_rejected(image)
         return cast(GeneratedImage, image)
 
     if not path:
@@ -243,6 +250,7 @@ def _resolve_image_for_publish(
         db.add(image)
         db.flush()
 
+    _refuse_rejected(image)
     return cast(GeneratedImage, image)
 
 
@@ -700,6 +708,7 @@ async def unpublish_from_gallery(
     request: Request,
     share_id: str,
     db: DbSession,
+    _auth: GenerationAuthDep,
 ) -> dict[str, Any]:
     """Remove an image from the public gallery (make private)."""
     image = (
@@ -769,10 +778,10 @@ async def get_gallery_stats(
 class CollectionCreate(BaseModel):
     """Request to create a collection."""
 
-    name: str
-    description: str | None = None
-    theme: str | None = None
-    artwork_ids: list[int] = Field(default_factory=list)
+    name: str = Field(min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=2000)
+    theme: str | None = Field(default=None, max_length=200)
+    artwork_ids: list[int] = Field(default_factory=list, max_length=500)
 
 
 class CollectionResponse(BaseModel):
@@ -850,6 +859,7 @@ async def create_collection(
     request: Request,
     collection_req: CollectionCreate,
     db: DbSession,
+    _auth: GenerationAuthDep,
 ) -> CollectionResponse:
     """Create a new collection."""
     # Create collection

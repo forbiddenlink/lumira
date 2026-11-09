@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from ai_artist.db.models import GeneratedImage, UserFeedback
 from ai_artist.db.session import get_db
 from ai_artist.learning import FeedbackSignal, get_adaptive_learner
+from ai_artist.personality.moods import Mood
 
 from .rate_limit import RATE_LIMIT_ENABLED
 
@@ -89,15 +90,39 @@ async def submit_feedback(
                 detail=f"Invalid action. Must be one of: {valid_actions}",
             )
 
-        # Create feedback signal for adaptive learner (JSON-based, existing system)
-        signal = FeedbackSignal(
-            artwork_id=feedback.artwork_id,
-            user_action=feedback.action,
-            generation_params=feedback.generation_params or {},
-            prompt=feedback.prompt or "",
-            model_id=feedback.model_id or "unknown",
-            mood=feedback.mood,
+        # This route is anonymous, and the learner's favourite model and params
+        # feed back into what Lumira generates next. So model, params and prompt
+        # come from the server's own record of the artwork, never the request;
+        # an artwork we have no record of teaches only its mood.
+        art_row = (
+            db.query(GeneratedImage)
+            .filter(GeneratedImage.filename == feedback.artwork_id)
+            .first()
         )
+        known_moods = {m.value for m in Mood}
+        mood = feedback.mood if feedback.mood in known_moods else None
+        if art_row is not None:
+            row_params = art_row.generation_params or {}
+            row_mood = row_params.get("mood")
+            if isinstance(row_mood, str) and row_mood in known_moods:
+                mood = row_mood
+            signal = FeedbackSignal(
+                artwork_id=feedback.artwork_id,
+                user_action=feedback.action,
+                generation_params=row_params,
+                prompt=art_row.prompt or "",
+                model_id=art_row.model_id or "unknown",
+                mood=mood,
+            )
+        else:
+            signal = FeedbackSignal(
+                artwork_id=feedback.artwork_id,
+                user_action=feedback.action,
+                generation_params={},
+                prompt="",
+                model_id="unknown",
+                mood=mood,
+            )
 
         learner = get_adaptive_learner()
         learner.record_feedback(signal)
@@ -105,14 +130,7 @@ async def submit_feedback(
         # Also persist to DB for SQL-queryable analytics
         try:
             # Resolve DB artwork id from filename if possible
-            art_db_id = None
-            art_row = (
-                db.query(GeneratedImage)
-                .filter(GeneratedImage.filename == feedback.artwork_id)
-                .first()
-            )
-            if art_row:
-                art_db_id = art_row.id
+            art_db_id = art_row.id if art_row is not None else None
 
             # Determine signal value from action
             action_values = {
@@ -130,8 +148,8 @@ async def submit_feedback(
                 artwork_filename=feedback.artwork_id,
                 action=feedback.action,
                 signal_value=signal_value,
-                generation_params=feedback.generation_params or {},
-                mood=feedback.mood,
+                generation_params=signal.generation_params,
+                mood=mood,
                 session_id=feedback.session_id,
             )
             db.add(db_feedback)
