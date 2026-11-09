@@ -822,6 +822,7 @@ async def llms_txt(request: Request) -> PlainTextResponse:
 - [Creative Studio]({base_url}/lumira): Interactive studio — request creations, view mood, semantic search
 - [Monitoring]({base_url}/monitoring): Health and WebSocket metrics dashboard
 - [Privacy]({base_url}/privacy): Privacy policy and EU AI Act disclosure
+- [Terms]({base_url}/terms): Terms of use for the gallery, comments and studio
 
 ## API (read-only discovery)
 
@@ -869,6 +870,11 @@ async def sitemap_xml(request: Request) -> Response:
     </url>
     <url>
         <loc>{base_url}/privacy</loc>
+        <changefreq>monthly</changefreq>
+        <priority>0.4</priority>
+    </url>
+    <url>
+        <loc>{base_url}/terms</loc>
         <changefreq>monthly</changefreq>
         <priority>0.4</priority>
     </url>
@@ -1927,6 +1933,16 @@ async def privacy_page(request: Request) -> HTMLResponse:
         request,
         "privacy.html",
         {"title": "Privacy Policy | Lumira"},
+    )
+
+
+@app.get("/terms", response_class=HTMLResponse, tags=["pages"])
+async def terms_page(request: Request) -> HTMLResponse:
+    """Terms of use for the Lumira web gallery and studio."""
+    return templates.TemplateResponse(
+        request,
+        "terms.html",
+        {"title": "Terms of Use | Lumira"},
     )
 
 

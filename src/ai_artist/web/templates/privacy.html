@@ -240,9 +240,10 @@
 
       <h2>Third-party services</h2>
       <p>
-        Image generation may use cloud providers (e.g. Replicate) or local GPU
-        inference. API keys for those services are configured by the site
-        operator and are not exposed to visitors.
+        Image generation may use cloud providers (e.g. Magica or Replicate) or
+        local GPU inference. API keys for those services are configured by the
+        site operator and are not exposed to visitors. Server errors are
+        reported to Sentry for debugging, without IP addresses or cookies.
       </p>
 
       <h2>Data retention</h2>
@@ -267,6 +268,7 @@
     </main>
     <footer>
       <a href="/">← Back to gallery</a>
+      <a href="/terms">Terms of use</a>
     </footer>
   </body>
 </html>
