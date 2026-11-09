@@ -728,6 +728,25 @@ def unpublish_from_gallery(
     return {"success": True, "message": "Image removed from public gallery"}
 
 
+@router.delete("/comments/{comment_id}")
+@limiter.limit("30/minute")
+def delete_comment(
+    request: Request,
+    comment_id: int,
+    db: DbSession,
+    _auth: GenerationAuthDep,
+) -> dict[str, Any]:
+    """Remove a comment. Owner only: comments are public and anonymous."""
+    comment = db.query(GalleryComment).filter(GalleryComment.id == comment_id).first()
+    if not comment:
+        raise HTTPException(status_code=404, detail="Comment not found")
+
+    db.delete(comment)
+    db.commit()
+    logger.info("comment_deleted", comment_id=comment_id)
+    return {"success": True, "message": "Comment deleted"}
+
+
 @router.get("/stats")
 @limiter.limit("30/minute")
 def get_gallery_stats(
