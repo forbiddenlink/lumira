@@ -163,3 +163,51 @@ def test_owner_can_delete_comment(client, auth_enabled, tmp_path, monkeypatch):
         == 404
     )
     monkeypatch.setattr(db_session_module, "_session_factory", None)
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"text": "cheap pills at https://spam.example"},
+        {"text": "visit www.spam.example"},
+        {"text": "nice", "display_name": "http://spam.example"},
+        {"text": "child porn"},
+    ],
+)
+def test_comment_filter_rejects_spam_and_illegal(client, tmp_path, monkeypatch, body):
+    from ai_artist.db import session as db_session_module
+    from ai_artist.db.models import Base, GalleryComment, GeneratedImage
+    from ai_artist.db.session import create_session_factory, set_session_factory
+
+    monkeypatch.setattr(db_session_module, "_session_factory", None)
+    factory = create_session_factory(tmp_path / "f.db")
+    Base.metadata.create_all(factory.kw["bind"])
+    set_session_factory(factory)
+    with factory() as s:
+        s.add(
+            GeneratedImage(
+                filename="g/x.png",
+                prompt="p",
+                model_id="m",
+                tags=[],
+                share_id="pub1",
+                is_public=True,
+            )
+        )
+        s.commit()
+
+    r = client.post("/api/gallery/image/pub1/comment", json=body)
+    assert r.status_code == 422, r.text
+    with factory() as s:
+        assert s.query(GalleryComment).count() == 0
+
+    ok = client.post("/api/gallery/image/pub1/comment", json={"text": "lovely blues"})
+    assert ok.status_code == 200, ok.text
+    monkeypatch.setattr(db_session_module, "_session_factory", None)
+
+
+def test_terms_page_renders(client):
+    r = client.get("/terms")
+    assert r.status_code == 200
+    assert "Terms of Use" in r.text
+    assert "/terms" in client.get("/sitemap.xml").text

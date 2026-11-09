@@ -1,6 +1,7 @@
 """Community Gallery API routes - public sharing, likes, comments."""
 
 import json
+import re
 import secrets
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -169,6 +170,24 @@ def _sanitize_text(text: str) -> str:
         import html  # noqa: PLC0415
 
         return html.escape(text)
+
+
+# Anonymous comments with links are almost always spam, and nobody reviews
+# them before they are public.
+_LINK_PATTERN = re.compile(r"(https?://|www\.)", re.IGNORECASE)
+
+
+def _comment_rejection(*fields: str) -> str | None:
+    """Return why a comment is refused, or None when it may be stored."""
+    from ..core.moderation import check_prompt  # noqa: PLC0415
+
+    for field in fields:
+        if _LINK_PATTERN.search(field):
+            return "Comments cannot contain links."
+        allowed, _reason = check_prompt(field)
+        if not allowed:
+            return "This comment was blocked by the content filter."
+    return None
 
 
 def _refuse_rejected(image: GeneratedImage) -> None:
@@ -532,6 +551,10 @@ def add_comment(
 ) -> CommentResponse:
     """Add a comment to an image."""
     session_id = get_session_id(request)
+
+    rejection = _comment_rejection(comment.text, comment.display_name)
+    if rejection:
+        raise HTTPException(status_code=422, detail=rejection)
 
     image = (
         db.query(GeneratedImage)
