@@ -36,6 +36,45 @@ except ImportError:
     Retry = None  # type: ignore[misc, assignment]
 
 
+def _resolve_backend(params: dict[str, Any]) -> str:
+    """Backend the worker will use: the job's own, else config.yaml's."""
+    if params.get("backend"):
+        return str(params["backend"]).lower()
+    try:
+        from pathlib import Path
+
+        from ..utils.config import load_config
+
+        config_path = Path("config/config.yaml")
+        if config_path.exists():
+            return load_config(config_path).model.backend.lower()
+    except Exception as e:
+        # Unknown backend: treat as paid so a broken config never re-bills.
+        logger.warning("retry_backend_unresolved", error=str(e))
+        return "unknown"
+    return "local"
+
+
+def _max_retries_for(params: dict[str, Any]) -> int:
+    """Retries for one job. Paid cloud backends get none by default.
+
+    A cloud job can fail after the provider has already charged for the
+    image (timeout while polling, a save error), so an automatic retry pays
+    again for the same request. LUMIRA_JOB_RETRY_PAID=1 opts back in.
+    """
+    max_retries = int(os.getenv("LUMIRA_JOB_MAX_RETRIES", "3"))
+    backend = _resolve_backend(params)
+    if backend != "local" and os.getenv("LUMIRA_JOB_RETRY_PAID", "").lower() not in (
+        "1",
+        "true",
+        "yes",
+    ):
+        if max_retries > 0:
+            logger.info("job_retry_disabled_paid_backend", backend=backend)
+        return 0
+    return max_retries
+
+
 class JobPriority(str, Enum):
     """Job priority levels."""
 
@@ -240,7 +279,7 @@ class GenerationQueue:
             # rq.Retry may be missing/differently-shaped on older RQ. Set
             # LUMIRA_JOB_MAX_RETRIES=0 to disable.
             if Retry is not None:
-                max_retries = int(os.getenv("LUMIRA_JOB_MAX_RETRIES", "3"))
+                max_retries = _max_retries_for(params)
                 if max_retries > 0:
                     intervals = [min(10 * (2**i), 300) for i in range(max_retries)]
                     try:
