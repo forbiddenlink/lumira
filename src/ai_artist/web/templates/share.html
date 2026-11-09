@@ -42,6 +42,7 @@
         --text: #ebe4d8;
         --muted: #9a9084;
         --accent: #c4a574;
+        --danger: #d4646a;
         --border: color-mix(in oklab, #ebe4d8 10%, transparent);
         --font-display: "Fraunces", Georgia, serif;
         --font-ui: "Figtree", system-ui, sans-serif;
@@ -375,6 +376,108 @@
         margin-right: auto;
         line-height: 1.6;
       }
+
+      /* Comments */
+      .comments {
+        margin-top: 48px;
+        padding: 32px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+      }
+      .comments h2 {
+        font-family: var(--font-display);
+        font-size: clamp(20px, 3vw, 26px);
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        margin-bottom: 20px;
+      }
+      .comment-form {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 28px;
+      }
+      .comment-form label {
+        display: block;
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+      .comment-form input,
+      .comment-form textarea {
+        width: 100%;
+        font: inherit;
+        color: var(--text);
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 12px;
+      }
+      .comment-form textarea {
+        min-height: 88px;
+        resize: vertical;
+      }
+      .comment-form-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .comment-hint,
+      .comment-status {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .comment-status[data-state="error"] {
+        color: var(--danger);
+      }
+      .comment-list {
+        list-style: none;
+        display: grid;
+        gap: 16px;
+      }
+      .comment {
+        border-top: 1px solid var(--border);
+        padding-top: 16px;
+      }
+      .comment-head {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+      .comment-author {
+        color: var(--text);
+        font-weight: 600;
+      }
+      .comment-text {
+        line-height: 1.6;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      .comment-delete,
+      .comment-owner {
+        margin-left: auto;
+        min-height: 24px;
+        min-width: 24px;
+        background: none;
+        border: 0;
+        color: var(--muted);
+        font: inherit;
+        font-size: 13px;
+        text-decoration: underline;
+        cursor: pointer;
+      }
+      .comment-delete:hover,
+      .comment-owner:hover {
+        color: var(--accent);
+      }
+      .comment-owner {
+        margin-top: 20px;
+      }
     </style>
   </head>
   <body>
@@ -482,6 +585,28 @@
         </div>
       </div>
 
+      <section class="comments" aria-labelledby="comments-heading">
+        <h2 id="comments-heading">Comments</h2>
+        <form class="comment-form" id="comment-form" novalidate>
+          <div>
+            <label for="comment-name">Name (optional)</label>
+            <input id="comment-name" name="display_name" maxlength="50" autocomplete="nickname" />
+          </div>
+          <div>
+            <label for="comment-text">Comment</label>
+            <textarea id="comment-text" name="text" maxlength="500" required></textarea>
+          </div>
+          <div class="comment-form-row">
+            <span class="comment-hint">Public and anonymous. No links. See the <a href="/terms" style="color:inherit;">terms</a>.</span>
+            <button type="submit" class="btn btn-primary">Post comment</button>
+          </div>
+          <p id="comment-status" class="comment-status" role="status" aria-live="polite"></p>
+        </form>
+        <ol class="comment-list" id="comment-list" aria-live="polite"></ol>
+        <p class="comment-hint" id="comment-empty" hidden>No comments yet.</p>
+        <button type="button" class="comment-owner" id="comment-owner">Moderate comments</button>
+      </section>
+
       <div class="cta-section">
         <h2>Lumira makes art with intention.</h2>
         <p>
@@ -523,6 +648,192 @@
             status.dataset.state = "error";
           }
         });
+      })();
+    </script>
+    <script nonce="{{ csp_nonce }}">
+      (function () {
+        var shareId = {{ share_id | tojson }};
+        var base = "/api/gallery";
+        var list = document.getElementById("comment-list");
+        var empty = document.getElementById("comment-empty");
+        var form = document.getElementById("comment-form");
+        var status = document.getElementById("comment-status");
+        var ownerBtn = document.getElementById("comment-owner");
+        var authRequired = true;
+        var ownerMode = false;
+
+        // Stored comments are HTML-escaped server-side. Decode to plain text,
+        // then render with textContent so nothing is ever parsed as markup.
+        function decode(s) {
+          return new DOMParser().parseFromString(s, "text/html").documentElement
+            .textContent;
+        }
+
+        function ownerKey() {
+          try {
+            return sessionStorage.getItem("lumira_api_key");
+          } catch (e) {
+            return null;
+          }
+        }
+
+        function setStatus(text, state) {
+          status.textContent = text;
+          status.dataset.state = state || "";
+        }
+
+        function render(comment) {
+          var li = document.createElement("li");
+          li.className = "comment";
+          li.dataset.id = comment.id;
+          var head = document.createElement("div");
+          head.className = "comment-head";
+          var who = document.createElement("span");
+          who.className = "comment-author";
+          who.textContent = decode(comment.display_name) || "Anonymous";
+          var when = document.createElement("time");
+          when.dateTime = comment.created_at;
+          when.textContent = new Date(comment.created_at).toLocaleDateString();
+          head.append(who, when);
+          if (ownerMode) {
+            var del = document.createElement("button");
+            del.type = "button";
+            del.className = "comment-delete";
+            del.textContent = "Delete";
+            del.setAttribute("aria-label", "Delete comment by " + who.textContent);
+            del.addEventListener("click", function () {
+              remove(comment.id, li, del);
+            });
+            head.append(del);
+          }
+          var text = document.createElement("p");
+          text.className = "comment-text";
+          text.textContent = decode(comment.text);
+          li.append(head, text);
+          return li;
+        }
+
+        function load() {
+          fetch(base + "/image/" + encodeURIComponent(shareId) + "/comments?per_page=50")
+            .then(function (r) {
+              return r.ok ? r.json() : { comments: [] };
+            })
+            .then(function (data) {
+              list.replaceChildren.apply(list, data.comments.map(render));
+              empty.hidden = data.comments.length > 0;
+            })
+            .catch(function () {
+              empty.hidden = false;
+            });
+        }
+
+        function remove(id, li, button) {
+          var headers = {};
+          var key = ownerKey();
+          if (key) headers["X-API-Key"] = key;
+          button.disabled = true;
+          fetch(base + "/comments/" + id, { method: "DELETE", headers: headers })
+            .then(function (r) {
+              if (r.ok || r.status === 404) {
+                li.remove();
+                empty.hidden = list.children.length > 0;
+                setStatus("Comment deleted.");
+                return;
+              }
+              button.disabled = false;
+              setStatus(
+                r.status === 401 || r.status === 403
+                  ? "That studio key was not accepted."
+                  : "Could not delete the comment.",
+                "error"
+              );
+              if (r.status === 401 || r.status === 403) {
+                try {
+                  sessionStorage.removeItem("lumira_api_key");
+                } catch (e) {}
+              }
+            })
+            .catch(function () {
+              button.disabled = false;
+              setStatus("Could not delete the comment.", "error");
+            });
+        }
+
+        form.addEventListener("submit", function (event) {
+          event.preventDefault();
+          var text = form.text.value.trim();
+          if (!text) {
+            setStatus("Write a comment first.", "error");
+            form.text.focus();
+            return;
+          }
+          var button = form.querySelector("button[type=submit]");
+          button.disabled = true;
+          fetch(base + "/image/" + encodeURIComponent(shareId) + "/comment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              text: text,
+              display_name: form.display_name.value.trim() || "Anonymous",
+            }),
+          })
+            .then(function (r) {
+              return r.json().then(function (body) {
+                return { ok: r.ok, status: r.status, body: body };
+              });
+            })
+            .then(function (res) {
+              if (res.ok) {
+                list.prepend(render(res.body));
+                empty.hidden = true;
+                form.text.value = "";
+                setStatus("Comment posted.");
+              } else if (res.status === 429) {
+                setStatus("Too many comments. Try again in a minute.", "error");
+              } else {
+                // The app error handler sends {error}; plain FastAPI sends {detail}.
+                var detail = res.body && (res.body.error || res.body.detail);
+                setStatus(
+                  typeof detail === "string" ? detail : "Could not post the comment.",
+                  "error"
+                );
+              }
+            })
+            .catch(function () {
+              setStatus("Could not post the comment.", "error");
+            })
+            .finally(function () {
+              button.disabled = false;
+            });
+        });
+
+        ownerBtn.addEventListener("click", function () {
+          if (authRequired && !ownerKey()) {
+            var key = window.prompt("Studio key, to delete comments:");
+            if (!key) return;
+            try {
+              sessionStorage.setItem("lumira_api_key", key);
+            } catch (e) {}
+          }
+          ownerMode = true;
+          ownerBtn.hidden = true;
+          load();
+        });
+
+        fetch("/api/auth-mode")
+          .then(function (r) {
+            return r.json();
+          })
+          .then(function (d) {
+            authRequired = !!d.auth_required;
+          })
+          .catch(function () {});
+
+        if (ownerKey()) {
+          ownerMode = true;
+          ownerBtn.hidden = true;
+        }
+        load();
       })();
     </script>
   </body>

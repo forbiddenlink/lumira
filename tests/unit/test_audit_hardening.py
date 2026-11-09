@@ -148,6 +148,7 @@ def test_owner_can_delete_comment(client, auth_enabled, tmp_path, monkeypatch):
         img = GeneratedImage(filename="g/x.png", prompt="p", model_id="m", tags=[])
         s.add(img)
         s.flush()
+        img.comment_count = 1
         s.add(GalleryComment(image_id=img.id, session_id="s", text="spam"))
         s.commit()
         cid = s.query(GalleryComment).one().id
@@ -156,6 +157,7 @@ def test_owner_can_delete_comment(client, auth_enabled, tmp_path, monkeypatch):
     assert r.status_code == 200, r.text
     with factory() as s:
         assert s.query(GalleryComment).count() == 0
+        assert s.query(GeneratedImage).one().comment_count == 0
     assert (
         client.delete(
             f"/api/gallery/comments/{cid}", headers={"X-API-Key": KEY}
@@ -211,3 +213,37 @@ def test_terms_page_renders(client):
     assert r.status_code == 200
     assert "Terms of Use" in r.text
     assert "/terms" in client.get("/sitemap.xml").text
+
+
+def test_share_page_has_comments_section(client, tmp_path, monkeypatch):
+    from ai_artist.db import session as db_session_module
+    from ai_artist.db.models import Base, GeneratedImage
+    from ai_artist.db.session import create_session_factory, set_session_factory
+
+    monkeypatch.setattr(db_session_module, "_session_factory", None)
+    factory = create_session_factory(tmp_path / "s.db")
+    Base.metadata.create_all(factory.kw["bind"])
+    set_session_factory(factory)
+    with factory() as s:
+        s.add(
+            GeneratedImage(
+                filename="g/x.png",
+                prompt="p",
+                model_id="m",
+                tags=[],
+                share_id="pub2",
+                is_public=True,
+            )
+        )
+        s.commit()
+    from ai_artist.gallery.manager import GalleryManager
+    from ai_artist.web.dependencies import set_gallery_manager
+
+    (tmp_path / "gallery").mkdir()
+    set_gallery_manager(GalleryManager(tmp_path / "gallery"), str(tmp_path / "gallery"))
+
+    r = client.get("/share/pub2")
+    assert r.status_code == 200
+    assert 'id="comment-form"' in r.text
+    assert 'var shareId = "pub2";' in r.text
+    monkeypatch.setattr(db_session_module, "_session_factory", None)
