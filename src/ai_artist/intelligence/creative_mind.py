@@ -149,7 +149,7 @@ class CreativeMind:
                     hint="pip install anthropic to enable LLM creative reasoning",
                 )
         else:
-            logger.info(
+            logger.warning(
                 "creative_mind_initialized_no_llm",
                 hint="Set ANTHROPIC_API_KEY to enable LLM creative reasoning",
             )

@@ -1391,7 +1391,7 @@ async def suggest_prompt(
             )
             suggestion = response.content[0].text.strip()
     except Exception as e:
-        logger.debug("suggest_prompt_llm_failed", error=str(e))
+        logger.warning("suggest_prompt_llm_failed", error=str(e))
 
     # Fallback to template
     if not suggestion:
