@@ -127,7 +127,7 @@ def main():
     parser.add_argument(
         "--railway-url",
         default=os.getenv(
-            "RAILWAY_URL", "https://lumira-production-3084.up.railway.app"
+            "RAILWAY_URL", "https://lumira-gallery-production.up.railway.app"
         ),
         help="Railway deployment URL",
     )

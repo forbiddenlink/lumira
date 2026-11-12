@@ -221,7 +221,7 @@ railway up
 railway logs
 
 # Check deployment status
-curl https://lumira-production-3084.up.railway.app/health
+curl https://lumira-gallery-production.up.railway.app/health
 ```
 
 **Railway Features:**
@@ -313,7 +313,7 @@ python scripts/train_all_loras.py
 
 ```bash
 # Set API key header
-curl -X POST https://lumira-production-3084.up.railway.app/api/admin/upload-image \
+curl -X POST https://lumira-gallery-production.up.railway.app/api/admin/upload-image \
   -H "X-API-Key: your-api-key" \
   -F "image=@/path/to/image.png" \
   -F "metadata={\"prompt\":\"A beautiful sunset\"}"
