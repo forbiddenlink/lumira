@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field
 
-from ..core.spend_guard import guarded_messages_create
+from ..core.spend_guard import guarded_messages_create, response_text
 from ..utils.logging import get_logger
 
 if TYPE_CHECKING:
@@ -680,7 +680,7 @@ Write naturally, not formally. Example tone: "Today I found myself drawn to..."
                 max_tokens=200,
                 messages=[{"role": "user", "content": prompt}],
             )
-            text: str = response.content[0].text.strip()
+            text: str = response_text(response)
             return text
         except Exception as e:
             logger.warning("llm_session_narrative_failed", error=str(e))
@@ -733,7 +733,7 @@ Write authentically as Lumira - an AI that genuinely creates and feels.
                 max_tokens=800,
                 messages=[{"role": "user", "content": prompt}],
             )
-            text = response.content[0].text.strip()
+            text = response_text(response)
             # Parse JSON
             if text.startswith("```"):
                 lines = text.split("\n")

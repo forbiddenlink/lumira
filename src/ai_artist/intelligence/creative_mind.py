@@ -18,7 +18,11 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from ..core.spend_guard import guarded_messages_create, guarded_messages_parse
+from ..core.spend_guard import (
+    guarded_messages_create,
+    guarded_messages_parse,
+    response_text,
+)
 from ..utils.logging import get_logger
 from .desire_engine import DesireEngine, get_desire_engine
 from .narrative_engine import NarrativeEngine, get_narrative_engine
@@ -283,7 +287,7 @@ class CreativeMind:
                 max_tokens=200,
                 messages=messages,
             )
-            text: str = response.content[0].text.strip()
+            text: str = response_text(response)
             return text
         except Exception as e:
             logger.warning("llm_reflection_failed", error=str(e))
