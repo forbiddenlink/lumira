@@ -35,3 +35,7 @@ sentry-sdk[fastapi]>=2.0.0
 
 # Cloud image generation (no local GPU needed)
 replicate>=1.0.0
+
+# Claude: creative intent, reflection, prompt suggestions. Without it every
+# LLM path silently falls back to templates.
+anthropic>=0.84.0
