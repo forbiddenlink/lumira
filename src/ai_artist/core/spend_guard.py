@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import os
 import threading
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
@@ -358,13 +359,28 @@ def guarded_messages_create(client: Any, **kwargs: Any) -> Any:
     """Wrap Anthropic ``client.messages.create`` with kill switch, budget check,
     and usage logging. Drop-in for ``client.messages.create(**kwargs)``.
     """
+    return _guarded_call(client.messages.create, kwargs)
+
+
+def guarded_messages_parse(client: Any, **kwargs: Any) -> Any:
+    """Same guard for ``client.messages.parse`` (structured outputs).
+
+    Drop-in for ``client.messages.parse(**kwargs)``; the response carries the
+    validated Pydantic object in ``parsed_output``.
+    """
+    return _guarded_call(client.messages.parse, kwargs)
+
+
+def _guarded_call(call: Callable[..., Any], kwargs: dict[str, Any]) -> Any:
+    """Run one Anthropic Messages call under the kill switch and daily budget,
+    then settle the reservation against the real token usage."""
     model = kwargs.get("model", "default")
     # Pre-call: kill switch + budget check using max_tokens as an output ceiling.
     max_tokens = int(kwargs.get("max_tokens", 1024))
     pre_estimate = estimate_llm_cost_usd(max_tokens, max_tokens, model)
     reservation = _reserve_budget("llm", 0, 0, pre_estimate)
 
-    response = client.messages.create(**kwargs)
+    response = call(**kwargs)
 
     # Unknown usage (including failed calls) retains the estimate conservatively.
     usage = getattr(response, "usage", None)

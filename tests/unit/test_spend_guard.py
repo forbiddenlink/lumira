@@ -245,3 +245,21 @@ def test_concurrent_fallback_reservations_obey_shared_budget(sg, monkeypatch):
     with ThreadPoolExecutor(max_workers=8) as pool:
         assert sum(pool.map(reserve, range(20))) == 4
     assert sg.current_spend_usd() == 1.0
+
+
+def test_parse_goes_through_the_same_budget_guard(sg):
+    from types import SimpleNamespace
+    from unittest.mock import Mock
+
+    response = SimpleNamespace(
+        usage=SimpleNamespace(input_tokens=10, output_tokens=10), parsed_output="x"
+    )
+    client = SimpleNamespace(
+        messages=SimpleNamespace(create=Mock(), parse=Mock(return_value=response))
+    )
+    assert sg.guarded_messages_parse(client, max_tokens=100, output_format=str) is (
+        response
+    )
+    client.messages.parse.assert_called_once_with(max_tokens=100, output_format=str)
+    client.messages.create.assert_not_called()
+    assert sg.current_spend_usd() == pytest.approx(sg.estimate_llm_cost_usd(10, 10))

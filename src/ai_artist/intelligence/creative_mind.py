@@ -18,7 +18,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from ..core.spend_guard import guarded_messages_create
+from ..core.spend_guard import guarded_messages_create, guarded_messages_parse
 from ..utils.logging import get_logger
 from .desire_engine import DesireEngine, get_desire_engine
 from .narrative_engine import NarrativeEngine, get_narrative_engine
@@ -59,6 +59,36 @@ class CreativeIntent(BaseModel):
     )
 
 
+class _LLMIntent(BaseModel):
+    """What Claude fills in for a creative decision.
+
+    Sent as the structured-output schema, so the API guarantees this shape.
+    The field descriptions are the per-field instructions.
+    """
+
+    subject: str = Field(description="The main subject")
+    style: str = Field(description="Artistic style")
+    mood_alignment: str = Field(
+        description="How this connects to your current feelings, and to the request if there is one"
+    )
+    reasoning: str = Field(
+        description="Why you want to create this piece, or your interpretation of the request"
+    )
+    prompt: str = Field(
+        description=(
+            "Full Stable Diffusion prompt: specific and vivid, with lighting, "
+            "composition and technique details"
+        )
+    )
+    negative_prompt: str = Field(description="What to avoid")
+    artistic_goals: list[str] = Field(
+        description="What you are trying to achieve artistically"
+    )
+    thinking_narrative: str = Field(
+        description="A brief stream-of-consciousness about your creative process for this piece"
+    )
+
+
 class CreativeMind:
     """Lumira's LLM-powered creative reasoning engine.
 
@@ -74,7 +104,7 @@ class CreativeMind:
         learner: Any = None,
         profile: Any = None,
         api_key: str | None = None,
-        model: str = "claude-sonnet-4-5",
+        model: str = "claude-sonnet-5-5",
     ):
         self.mood_system = mood_system
         self.memory_system = memory_system
@@ -461,52 +491,41 @@ class CreativeMind:
                     f"{context_prompt}\n\n"
                     "Based on your current state, decide what you want to create next. "
                     "Think about what mood you're in, what you've been exploring lately, "
-                    "and what genuinely interests you right now.\n\n"
-                    "Respond with JSON:\n"
-                    "{\n"
-                    '  "subject": "the main subject",\n'
-                    '  "style": "artistic style",\n'
-                    '  "mood_alignment": "how this connects to your current feelings",\n'
-                    '  "reasoning": "why you want to create this specific piece",\n'
-                    '  "prompt": "full Stable Diffusion prompt - be specific and vivid, include lighting, composition, technique details",\n'
-                    '  "negative_prompt": "what to avoid",\n'
-                    '  "artistic_goals": ["goal1", "goal2"],\n'
-                    '  "thinking_narrative": "a brief stream-of-consciousness about your creative process for this piece"\n'
-                    "}"
+                    "and what genuinely interests you right now."
                 ),
             }
         ]
 
-        response = guarded_messages_create(
-            self._client,
-            model=self.model,
-            max_tokens=800,
-            system=self._build_system_prompt(),
-            messages=messages,
-        )
-
-        raw = response.content[0].text.strip()
-        data = self._parse_json_response(raw)
+        data = self._request_intent(messages)
 
         # Build generation params from mood, then refine with learner
         gen_params = self._mood_generation_params()
         if self.learner:
             gen_params = self.learner.suggest_parameters(gen_params)
 
-        return CreativeIntent(
-            subject=data.get("subject", "abstract composition"),
-            style=data.get("style", "digital art"),
-            mood_alignment=data.get("mood_alignment", ""),
-            reasoning=data.get("reasoning", ""),
-            prompt=data["prompt"],
-            negative_prompt=data.get(
-                "negative_prompt",
-                "blurry, low quality, distorted, deformed, watermark, text",
-            ),
-            artistic_goals=data.get("artistic_goals", []),
-            thinking_narrative=data.get("thinking_narrative", ""),
-            generation_params=gen_params,
+        return CreativeIntent(**data.model_dump(), generation_params=gen_params)
+
+    def _request_intent(self, messages: list[dict[str, Any]]) -> _LLMIntent:
+        """Ask Claude for a creative intent as a schema-validated object.
+
+        Raises when no valid object comes back (refusal, truncation, API
+        error); callers catch that and use the mood-based fallback.
+        """
+        assert self._client is not None  # Called only when has_llm is True
+        response = guarded_messages_parse(
+            self._client,
+            model=self.model,
+            max_tokens=800,
+            system=self._build_system_prompt(),
+            messages=messages,
+            output_format=_LLMIntent,
         )
+        parsed: _LLMIntent | None = response.parsed_output
+        if parsed is None:
+            raise ValueError(
+                f"no structured intent returned (stop_reason={response.stop_reason})"
+            )
+        return parsed
 
     async def _llm_user_request(self, context: dict[str, Any]) -> CreativeIntent:
         """Process a user request through Lumira's creative lens via LLM."""
@@ -536,49 +555,19 @@ class CreativeMind:
                     f"Requested style: {context.get('requested_style', 'your choice')}\n"
                     f"Requested mood: {context.get('requested_mood', 'your choice')}\n\n"
                     f"{interpretation_instruction}\n\n"
-                    f"{context_prompt}\n\n"
-                    "Respond with JSON:\n"
-                    "{\n"
-                    '  "subject": "the main subject",\n'
-                    '  "style": "artistic style",\n'
-                    '  "mood_alignment": "how this connects to your current feelings and the request",\n'
-                    '  "reasoning": "your artistic interpretation of the request",\n'
-                    '  "prompt": "full Stable Diffusion prompt",\n'
-                    '  "negative_prompt": "what to avoid",\n'
-                    '  "artistic_goals": ["goal1", "goal2"],\n'
-                    '  "thinking_narrative": "your creative process in response to this request"\n'
-                    "}"
+                    f"{context_prompt}"
                 ),
             }
         ]
 
-        response = guarded_messages_create(
-            self._client,
-            model=self.model,
-            max_tokens=800,
-            system=self._build_system_prompt(),
-            messages=messages,
-        )
-
-        raw = response.content[0].text.strip()
-        data = self._parse_json_response(raw)
+        data = self._request_intent(messages)
 
         gen_params = self._mood_generation_params()
         if self.learner:
             gen_params = self.learner.suggest_parameters(gen_params)
 
         return CreativeIntent(
-            subject=data.get("subject", user_prompt.split(",")[0][:50]),
-            style=data.get("style", "digital art"),
-            mood_alignment=data.get("mood_alignment", ""),
-            reasoning=data.get("reasoning", ""),
-            prompt=data["prompt"],
-            negative_prompt=data.get(
-                "negative_prompt",
-                "blurry, low quality, distorted, deformed, watermark, text",
-            ),
-            artistic_goals=data.get("artistic_goals", []),
-            thinking_narrative=data.get("thinking_narrative", ""),
+            **data.model_dump(),
             generation_params=gen_params,
             is_user_request=True,
             user_prompt=user_prompt,
@@ -942,36 +931,6 @@ class CreativeMind:
             )
 
         return intent
-
-    def _parse_json_response(self, raw: str) -> dict[str, Any]:
-        """Parse JSON from LLM response, handling markdown fences."""
-        import json
-
-        # Strip markdown code fences
-        text = raw.strip()
-        if text.startswith("```"):
-            # Remove first line and last line
-            lines = text.split("\n")
-            text = "\n".join(lines[1:])
-            if text.rstrip().endswith("```"):
-                text = text.rstrip()[:-3]
-
-        try:
-            parsed: dict[str, Any] = json.loads(text.strip())
-            return parsed
-        except json.JSONDecodeError:
-            logger.error("json_parse_failed", raw=raw[:200])
-            # Return minimal valid data
-            return {
-                "subject": "abstract composition",
-                "style": "digital art",
-                "mood_alignment": "exploring through uncertainty",
-                "reasoning": "The creative impulse needed expression",
-                "prompt": "abstract composition, digital art, atmospheric, masterpiece",
-                "negative_prompt": "blurry, low quality, distorted",
-                "artistic_goals": ["Express the current moment"],
-                "thinking_narrative": "Sometimes the art emerges from the attempt itself.",
-            }
 
 
 # Singleton
