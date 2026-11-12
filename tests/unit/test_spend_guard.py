@@ -273,3 +273,18 @@ def test_sonnet_5_5_is_costed_at_its_own_rate(sg):
     assert sg.estimate_llm_cost_usd(
         1_000_000, 1_000_000, "some-other-model"
     ) == pytest.approx(18.0)
+
+
+def test_response_text_reads_text_blocks_after_a_thinking_block(sg):
+    # Sonnet 5.5 can open a reply with a thinking block that has no .text.
+    from types import SimpleNamespace as NS
+
+    response = NS(
+        content=[
+            NS(type="thinking", thinking=""),
+            NS(type="text", text="  a lighthouse "),
+            NS(type="text", text="in fog  "),
+        ]
+    )
+    assert sg.response_text(response) == "a lighthouse in fog"
+    assert sg.response_text(NS(content=[NS(type="thinking", thinking="")])) == ""

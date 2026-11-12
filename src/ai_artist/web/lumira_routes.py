@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field, model_validator
 from sqlalchemy.orm import Session
 
 from ..caching import get_generation_cache
-from ..core.spend_guard import guarded_messages_create
+from ..core.spend_guard import guarded_messages_create, response_text
 from ..db.models import GeneratedImage
 from ..db.session import get_db
 from ..personality.enhanced_memory import EnhancedMemorySystem
@@ -1377,7 +1377,8 @@ async def suggest_prompt(
             response = guarded_messages_create(
                 client,
                 model="claude-sonnet-5-5",
-                max_tokens=150,
+                max_tokens=1024,
+                output_config={"effort": "low"},
                 messages=[
                     {
                         "role": "user",
@@ -1389,7 +1390,7 @@ async def suggest_prompt(
                     }
                 ],
             )
-            suggestion = response.content[0].text.strip()
+            suggestion = response_text(response)
     except Exception as e:
         logger.warning("suggest_prompt_llm_failed", error=str(e))
 

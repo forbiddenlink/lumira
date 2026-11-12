@@ -363,6 +363,20 @@ def guarded_messages_create(client: Any, **kwargs: Any) -> Any:
     return _guarded_call(client.messages.create, kwargs)
 
 
+def response_text(response: Any) -> str:
+    """Join the ``text`` blocks of a Messages response, stripped.
+
+    Read blocks by type, not position: on Claude Sonnet 5.5 a reply can begin
+    with a ``thinking`` block, which has no ``.text``.
+    """
+    parts = [
+        block.text
+        for block in getattr(response, "content", None) or []
+        if getattr(block, "type", None) == "text"
+    ]
+    return "".join(parts).strip()
+
+
 def guarded_messages_parse(client: Any, **kwargs: Any) -> Any:
     """Same guard for ``client.messages.parse`` (structured outputs).
 
