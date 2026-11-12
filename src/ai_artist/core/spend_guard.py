@@ -42,6 +42,7 @@ class SpendBudgetExceededError(RuntimeError):
 _LLM_COST_PER_MTOK = {
     # (input_per_million, output_per_million)
     "default": (3.0, 15.0),  # Claude Sonnet-class
+    "claude-sonnet-5-5": (2.0, 10.0),
 }
 
 

@@ -263,3 +263,13 @@ def test_parse_goes_through_the_same_budget_guard(sg):
     client.messages.parse.assert_called_once_with(max_tokens=100, output_format=str)
     client.messages.create.assert_not_called()
     assert sg.current_spend_usd() == pytest.approx(sg.estimate_llm_cost_usd(10, 10))
+
+
+def test_sonnet_5_5_is_costed_at_its_own_rate(sg):
+    # $2 / $10 per million tokens; unknown models keep the conservative default.
+    assert sg.estimate_llm_cost_usd(
+        1_000_000, 1_000_000, "claude-sonnet-5-5"
+    ) == pytest.approx(12.0)
+    assert sg.estimate_llm_cost_usd(
+        1_000_000, 1_000_000, "some-other-model"
+    ) == pytest.approx(18.0)
