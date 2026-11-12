@@ -1377,7 +1377,8 @@ async def suggest_prompt(
             response = guarded_messages_create(
                 client,
                 model="claude-sonnet-5-5",
-                max_tokens=150,
+                max_tokens=1024,
+                output_config={"effort": "low"},
                 messages=[
                     {
                         "role": "user",

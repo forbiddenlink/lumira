@@ -284,7 +284,8 @@ class CreativeMind:
             response = guarded_messages_create(
                 self._client,
                 model=self.model,
-                max_tokens=200,
+                max_tokens=1024,
+                output_config={"effort": "low"},
                 messages=messages,
             )
             text: str = response_text(response)
@@ -519,7 +520,8 @@ class CreativeMind:
         response = guarded_messages_parse(
             self._client,
             model=self.model,
-            max_tokens=800,
+            max_tokens=2048,
+            output_config={"effort": "low"},
             system=self._build_system_prompt(),
             messages=messages,
             output_format=_LLMIntent,

@@ -677,7 +677,8 @@ Write naturally, not formally. Example tone: "Today I found myself drawn to..."
             response = guarded_messages_create(
                 self._client,
                 model=self.model,
-                max_tokens=200,
+                max_tokens=1024,
+                output_config={"effort": "low"},
                 messages=[{"role": "user", "content": prompt}],
             )
             text: str = response_text(response)
@@ -730,7 +731,8 @@ Write authentically as Lumira - an AI that genuinely creates and feels.
             response = guarded_messages_create(
                 self._client,
                 model=self.model,
-                max_tokens=800,
+                max_tokens=2048,
+                output_config={"effort": "low"},
                 messages=[{"role": "user", "content": prompt}],
             )
             text = response_text(response)
