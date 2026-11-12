@@ -74,7 +74,7 @@ class CreativeMind:
         learner: Any = None,
         profile: Any = None,
         api_key: str | None = None,
-        model: str = "claude-sonnet-4-5",
+        model: str = "claude-sonnet-5-5",
     ):
         self.mood_system = mood_system
         self.memory_system = memory_system

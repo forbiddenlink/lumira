@@ -1376,7 +1376,7 @@ async def suggest_prompt(
             client = anthropic.Anthropic(api_key=api_key)
             response = guarded_messages_create(
                 client,
-                model="claude-sonnet-4-5",
+                model="claude-sonnet-5-5",
                 max_tokens=150,
                 messages=[
                     {
