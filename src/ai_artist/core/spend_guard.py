@@ -362,6 +362,15 @@ def guarded_messages_create(client: Any, **kwargs: Any) -> Any:
     return _guarded_call(client.messages.create, kwargs)
 
 
+def guarded_messages_parse(client: Any, **kwargs: Any) -> Any:
+    """Same guard for ``client.messages.parse`` (structured outputs).
+
+    Drop-in for ``client.messages.parse(**kwargs)``; the response carries the
+    validated Pydantic object in ``parsed_output``.
+    """
+    return _guarded_call(client.messages.parse, kwargs)
+
+
 def _guarded_call(call: Callable[..., Any], kwargs: dict[str, Any]) -> Any:
     """Run one Anthropic Messages call under the kill switch and daily budget,
     then settle the reservation against the real token usage."""

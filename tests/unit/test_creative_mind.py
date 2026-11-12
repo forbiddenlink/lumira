@@ -274,3 +274,75 @@ def test_build_context_prompt_includes_session_hypothesis():
     )
     assert "SESSION HYPOTHESIS (introspective)" in text
     assert "melancholic uncertainty" in text
+
+
+# ---------------------------------------------------------------------------
+# Structured-output LLM path (client mocked: no network, no spend)
+# ---------------------------------------------------------------------------
+
+_LLM_FIELDS = {
+    "subject": "a lighthouse in fog",
+    "style": "tonalist oil painting",
+    "mood_alignment": "quiet, like my mood",
+    "reasoning": "I keep returning to solitary lights",
+    "prompt": "lighthouse in dense fog, tonalist oil, soft rim light",
+    "negative_prompt": "blurry, text",
+    "artistic_goals": ["restraint"],
+    "thinking_narrative": "Fog lets me say less.",
+}
+
+
+def _llm_mind(parsed, stop_reason="end_turn"):
+    from types import SimpleNamespace
+
+    from ai_artist.intelligence.creative_mind import _LLMIntent
+
+    cm = CreativeMind(
+        mood_system=create_mock_mood_system(),
+        memory_system=create_mock_memory(),
+        learner=None,
+        api_key=None,
+    )
+    client = MagicMock()
+    client.messages.parse.return_value = SimpleNamespace(
+        parsed_output=_LLMIntent(**parsed) if parsed else None,
+        stop_reason=stop_reason,
+        usage=SimpleNamespace(input_tokens=10, output_tokens=10),
+    )
+    cm._client = client
+    return cm, client
+
+
+@pytest.mark.asyncio
+async def test_llm_decide_requests_schema_and_maps_fields():
+    from ai_artist.intelligence.creative_mind import _LLMIntent
+
+    cm, client = _llm_mind(_LLM_FIELDS)
+    intent = await cm._llm_decide({})
+    kwargs = client.messages.parse.call_args.kwargs
+    assert kwargs["output_format"] is _LLMIntent
+    assert kwargs["model"] == "claude-sonnet-5-5"
+    assert "Respond with JSON" not in kwargs["messages"][0]["content"]
+    client.messages.create.assert_not_called()
+    for field, value in _LLM_FIELDS.items():
+        assert getattr(intent, field) == value
+    assert intent.generation_params
+
+
+@pytest.mark.asyncio
+async def test_llm_user_request_marks_request():
+    cm, _ = _llm_mind(_LLM_FIELDS)
+    intent = await cm._llm_user_request({"user_request": "a lighthouse"})
+    assert intent.is_user_request is True
+    assert intent.user_prompt == "a lighthouse"
+    assert intent.prompt == _LLM_FIELDS["prompt"]
+
+
+@pytest.mark.asyncio
+async def test_refusal_falls_back_to_mood_selection():
+    cm, client = _llm_mind(None, stop_reason="refusal")
+    intent = await cm.decide_what_to_create()
+    client.messages.parse.assert_called_once()
+    assert isinstance(intent, CreativeIntent)
+    assert intent.prompt
+    assert intent.subject != _LLM_FIELDS["subject"]
