@@ -3082,6 +3082,158 @@
       .ws-status-reconnecting { background: #d29922; animation: ws-pulse 1s infinite; }
       .ws-status-disconnected { background: #f85149; }
       @keyframes ws-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+      /* === ROOM REDESIGN (phase 3): artist present, art as subject, wall labels === */
+      .header-content { padding: 16px 48px; }
+      .header-action-btn {
+        background: none;
+        border: 0;
+        border-radius: 6px;
+        padding: 8px 10px;
+        color: var(--text-muted);
+        font-weight: 500;
+        min-height: 36px;
+      }
+      .header-action-btn:hover { background: none; color: var(--text-main); }
+      .header-action-btn svg { display: none; }
+      .header-action-btn + .header-action-btn { margin-left: 4px; }
+      .header-studio-link { margin-left: 16px; }
+
+      .room-bar {
+        width: min(1400px, 100%);
+        margin: 1.25rem auto 0.9rem;
+        padding: 0 1.25rem;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem 1.5rem;
+        flex-wrap: wrap;
+      }
+      .room-bar .creation-fab {
+        width: auto;
+        margin: 0;
+        padding: 0;
+      }
+      .room-presence {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        font-family: var(--font-display);
+        font-size: clamp(1.25rem, 2.2vw, 1.6rem);
+        font-weight: 450;
+        line-height: 1.3;
+        color: var(--text-main);
+        margin: 0;
+      }
+      .room-presence[hidden] { display: none; }
+      .room-presence em {
+        font-style: italic;
+        color: color-mix(in oklab, var(--accent) 55%, var(--text-main));
+      }
+      .room-presence-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--accent);
+        flex-shrink: 0;
+        box-shadow: 0 0 0 4px var(--mood-wash);
+      }
+      .creation-fab-btn { box-shadow: none; background: transparent; }
+
+      .featured-work { margin-bottom: 2.25rem; }
+      .featured-work-frame {
+        padding: clamp(14px, 3.2vw, 44px);
+        background: color-mix(in oklab, var(--accent) 5%, var(--bg-panel));
+        border-radius: 2px;
+      }
+      .featured-work-frame { display: flex; justify-content: center; }
+      .featured-work-frame img {
+        width: auto;
+        max-width: 100%;
+        height: min(72vh, 760px);
+        object-fit: contain;
+        object-position: center;
+        background: transparent;
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+      }
+      .featured-work-meta { align-items: start; padding-top: 1.25rem; }
+      .featured-work-kicker {
+        font-size: 0.875rem;
+        letter-spacing: 0;
+        text-transform: none;
+        color: var(--text-muted);
+        margin: 0 0 0.2rem;
+      }
+      .featured-work-title {
+        font-size: clamp(1.9rem, 3.8vw, 3rem);
+        letter-spacing: -0.02em;
+      }
+      .featured-work-mood { font-size: 1rem; margin-top: 0.4rem; }
+      .featured-proposed { font-size: 0.875rem; }
+      .live-atelier-inner { border-top: 0; border-bottom: 0; padding-top: 1.6rem; }
+      .live-atelier-desire { font-size: clamp(1.1rem, 1.6vw, 1.3rem); color: var(--text-muted); }
+      @media (max-width: 900px) {
+        .featured-work-frame img { height: min(60vh, 460px); }
+        .live-atelier-inner { padding-top: 0; }
+      }
+      @media (max-width: 720px) {
+        .header-content { padding: 12px 16px; gap: 8px; }
+        .room-bar { margin-top: 0.9rem; }
+      }
+
+      .card-mood-badge {
+        font-size: 0.8125rem;
+        letter-spacing: 0;
+        text-transform: none;
+        background-color: rgba(18, 16, 14, 0.82) !important;
+        color: var(--text-main);
+        padding: 0.15rem 0.5rem;
+      }
+      .taste-chip { font-size: 0.8125rem; letter-spacing: 0; }
+      .featured-badge {
+        background: rgba(18, 16, 14, 0.82);
+        color: var(--text-main);
+        font-size: 0.8125rem;
+        font-weight: 600;
+        box-shadow: none;
+      }
+
+      .empty-wall {
+        grid-column: 1 / -1;
+        width: min(1100px, 100%);
+        margin: 0.5rem auto 2rem;
+      }
+      .empty-wall-plate {
+        aspect-ratio: 16 / 5;
+        max-height: 38vh;
+        width: 100%;
+        border: 1px solid var(--border-strong, color-mix(in oklab, var(--text-main) 18%, transparent));
+        outline: 1px solid var(--border);
+        outline-offset: -14px;
+        background-color: color-mix(in oklab, var(--accent) 4%, var(--bg-panel));
+      }
+      .empty-wall-label { padding-top: 1.1rem; max-width: 36rem; }
+      .empty-wall-label h2 {
+        font-family: var(--font-display);
+        font-size: clamp(1.7rem, 3.4vw, 2.6rem);
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+        color: var(--text-main);
+        margin: 0 0 0.6rem;
+      }
+      .empty-wall-label p {
+        font-size: 1rem;
+        line-height: 1.55;
+        color: var(--text-muted);
+        margin: 0 0 1.1rem;
+      }
+      .empty-wall-label em {
+        font-style: italic;
+        color: color-mix(in oklab, var(--accent) 55%, var(--text-main));
+      }
+      body:has(.empty-wall) .controls { display: none; }
     </style>
   </head>
   <body>
@@ -3194,6 +3346,11 @@
       </div>
     </div>
 
+    <div class="room-bar">
+    <p class="room-presence" id="room-presence" hidden>
+      <span class="room-presence-dot" aria-hidden="true"></span>
+      <span>Lumira is feeling <em id="room-presence-mood"></em>.</span>
+    </p>
     <div class="creation-fab" id="creation-fab">
       <button
         class="creation-fab-btn"
@@ -3236,6 +3393,7 @@
         </button>
         <a href="/lumira" class="fab-more-link">More options in the studio</a>
       </div>
+    </div>
     </div>
 
     <!-- Latest work owns the first viewport; Meet Lumira is opt-in via ?about=1 -->
@@ -4076,6 +4234,12 @@
             document.body.setAttribute('data-mood', mood);
             const atelierMood = document.getElementById('atelier-mood');
             if (atelierMood) atelierMood.textContent = mood;
+            const presence = document.getElementById('room-presence');
+            const presenceMood = document.getElementById('room-presence-mood');
+            if (presence && presenceMood) {
+              presenceMood.textContent = mood;
+              presence.hidden = false;
+            }
           }
 
           const desireEl = document.getElementById('atelier-desire');
@@ -4455,12 +4619,12 @@
         const mood = window._lumiraMood;
         const colors = mood && MOOD_COLORS[mood] ? MOOD_COLORS[mood] : null;
         const bgStyle = colors ? colors.bg : 'linear-gradient(135deg, rgba(196,165,116,0.06), rgba(184,122,106,0.06))';
-        const moodText = mood ? mood : 'inspired';
-        return '<div class="empty-state-personality" style="background:' + bgStyle + '; border-radius: 16px;">' +
-          '<div class="empty-icon" style="font-size:48px; margin-bottom:16px;">&#10022;</div>' +
-          '<h2>Lumira hasn\'t created anything yet</h2>' +
-          '<p>But she\'s feeling <strong>' + moodText + '</strong>.</p>' +
-          '<div class="empty-actions">' +
+        const moodText = mood ? escapeHTML(mood) : 'inspired';
+        return '<div class="empty-wall">' +
+          '<div class="empty-wall-plate" style="background:' + bgStyle + '" aria-hidden="true"></div>' +
+          '<div class="empty-wall-label">' +
+          '<h2>Nothing is hung yet</h2>' +
+          '<p>Lumira is feeling <em>' + moodText + '</em>. The first piece she finishes will hang here, at the top of the room.</p>' +
           '<a href="/lumira" class="empty-btn empty-btn-primary">Watch her create her first piece &#8594;</a>' +
           '</div></div>';
       }
@@ -7197,7 +7361,7 @@
       class="ai-disclosure"
       role="contentinfo"
       aria-label="AI transparency notice"
-      style="text-align:center;padding:1.25rem 1rem 5.5rem;color:var(--text-muted, #888);font-size:0.75rem;border-top:1px solid var(--border, rgba(255,255,255,0.08));margin-top:2rem"
+      style="text-align:center;padding:1.25rem 1rem 5.5rem;color:var(--text-muted, #888);font-size:0.8125rem;border-top:1px solid var(--border, rgba(255,255,255,0.08));margin-top:2rem"
     >
       Artwork on this gallery is created by Lumira, an autonomous AI artist.
       <a href="/privacy" class="ai-disclosure-link">Privacy</a>
