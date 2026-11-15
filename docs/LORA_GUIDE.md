@@ -50,7 +50,7 @@ Base Stable Diffusion Model
 
 ### Prerequisites
 
-1. **Training data**: 20-50 images ([see sourcing guide](docs/TRAINING_DATA_SOURCING.md))
+1. **Training data**: 20-50 images ([see sourcing guide](TRAINING_DATA_SOURCING.md))
 2. **Dependencies**: `pip install -e .` (includes peft, accelerate)
 3. **Legal compliance**: Review [LEGAL.md](LEGAL.md) before sourcing data
 4. **Disk space**: ~5GB per LoRA for models and training data
@@ -465,10 +465,10 @@ python scripts/train_all_loras.py all
 
 ## Resources
 
-- **Data Sourcing**: [docs/TRAINING_DATA_SOURCING.md](docs/TRAINING_DATA_SOURCING.md)
+- **Data Sourcing**: [docs/TRAINING_DATA_SOURCING.md](TRAINING_DATA_SOURCING.md)
 - **Legal Guidelines**: [LEGAL.md](LEGAL.md)
 - **Troubleshooting**: [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
-- **Architecture**: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- **Architecture**: [docs/ARCHITECTURE.md](ARCHITECTURE.md)
 
 ---
 

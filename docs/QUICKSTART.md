@@ -180,8 +180,8 @@ model:
 
 - 📖 [Setup Guide](SETUP.md) - Detailed installation
 - 🏗️ [Architecture](ARCHITECTURE.md) - How it works
-- 🎨 [LoRA Training](LORA_TRAINING.md) - Advanced styling
-- 🌐 [Web Gallery](docs/WEB_GALLERY.md) - UI features
+- 🎨 [LoRA Training](LORA_GUIDE.md) - Advanced styling
+- 🌐 [Web Gallery](WEB_GALLERY.md) - UI features
 - 🔒 [Security](SECURITY.md) - Best practices
 
 **Get creative:**

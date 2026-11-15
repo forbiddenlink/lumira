@@ -1,10 +1,12 @@
 # Lumira - Autonomous AI Artist
 
+**Live gallery:** [lumira-gallery-production.up.railway.app](https://lumira-gallery-production.up.railway.app)
+
 An autonomous AI artist with personality, moods, memory, and creative independence. A
 lightweight "gallery + cloud-generation" build (`Dockerfile.gallery`, no local ML/GPU,
 generation via Replicate/Magica) deploys to Railway; see `docs/DEPLOYMENT.md`.
 
-## ✨ What Makes Lumira Different
+## What makes Lumira different
 
 Lumira isn't a tool - she's an **artist** you collaborate with:
 
@@ -13,22 +15,24 @@ Lumira isn't a tool - she's an **artist** you collaborate with:
 - **Reflects**: Journals her thoughts after each creation (visible thinking with ReAct pattern)
 - **Chooses**: Makes autonomous decisions about what to paint
 - **Evolves**: Artistic style develops through experience and adaptive learning
-- **Ethical AI**: Built-in bias mitigation to ensure fair and diverse output
-- **Production-Ready**: 10x faster generation, PWA support, real-time monitoring
+- **Bias mitigation**: prompt-level bias mitigation (see `docs/BIAS_MITIGATION.md`)
 
-## 🚀 Performance Highlights
+## Performance and delivery
 
-- ⚡ **10x Faster**: First generation in 3-5s (was 35s) with model pool preloading
-- 🎯 **Smart Curation**: GPU-parallel batch processing (3x faster quality scoring)
-- 🧠 **Adaptive Learning**: Multi-armed bandit algorithm learns from user feedback
-- 📱 **Progressive Web App**: Install as native app, works offline
-- 🔴 **Real-time Preview**: WebSocket streaming shows generation progress
-- 📊 **Production Monitoring**: Prometheus metrics + health checks for Kubernetes
+- **Model pool**: pre-warmed diffusion pipelines (`src/ai_artist/core/model_pool.py`).
+- **Batch curation**: CLIP quality scoring in batches.
+- **Adaptive learning**: a multi-armed bandit learns from user feedback.
+- **Progressive Web App**: installable, with a service worker and three caches (static, dynamic, images; `static/service-worker.js`).
+- **Real-time preview**: WebSocket streaming of generation progress.
+- **Monitoring**: Prometheus metrics (`src/ai_artist/monitoring/metrics.py`) and health checks for Kubernetes.
 
-## Quick Start
+## Quick start
+
+Prerequisites: Python 3.11 or newer (`requires-python` in `pyproject.toml`; `.python-version` pins 3.14). The full install pulls in PyTorch and is meant for a machine with a GPU.
 
 ```bash
 # Clone and setup
+git clone https://github.com/forbiddenlink/lumira.git
 cd lumira
 python -m venv venv
 source venv/bin/activate
@@ -55,7 +59,7 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-## Project Structure
+## Project structure
 
 ```text
 lumira/
@@ -70,7 +74,7 @@ lumira/
 └── docs/               # Documentation
 ```
 
-## 📚 Documentation
+## Documentation
 
 | Document | Purpose |
 |----------|---------|
@@ -85,7 +89,7 @@ lumira/
 | **[docs/ROADMAP.md](docs/ROADMAP.md)** | What's next |
 | **[docs/](docs/)** | Full technical documentation |
 
-## 📊 Current Status
+## Current status
 
 See `CLAUDE.md` for the maintained current-state summary (stack, commands, gotchas). Highlights:
 
@@ -95,14 +99,14 @@ See `CLAUDE.md` for the maintained current-state summary (stack, commands, gotch
 - Adaptive learning from user feedback (multi-armed bandit)
 - Critique system for iterative improvement
 
-**Performance & Scale:**
+**Performance and scale:**
 
-- Model pool with pre-warming (10x faster first generation)
-- GPU-parallel batch curation (3x faster quality scoring)
+- Model pool with pre-warming
+- Batch curation
 - Kubernetes-ready health checks (liveness/readiness)
-- Prometheus metrics (15+ production metrics)
+- Prometheus metrics
 
-**User Experience:**
+**User experience:**
 
 - Progressive Web App (PWA) with offline support
 - Real-time generation preview via WebSocket
@@ -111,25 +115,25 @@ See `CLAUDE.md` for the maintained current-state summary (stack, commands, gotch
 - FastAPI web gallery with WebSocket
 - Service worker caching (3-tier strategy)
 
-**Quality & Safety:**
+**Quality and safety:**
 
 - CLIP-based quality curation
 - Ensemble curation framework
 - Bias mitigation in prompt generation
 - Intelligent prompt filtering
 - Advanced prompt features (Matrix, Emphasis, Style Presets)
-- Comprehensive test coverage (400+ tests)
+- A large pytest suite (over 1,400 test functions under `tests/`)
 
 See [docs/ROADMAP.md](docs/ROADMAP.md) for what's actively planned, and
 [docs/ADVANCED_PROMPTS.md](docs/ADVANCED_PROMPTS.md) for prompt utilities.
 
-## 🛠️ Tech Stack
+## Tech stack
 
 **Core:**
 
-- Stable Diffusion XL (diffusers + xFormers + SDPA)
+- Stable Diffusion XL and FLUX (diffusers; xFormers is an optional dependency); cloud generation through Replicate or Magica
 - LoRA for style training
-- PyTorch with torch.compile optimization
+- PyTorch
 
 **Backend:**
 
@@ -141,7 +145,7 @@ See [docs/ROADMAP.md](docs/ROADMAP.md) for what's actively planned, and
 **Frontend:**
 
 - Progressive Web App (PWA)
-- Service Worker with 3-tier caching
+- Service worker with three caches (static, dynamic, images)
 - Modern responsive UI with WebSocket streaming
 
 **Production:**
@@ -153,4 +157,4 @@ See [docs/ROADMAP.md](docs/ROADMAP.md) for what's actively planned, and
 
 ## License
 
-MIT License
+MIT. See [LICENSE](LICENSE).
