@@ -6,7 +6,7 @@ Example: "a {red|blue} {cat|dog}" generates 4 combinations.
 """
 
 import re
-from itertools import product
+from itertools import islice, product
 
 
 class PromptMatrix:
@@ -59,6 +59,35 @@ class PromptMatrix:
 
         return results
 
+    def preview_prompt(self, prompt: str, limit: int = 16) -> tuple[list[str], int]:
+        """Return a bounded, deterministic preview and exact total without expanding all results."""
+        if (
+            isinstance(limit, bool)
+            or not isinstance(limit, int)
+            or not 1 <= limit <= 50
+        ):
+            raise ValueError("Preview limit must be an integer between 1 and 50")
+        if len(prompt) > 2000:
+            raise ValueError("Preview prompt must be at most 2000 characters")
+        valid, error = self.validate_syntax(prompt)
+        if not valid:
+            raise ValueError(error)
+        matches = list(self.pattern.finditer(prompt))
+        if not matches:
+            return [prompt], 1
+        groups = [
+            [option.strip() for option in match.group(1).split("|")]
+            for match in matches
+        ]
+        total = self.count_combinations(prompt)
+        results = []
+        for combination in islice(product(*groups), limit):
+            result = prompt
+            for match, option in reversed(list(zip(matches, combination, strict=True))):
+                result = result[: match.start()] + option + result[match.end() :]
+            results.append(result)
+        return results, total
+
     def count_combinations(self, prompt: str) -> int:
         """Count how many combinations a prompt will generate."""
         matches = list(self.pattern.finditer(prompt))
@@ -80,6 +109,9 @@ class PromptMatrix:
         Returns:
             Tuple of (is_valid, error_message)
         """
+        if "{}" in prompt:
+            return False, "Empty option in {}"
+
         # Check for unmatched braces
         open_count = prompt.count("{")
         close_count = prompt.count("}")

@@ -1909,6 +1909,14 @@
         color: var(--text-faint);
       }
 
+      .matrix-preview { margin-top: 1rem; color: var(--text-main); }
+      .matrix-preview summary { cursor: pointer; font-weight: 600; }
+      .matrix-preview p { margin: 0.75rem 0; line-height: 1.5; overflow-wrap: anywhere; }
+      .matrix-preview button { padding: 0.6rem 0.8rem; border: 1px solid var(--border-strong); border-radius: var(--radius-md); background: var(--bg-elevated); color: var(--text-main); cursor: pointer; }
+      .matrix-preview button:disabled { opacity: 0.6; cursor: wait; }
+      .matrix-preview ol { padding-left: 1.5rem; }
+      .matrix-preview li { margin-bottom: 1rem; }
+
       /* Prompt Suggestion Panel */
       .prompt-suggestion {
         margin-top: 8px;
@@ -2935,6 +2943,13 @@
             data-input-action="updatePromptCounter"
           ></textarea>
           <div id="request-prompt-counter" class="request-char-counter" aria-live="polite" style="text-align:right;font-size:0.75rem;opacity:0.6;margin-top:2px">0/2000</div>
+          <details class="matrix-preview">
+            <summary>Explore text variations</summary>
+            <p id="matrix-preview-help">Try options in Your Vision, such as a {red|blue} {cat|dog}. Preview up to six text variations before choosing one. This does not generate images or spend generation credits.</p>
+            <button id="matrix-preview-button" type="button" aria-describedby="matrix-preview-help" aria-controls="matrix-preview-results">Preview text variations</button>
+            <p id="matrix-preview-status" role="status" aria-live="polite"></p>
+            <ol id="matrix-preview-results" aria-label="Prompt variation previews"></ol>
+          </details>
           <div id="prompt-suggestion" class="prompt-suggestion" role="region" aria-live="polite" aria-label="Lumira's prompt suggestion"></div>
           <div id="prompt-trust" class="prompt-suggestion-trust" style="display:none">Lumira trusts your vision</div>
         </div>
@@ -6445,5 +6460,6 @@
         });
       }
     </script>
+    <script src="/static/js/matrix-preview.js" defer nonce="{{ csp_nonce }}"></script>
   </body>
 </html>
