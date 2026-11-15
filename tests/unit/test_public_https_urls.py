@@ -1,5 +1,8 @@
 """Public URLs (canonical, og:*, sitemap, robots) must be https on real hosts."""
 
+import re
+from urllib.parse import urlparse
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -29,8 +32,10 @@ def test_robots_sitemap_line_uses_https_on_public_host(prod_client):
 
 def test_home_canonical_and_og_use_https_on_public_host(prod_client):
     html = prod_client.get("/").text
-    assert "http://gallery.example.com" not in html
-    assert "https://gallery.example.com" in html
+    urls = re.findall(r'(?:href|content)="(https?://[^"]+)"', html)
+    public = [u for u in urls if urlparse(u).hostname == "gallery.example.com"]
+    assert public, "expected canonical/og URLs on the public host"
+    assert all(urlparse(u).scheme == "https" for u in public)
 
 
 def test_localhost_stays_http(local_client):
