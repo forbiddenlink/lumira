@@ -59,6 +59,22 @@ class MatrixResponse(BaseModel):
     count: int
 
 
+class MatrixPreviewRequest(BaseModel):
+    """Bounded text-only preview; never submits image-generation jobs."""
+
+    prompt: str = Field(max_length=MAX_PROMPT_CHARS)
+    limit: int = Field(default=16, ge=1, le=50, strict=True)
+
+
+class MatrixPreviewResponse(BaseModel):
+    original: str
+    combinations: list[str]
+    count: int
+    # Decimal string preserves exact counts beyond JavaScript's safe integer range.
+    total_combinations: str
+    truncated: bool
+
+
 class StylePresetResponse(BaseModel):
     """Response model for style preset."""
 
@@ -153,6 +169,27 @@ async def generate_matrix(
     except Exception as e:
         logger.error("matrix_generation_failed", error=str(e))
         raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.post("/matrix/preview", response_model=MatrixPreviewResponse)
+@limiter.limit("30/minute")
+async def preview_matrix(
+    request: Request, preview_request: MatrixPreviewRequest
+) -> MatrixPreviewResponse:
+    """Inspect a small sample before choosing an affordable matrix to generate."""
+    try:
+        combinations, total = prompt_matrix.preview_prompt(
+            preview_request.prompt, preview_request.limit
+        )
+        return MatrixPreviewResponse(
+            original=preview_request.prompt,
+            combinations=combinations,
+            count=len(combinations),
+            total_combinations=str(total),
+            truncated=len(combinations) < total,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
 
 
 @router.get("/styles", response_model=list[StylePresetResponse])

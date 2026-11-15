@@ -23,3 +23,10 @@ def test_load_json_object_rejects_non_object_or_invalid_json(tmp_path):
     assert load_json_value(path) == ["archive"]
     path.write_text("not json")
     assert load_json_object(path) is None
+
+
+def test_invalid_utf8_returns_none(tmp_path):
+    path = tmp_path / "state.json"
+    path.write_bytes(b"\xff")
+    assert load_json_value(path) is None
+    assert load_json_object(path) is None

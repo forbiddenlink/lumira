@@ -13,7 +13,7 @@ def load_json_value(path: Path) -> Any | None:
     """Load JSON, returning ``None`` for absent or invalid files."""
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return None
     return data
 
