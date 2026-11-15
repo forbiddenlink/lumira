@@ -201,6 +201,34 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             raise
 
 
+_LOCAL_HOSTS = frozenset({"localhost", "127.0.0.1", "::1", "[::1]", "testserver"})
+
+
+class PublicHttpsSchemeMiddleware:
+    """Report https for requests that arrive on a public hostname.
+
+    The app runs behind a TLS-terminating proxy and deliberately does not trust
+    forwarded headers (see Dockerfile.gallery), so ``request.base_url`` and
+    ``request.url`` would otherwise say http:// and leak into canonical, og:url,
+    og:image, sitemap.xml and robots.txt. Local hosts keep the real scheme.
+    """
+
+    def __init__(self, app: Callable) -> None:
+        self.app = app
+
+    async def __call__(self, scope, receive, send):  # type: ignore[no-untyped-def]
+        if scope["type"] == "http" and scope.get("scheme") == "http":
+            host = ""
+            for name, value in scope.get("headers", []):
+                if name == b"host":
+                    host = value.decode("latin-1")
+                    break
+            hostname = host.rsplit(":", 1)[0] if not host.endswith("]") else host
+            if hostname and hostname.lower() not in _LOCAL_HOSTS:
+                scope = {**scope, "scheme": "https"}
+        await self.app(scope, receive, send)
+
+
 def add_cors_middleware(app: FastAPI, cors_origins: list[str] | None = None) -> None:
     """Add CORS middleware with secure defaults.
 

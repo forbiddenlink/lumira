@@ -66,6 +66,7 @@ from .helpers import (
 from .lumira_routes import router as lumira_router
 from .metrics_routes import router as metrics_router
 from .middleware import (
+    PublicHttpsSchemeMiddleware,
     RequestLoggingMiddleware,
     SecurityHeadersMiddleware,
     add_cors_middleware,
@@ -547,6 +548,7 @@ app.add_exception_handler(
 add_cors_middleware(app)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(PublicHttpsSchemeMiddleware)
 # NOTE: no ErrorHandlingMiddleware here — it was removed as dead code. The
 # app-level exception handlers registered above (exception_handlers.py +
 # rate_limit.py) are resolved by Starlette's ExceptionMiddleware, which sits
