@@ -14,7 +14,7 @@ class PromptMatrix:
 
     def __init__(self) -> None:
         # Pattern to match {option1|option2|option3}
-        self.pattern = re.compile(r"\{([^}]+)\}")
+        self.pattern = re.compile(r"\{([^{}]+)\}")
 
     def parse_prompt(self, prompt: str) -> list[str]:
         """
