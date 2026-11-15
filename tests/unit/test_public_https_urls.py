@@ -1,0 +1,38 @@
+"""Public URLs (canonical, og:*, sitemap, robots) must be https on real hosts."""
+
+import pytest
+from fastapi.testclient import TestClient
+
+from ai_artist.web.app import app
+
+
+@pytest.fixture
+def prod_client():
+    return TestClient(app, base_url="http://gallery.example.com")
+
+
+@pytest.fixture
+def local_client():
+    return TestClient(app, base_url="http://localhost:8000")
+
+
+def test_sitemap_uses_https_on_public_host(prod_client):
+    body = prod_client.get("/sitemap.xml").text
+    assert "<loc>https://gallery.example.com/</loc>" in body
+    assert "<loc>http://" not in body
+
+
+def test_robots_sitemap_line_uses_https_on_public_host(prod_client):
+    body = prod_client.get("/robots.txt").text
+    assert "Sitemap: https://gallery.example.com/sitemap.xml" in body
+
+
+def test_home_canonical_and_og_use_https_on_public_host(prod_client):
+    html = prod_client.get("/").text
+    assert "http://gallery.example.com" not in html
+    assert "https://gallery.example.com" in html
+
+
+def test_localhost_stays_http(local_client):
+    body = local_client.get("/sitemap.xml").text
+    assert "<loc>http://localhost:8000/</loc>" in body
