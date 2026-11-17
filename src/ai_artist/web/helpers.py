@@ -26,7 +26,11 @@ def resolve_within(base: str | Path, user_path: str | Path) -> Path:
     """
     base_real = os.path.realpath(base)
     candidate = os.path.realpath(os.path.join(base_real, user_path))
-    if candidate != base_real and not candidate.startswith(base_real + os.sep):
+    if candidate == base_real:
+        return Path(base_real)
+    # One plain negated startswith guard: CodeQL does not treat a compound
+    # condition (`!= ... and not startswith`) as a path-injection barrier.
+    if not candidate.startswith(base_real + os.sep):
         raise ValueError("path escapes base directory")
     return Path(candidate)
 

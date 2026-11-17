@@ -1251,11 +1251,7 @@ async def delete_image(
     """Delete an image and its metadata."""
     gallery_path_obj = Path(gallery_path)
 
-    # Validate and resolve full paths
-    full_image_path = gallery_path_obj / file_path
-    metadata_path = full_image_path.with_suffix(METADATA_FILE_SUFFIX)
-
-    # Security check
+    # Security check: validate and resolve full paths
     try:
         full_image_path = resolve_within(gallery_path_obj, file_path)
         metadata_path = full_image_path.with_suffix(METADATA_FILE_SUFFIX)
@@ -1287,8 +1283,6 @@ async def toggle_featured(
 ) -> dict[str, Any]:
     """Toggle featured status of an image."""
     gallery_path_obj = Path(gallery_path)
-    full_image_path = gallery_path_obj / file_path
-    metadata_path = full_image_path.with_suffix(METADATA_FILE_SUFFIX)
 
     # Security check
     try:
