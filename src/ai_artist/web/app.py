@@ -62,6 +62,7 @@ from .helpers import (
     filter_by_search,
     is_valid_image,
     load_image_metadata,
+    resolve_within,
 )
 from .lumira_routes import router as lumira_router
 from .metrics_routes import router as metrics_router
@@ -1173,16 +1174,15 @@ async def get_image_file(
     if file_ext not in allowed_extensions:
         raise HTTPException(status_code=400, detail=ERROR_INVALID_FILE_TYPE)
 
-    full_path = gallery_path_obj / file_path
+    # Security: ensure path is within gallery. Check containment before
+    # existence so a 404/403 difference cannot probe files outside it.
+    try:
+        full_path = resolve_within(gallery_path_obj, file_path)
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail=ERROR_ACCESS_DENIED) from e
 
     if not full_path.exists() or not full_path.is_file():
         raise HTTPException(status_code=404, detail=ERROR_IMAGE_NOT_FOUND)
-
-    # Security: ensure path is within gallery
-    try:
-        full_path.resolve().relative_to(gallery_path_obj.resolve())
-    except ValueError as e:
-        raise HTTPException(status_code=403, detail=ERROR_ACCESS_DENIED) from e
 
     # Detect MIME type from file extension
     mime_types = {
@@ -1251,13 +1251,10 @@ async def delete_image(
     """Delete an image and its metadata."""
     gallery_path_obj = Path(gallery_path)
 
-    # Validate and resolve full paths
-    full_image_path = gallery_path_obj / file_path
-    metadata_path = full_image_path.with_suffix(METADATA_FILE_SUFFIX)
-
-    # Security check
+    # Security check: validate and resolve full paths
     try:
-        full_image_path.resolve().relative_to(gallery_path_obj.resolve())
+        full_image_path = resolve_within(gallery_path_obj, file_path)
+        metadata_path = full_image_path.with_suffix(METADATA_FILE_SUFFIX)
     except ValueError as e:
         raise HTTPException(status_code=403, detail=ERROR_ACCESS_DENIED) from e
 
@@ -1286,12 +1283,11 @@ async def toggle_featured(
 ) -> dict[str, Any]:
     """Toggle featured status of an image."""
     gallery_path_obj = Path(gallery_path)
-    full_image_path = gallery_path_obj / file_path
-    metadata_path = full_image_path.with_suffix(METADATA_FILE_SUFFIX)
 
     # Security check
     try:
-        full_image_path.resolve().relative_to(gallery_path_obj.resolve())
+        full_image_path = resolve_within(gallery_path_obj, file_path)
+        metadata_path = full_image_path.with_suffix(METADATA_FILE_SUFFIX)
     except ValueError as e:
         raise HTTPException(status_code=403, detail=ERROR_ACCESS_DENIED) from e
 

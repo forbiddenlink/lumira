@@ -38,6 +38,7 @@ from .generation_registry import (
 from .generation_registry import (
     register as register_generation_task,
 )
+from .helpers import resolve_within
 from .rate_limit import RateLimits, limiter
 
 logger = get_logger(__name__)
@@ -3259,6 +3260,17 @@ async def create_video(
     if not os.environ.get("MAGICA_API_KEY"):
         raise HTTPException(status_code=503, detail="MAGICA_API_KEY not configured")
 
+    # Validate before the paid generation call: the sidecar below is read and
+    # rewritten, so an escaping path would be an arbitrary .json write.
+    artwork_img_path: Path | None = None
+    if body.artwork_path:
+        try:
+            artwork_img_path = resolve_within(
+                "gallery", body.artwork_path.lstrip("/").replace("\\", "/")
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="Invalid artwork path") from exc
+
     state = _get_lumira_state()
     mood = body.mood or state["mood_system"].current_mood.value
 
@@ -3281,10 +3293,9 @@ async def create_video(
     url = _media_public_url(path)
 
     # Optionally attach video_url onto the source artwork sidecar
-    if body.artwork_path:
+    if artwork_img_path is not None:
         try:
-            gallery_root = Path("gallery")
-            img_path = gallery_root / body.artwork_path.lstrip("/")
+            img_path = artwork_img_path
             sidecar = img_path.with_suffix(".json")
             if not sidecar.exists():
                 sidecar = Path(str(img_path) + ".json")
@@ -4964,9 +4975,8 @@ async def post_to_social(
         # paths). Mirrors gallery_routes._resolve_image_for_publish.
         gallery_base = Path("data/gallery").resolve()
         rel = post_request.image_path.lstrip("/").replace("\\", "/")
-        image_path = (gallery_base / rel).resolve()
         try:
-            image_path.relative_to(gallery_base)
+            image_path = resolve_within(gallery_base, rel)
         except ValueError as exc:
             raise HTTPException(status_code=400, detail="Invalid image path") from exc
         if not image_path.is_file():
@@ -5618,19 +5628,14 @@ async def download_video(
     Args:
         path: Path to the video file (returned by /export/video)
     """
-    from pathlib import Path as PathLib
-
     from fastapi.responses import FileResponse
 
     from ..utils.video import export_dir
 
-    video_path = PathLib(path)
-
     # Security: only allow files from Lumira's own export subdirectory, not
     # the shared system temp root (which any process can write to).
-    export_base = export_dir().resolve()
     try:
-        video_path.resolve().relative_to(export_base)
+        video_path = resolve_within(export_dir(), path)
     except ValueError as e:
         raise HTTPException(status_code=403, detail="Access denied") from e
 

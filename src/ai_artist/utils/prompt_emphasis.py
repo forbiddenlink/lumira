@@ -19,7 +19,9 @@ class PromptEmphasis:
 
     def __init__(self) -> None:
         # Pattern for (text:weight) or (text) for 1.1x emphasis
-        self.weight_pattern = re.compile(r"\(([^:)]+)(?::([+-]?\d*\.?\d+))?\)")
+        self.weight_pattern = re.compile(
+            r"\(([^:()]+)(?::([+-]?(?:\d+(?:\.\d+)?|\.\d+)))?\)"
+        )
         # Default multiplier for () without explicit weight
         self.default_emphasis = 1.1
 
