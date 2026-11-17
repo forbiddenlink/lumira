@@ -22,14 +22,14 @@ def resolve_within(base: str | Path, user_path: str | Path) -> Path:
     py/path-injection query recognises, which ``Path.relative_to`` is not.
 
     Raises:
-        ValueError: if the resolved path is not ``base`` or inside it.
+        ValueError: if the resolved path is not strictly inside ``base``.
     """
     base_real = os.path.realpath(base)
     candidate = os.path.realpath(os.path.join(base_real, user_path))
-    if candidate == base_real:
-        return Path(base_real)
-    # One plain negated startswith guard: CodeQL does not treat a compound
-    # condition (`!= ... and not startswith`) as a path-injection barrier.
+    # One plain negated startswith guard, and only ``candidate`` is returned.
+    # CodeQL does not treat a compound condition as a barrier, and it models
+    # the FastAPI-injected base as user input, so returning ``base`` itself
+    # would be an unguarded path. No caller wants the bare directory.
     if not candidate.startswith(base_real + os.sep):
         raise ValueError("path escapes base directory")
     return Path(candidate)
@@ -44,14 +44,14 @@ def resolve_gallery_file_path(filename: str, gallery_path: str | Path) -> str:
         try:
             return str(stored.resolve().relative_to(gallery_base)).replace("\\", "/")
         except ValueError:
-            pass
+            pass  # Stored path is outside the gallery; fall back to the relative form.
 
     rel = str(filename).replace("\\", "/").lstrip("/")
     try:
         if resolve_within(gallery_base, rel).is_file():
             return rel
     except ValueError:
-        pass
+        pass  # Escapes the gallery; try the basename search below.
 
     if stored.name:
         for candidate in gallery_base.rglob(stored.name):
