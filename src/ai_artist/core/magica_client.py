@@ -23,6 +23,7 @@ REST contract (verified against magica.com/docs/introduction/quickstart,
 from __future__ import annotations
 
 import os
+import re
 import time
 from typing import Any
 
@@ -30,6 +31,8 @@ import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from ..utils.logging import get_logger
+
+_NODE_TYPE_RE = re.compile(r"[A-Za-z0-9_-]+")
 
 logger = get_logger(__name__)
 
@@ -107,6 +110,10 @@ class MagicaClient:
         Deliberately NOT retried: a model run is non-idempotent, so retrying
         an ambiguous POST failure could enqueue (and bill) duplicate runs.
         """
+        # node_type can come from a caller's raw model_id; keep it a single
+        # path segment so it cannot walk to another Magica endpoint.
+        if not _NODE_TYPE_RE.fullmatch(node_type):
+            raise ValueError(f"Invalid Magica node type: {node_type!r}")
         url = f"{MAGICA_BASE_URL}/v1/nodes/{node_type}/run"
         body: dict[str, Any] = {"input": input_params}
         if sub_model_id:

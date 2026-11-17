@@ -43,8 +43,11 @@ def resolve_gallery_file_path(filename: str, gallery_path: str | Path) -> str:
             pass
 
     rel = str(filename).replace("\\", "/").lstrip("/")
-    if (gallery_base / rel).is_file():
-        return rel
+    try:
+        if resolve_within(gallery_base, rel).is_file():
+            return rel
+    except ValueError:
+        pass
 
     if stored.name:
         for candidate in gallery_base.rglob(stored.name):

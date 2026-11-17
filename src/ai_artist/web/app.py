@@ -1174,16 +1174,15 @@ async def get_image_file(
     if file_ext not in allowed_extensions:
         raise HTTPException(status_code=400, detail=ERROR_INVALID_FILE_TYPE)
 
-    full_path = gallery_path_obj / file_path
-
-    if not full_path.exists() or not full_path.is_file():
-        raise HTTPException(status_code=404, detail=ERROR_IMAGE_NOT_FOUND)
-
-    # Security: ensure path is within gallery
+    # Security: ensure path is within gallery. Check containment before
+    # existence so a 404/403 difference cannot probe files outside it.
     try:
         full_path = resolve_within(gallery_path_obj, file_path)
     except ValueError as e:
         raise HTTPException(status_code=403, detail=ERROR_ACCESS_DENIED) from e
+
+    if not full_path.exists() or not full_path.is_file():
+        raise HTTPException(status_code=404, detail=ERROR_IMAGE_NOT_FOUND)
 
     # Detect MIME type from file extension
     mime_types = {

@@ -3260,6 +3260,17 @@ async def create_video(
     if not os.environ.get("MAGICA_API_KEY"):
         raise HTTPException(status_code=503, detail="MAGICA_API_KEY not configured")
 
+    # Validate before the paid generation call: the sidecar below is read and
+    # rewritten, so an escaping path would be an arbitrary .json write.
+    artwork_img_path: Path | None = None
+    if body.artwork_path:
+        try:
+            artwork_img_path = resolve_within(
+                "gallery", body.artwork_path.lstrip("/").replace("\\", "/")
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="Invalid artwork path") from exc
+
     state = _get_lumira_state()
     mood = body.mood or state["mood_system"].current_mood.value
 
@@ -3282,10 +3293,9 @@ async def create_video(
     url = _media_public_url(path)
 
     # Optionally attach video_url onto the source artwork sidecar
-    if body.artwork_path:
+    if artwork_img_path is not None:
         try:
-            gallery_root = Path("gallery")
-            img_path = gallery_root / body.artwork_path.lstrip("/")
+            img_path = artwork_img_path
             sidecar = img_path.with_suffix(".json")
             if not sidecar.exists():
                 sidecar = Path(str(img_path) + ".json")
