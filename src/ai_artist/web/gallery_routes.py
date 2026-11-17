@@ -24,6 +24,7 @@ from ..db.models import (
 from ..db.session import get_db
 from ..utils.logging import get_logger
 from .dependencies import GalleryPathDep, GenerationAuthDep
+from .helpers import resolve_within
 from .rate_limit import RATE_LIMIT_ENABLED, client_ip
 
 logger = get_logger(__name__)
@@ -217,10 +218,8 @@ def _resolve_image_for_publish(
 
     rel = path.lstrip("/").replace("\\", "/")
     gallery_base = Path(gallery_path).resolve()
-    full_path = (gallery_base / rel).resolve()
-
     try:
-        full_path.relative_to(gallery_base)
+        full_path = resolve_within(gallery_base, rel)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail="Invalid image path") from exc
 

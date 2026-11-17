@@ -62,6 +62,7 @@ from .helpers import (
     filter_by_search,
     is_valid_image,
     load_image_metadata,
+    resolve_within,
 )
 from .lumira_routes import router as lumira_router
 from .metrics_routes import router as metrics_router
@@ -1180,7 +1181,7 @@ async def get_image_file(
 
     # Security: ensure path is within gallery
     try:
-        full_path.resolve().relative_to(gallery_path_obj.resolve())
+        full_path = resolve_within(gallery_path_obj, file_path)
     except ValueError as e:
         raise HTTPException(status_code=403, detail=ERROR_ACCESS_DENIED) from e
 
@@ -1257,7 +1258,8 @@ async def delete_image(
 
     # Security check
     try:
-        full_image_path.resolve().relative_to(gallery_path_obj.resolve())
+        full_image_path = resolve_within(gallery_path_obj, file_path)
+        metadata_path = full_image_path.with_suffix(METADATA_FILE_SUFFIX)
     except ValueError as e:
         raise HTTPException(status_code=403, detail=ERROR_ACCESS_DENIED) from e
 
@@ -1291,7 +1293,8 @@ async def toggle_featured(
 
     # Security check
     try:
-        full_image_path.resolve().relative_to(gallery_path_obj.resolve())
+        full_image_path = resolve_within(gallery_path_obj, file_path)
+        metadata_path = full_image_path.with_suffix(METADATA_FILE_SUFFIX)
     except ValueError as e:
         raise HTTPException(status_code=403, detail=ERROR_ACCESS_DENIED) from e
 

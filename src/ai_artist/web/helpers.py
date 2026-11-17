@@ -1,6 +1,7 @@
 """Helper functions for the web API to keep routes clean and focused."""
 
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -10,6 +11,24 @@ from ..gallery.manager import GalleryManager
 from ..utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+def resolve_within(base: str | Path, user_path: str | Path) -> Path:
+    """Resolve ``user_path`` against ``base`` and refuse anything outside it.
+
+    Symlinks and ``..`` are resolved before the check. An absolute
+    ``user_path`` is taken as-is, so it passes only if it already lies under
+    ``base``. The realpath + startswith form is the containment check CodeQL's
+    py/path-injection query recognises, which ``Path.relative_to`` is not.
+
+    Raises:
+        ValueError: if the resolved path is not ``base`` or inside it.
+    """
+    base_real = os.path.realpath(base)
+    candidate = os.path.realpath(os.path.join(base_real, user_path))
+    if candidate != base_real and not candidate.startswith(base_real + os.sep):
+        raise ValueError("path escapes base directory")
+    return Path(candidate)
 
 
 def resolve_gallery_file_path(filename: str, gallery_path: str | Path) -> str:

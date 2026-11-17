@@ -1,13 +1,17 @@
 """Unit tests for web helper functions."""
 
 import json
+import os
 from unittest.mock import Mock, patch
+
+import pytest
 
 from ai_artist.web.helpers import (
     calculate_gallery_stats,
     filter_by_search,
     is_valid_image,
     load_image_metadata,
+    resolve_within,
 )
 
 
@@ -342,3 +346,36 @@ class TestCalculateGalleryStats:
         assert result["featured_images"] == 0
         assert result["total_prompts"] == 0
         assert result["date_range"] == {}
+
+
+class TestResolveWithin:
+    """Containment guard used by every route that joins a request path."""
+
+    def test_relative_path_inside_base(self, tmp_path):
+        assert resolve_within(tmp_path, "2026/01/a.png") == (
+            tmp_path.resolve() / "2026/01/a.png"
+        )
+
+    def test_dotdot_escape_rejected(self, tmp_path):
+        with pytest.raises(ValueError):
+            resolve_within(tmp_path / "gallery", "../secret.json")
+
+    def test_absolute_outside_rejected(self, tmp_path):
+        with pytest.raises(ValueError):
+            resolve_within(tmp_path, "/etc/passwd")
+
+    def test_absolute_inside_allowed(self, tmp_path):
+        inside = tmp_path / "x.mp4"
+        assert resolve_within(tmp_path, str(inside)) == inside.resolve()
+
+    def test_sibling_prefix_rejected(self, tmp_path):
+        (tmp_path / "gallery").mkdir()
+        with pytest.raises(ValueError):
+            resolve_within(tmp_path / "gallery", "../gallery-evil/a.png")
+
+    def test_symlink_escape_rejected(self, tmp_path):
+        base = tmp_path / "gallery"
+        base.mkdir()
+        os.symlink(tmp_path, base / "link")
+        with pytest.raises(ValueError):
+            resolve_within(base, "link/outside.json")
