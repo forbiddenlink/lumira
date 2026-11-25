@@ -8,8 +8,8 @@ Backends:
     - ``"local"``     : :class:`ImageGenerator` (diffusers SDXL/FLUX, local GPU)
     - ``"replicate"`` : :class:`ReplicateGenerator` (hosted Replicate API)
 
-    - ``"magica"``    : :class:`MagicaGenerator` (Magica/Galaxy AI hosted REST API,
-      multi-model image; gated on ``MAGICA_API_KEY``). See ``AI/diagrams/MAGICA_INTEGRATION.md``.
+    - ``"spiral"``    : :class:`SpiralGenerator` (Spiral hosted REST API,
+      multi-model image; gated on ``SPIRAL_API_KEY``). See ``AI/diagrams/SPIRAL_INTEGRATION.md``.
 
 All backends share a construction signature ``(model_id, device, dtype)`` where the remote
 backends ignore ``device``/``dtype`` — so callers can swap backends without changing their
@@ -27,8 +27,8 @@ logger = get_logger(__name__)
 
 BACKEND_LOCAL = "local"
 BACKEND_REPLICATE = "replicate"
-BACKEND_MAGICA = "magica"
-KNOWN_BACKENDS = (BACKEND_LOCAL, BACKEND_REPLICATE, BACKEND_MAGICA)
+BACKEND_SPIRAL = "spiral"
+KNOWN_BACKENDS = (BACKEND_LOCAL, BACKEND_REPLICATE, BACKEND_SPIRAL)
 
 _Device = Literal["cuda", "mps", "cpu"]
 
@@ -47,9 +47,9 @@ class ImageBackend(Protocol):
 def resolve_web_image_backend(configured: str | None = None) -> str:
     """Resolve the image backend for studio / cloud create paths.
 
-    Explicit ``magica`` / ``replicate`` / ``local`` values win. When the config
-    still says ``local`` (the Pydantic default) but Magica or Replicate keys are
-    present, prefer Magica then Replicate — matching Magica-first studio intent
+    Explicit ``spiral`` / ``replicate`` / ``local`` values win. When the config
+    still says ``local`` (the Pydantic default) but Spiral or Replicate keys are
+    present, prefer Spiral then Replicate — matching Spiral-first studio intent
     and torch-free Railway deploys. Set ``LUMIRA_FORCE_LOCAL_WEB=1`` to keep
     on-device generation even when cloud keys exist.
     """
@@ -63,17 +63,17 @@ def resolve_web_image_backend(configured: str | None = None) -> str:
 
     if os.getenv("LUMIRA_FORCE_LOCAL_WEB", "").strip() in {"1", "true", "yes"}:
         return BACKEND_LOCAL
-    if os.environ.get("MAGICA_API_KEY"):
-        return BACKEND_MAGICA
+    if os.environ.get("SPIRAL_API_KEY"):
+        return BACKEND_SPIRAL
     if os.environ.get("REPLICATE_API_TOKEN"):
         return BACKEND_REPLICATE
     return BACKEND_LOCAL
 
 
 def _model_id_for_backend(backend: str, config: Any, mood: str | None) -> str:
-    """Pick a backend-appropriate model id (mood-aware for Magica)."""
-    if backend == BACKEND_MAGICA:
-        from .magica_generator import DEFAULT_MODEL, model_for_mood
+    """Pick a backend-appropriate model id (mood-aware for Spiral)."""
+    if backend == BACKEND_SPIRAL:
+        from .spiral_generator import DEFAULT_MODEL, model_for_mood
 
         return model_for_mood(mood) if mood else DEFAULT_MODEL
 
@@ -108,30 +108,30 @@ def build_web_image_generator(
     """Build the studio/cloud image generator from config + env keys.
 
     Returns ``(backend, generator)``. When ``require_img2img`` is True and the
-    resolved backend is Magica (no img2img yet), fall back to Replicate if a
+    resolved backend is Spiral (no img2img yet), fall back to Replicate if a
     token is present; otherwise raise ``RuntimeError``.
 
     ``preferred_model_id`` (from the adaptive learner) is honored for local and
-    Replicate backends only — Magica keeps mood-routed Nano Banana / Flux ids.
+    Replicate backends only — Spiral keeps mood-routed Nano Banana / Flux ids.
     """
     backend = resolve_web_image_backend(getattr(config.model, "backend", None))
 
-    if require_img2img and backend == BACKEND_MAGICA:
+    if require_img2img and backend == BACKEND_SPIRAL:
         if os.environ.get("REPLICATE_API_TOKEN"):
             logger.info(
                 "img2img_backend_fallback",
-                requested=BACKEND_MAGICA,
+                requested=BACKEND_SPIRAL,
                 using=BACKEND_REPLICATE,
             )
             backend = BACKEND_REPLICATE
         else:
             raise RuntimeError(
-                "img2img is not available on the Magica image backend yet. "
+                "img2img is not available on the Spiral image backend yet. "
                 "Set REPLICATE_API_TOKEN or config.model.backend=local."
             )
 
     model_id = _model_id_for_backend(backend, config, mood)
-    if preferred_model_id and backend != BACKEND_MAGICA:
+    if preferred_model_id and backend != BACKEND_SPIRAL:
         # Accept learner suggestion when it looks usable for this backend
         if backend == BACKEND_REPLICATE:
             from .replicate_generator import REPLICATE_MODELS
@@ -189,11 +189,11 @@ def get_image_generator(
             model_id=model_id, device=cast(_Device, device), dtype=dtype
         )
 
-    if backend == BACKEND_MAGICA:
-        from .magica_generator import MagicaGenerator
+    if backend == BACKEND_SPIRAL:
+        from .spiral_generator import SpiralGenerator
 
         logger.info("image_backend_selected", backend=backend, model_id=model_id)
-        return MagicaGenerator(
+        return SpiralGenerator(
             model_id=model_id, device=cast(_Device, device), dtype=dtype
         )
 

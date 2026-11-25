@@ -243,7 +243,7 @@ when that process restarts. Actual usage can exceed the pre-call estimate.
 2. **Verify optional integrations when needed**
    - FalkorDB graph queries require a running graph service.
    - Local CLIP/FLUX checks require downloaded models and suitable hardware.
-   - Magica audio/video paths exist; paid output quality is not yet validated by
+   - Spiral audio/video paths exist; paid output quality is not yet validated by
      these local checks. 3D generation remains deferred.
 
 3. **Prepare the release**

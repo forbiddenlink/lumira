@@ -139,7 +139,7 @@ def server_process(test_port: int) -> Generator[None, None, None]:
     _seed_e2e_runtime(e2e_root)
 
     project_root = Path(__file__).resolve().parents[2]
-    # Share real config so Magica/local factory resolves like production studio
+    # Share real config so Spiral/local factory resolves like production studio
     config_link = e2e_root / "config"
     if not config_link.exists():
         try:

@@ -64,7 +64,7 @@ def should_pair_soundtrack(
         "yes",
     }:
         return True
-    if not os.environ.get("MAGICA_API_KEY"):
+    if not os.environ.get("SPIRAL_API_KEY"):
         return False
     mood_l = (mood or "").lower()
     emotional_moods = {
@@ -97,9 +97,9 @@ def should_pair_video(
     drive_status: dict[str, Any] | None = None,
     explicit: bool = False,
 ) -> bool:
-    """Pair a short Magica video when the mood wants motion.
+    """Pair a short Spiral video when the mood wants motion.
 
-    ``LUMIRA_AUTO_VIDEO=0`` disables. ``=1`` forces (still needs a Magica key).
+    ``LUMIRA_AUTO_VIDEO=0`` disables. ``=1`` forces (still needs a Spiral key).
     Unset means mood/drive decides. Soundtrack and video are XOR'd by
     :func:`choose_extra_media` so one piece spends at most one extra media call.
     """
@@ -108,7 +108,7 @@ def should_pair_video(
     flag = os.getenv("LUMIRA_AUTO_VIDEO", "").strip().lower()
     if flag in {"0", "false", "no", "off"}:
         return False
-    if not os.environ.get("MAGICA_API_KEY"):
+    if not os.environ.get("SPIRAL_API_KEY"):
         return False
     if flag in {"1", "true", "yes", "on"}:
         return True
@@ -182,7 +182,7 @@ def maybe_pair_soundtrack(
     enabled: bool,
     gallery_root: str = "gallery",
 ) -> Path | None:
-    """Optionally generate a Magica soundtrack next to a new artwork.
+    """Optionally generate a Spiral soundtrack next to a new artwork.
 
     Opt-in via ``enabled`` or ``LUMIRA_AUTO_SOUNDTRACK=1``. Failures are logged
     and swallowed so image creation still succeeds. Shared by web + CLI.
@@ -193,16 +193,16 @@ def maybe_pair_soundtrack(
         "yes",
     }:
         return None
-    if not os.environ.get("MAGICA_API_KEY"):
+    if not os.environ.get("SPIRAL_API_KEY"):
         return None
     try:
-        from ..core.magica_media import MagicaAudioGenerator
+        from ..core.spiral_media import SpiralAudioGenerator
 
         audio_prompt = (
             f"Instrumental soundtrack for an artwork: {prompt[:200]}. "
             f"Mood: {mood or 'contemplative'}."
         )
-        path = MagicaAudioGenerator().generate_audio(
+        path = SpiralAudioGenerator().generate_audio(
             audio_prompt,
             duration_seconds=30,
             mood=mood,
@@ -288,10 +288,10 @@ def maybe_pair_video(
     enabled: bool,
     gallery_root: str = "gallery",
 ) -> Path | None:
-    """Optionally generate a short Magica video next to a new artwork.
+    """Optionally generate a short Spiral video next to a new artwork.
 
     Failures are logged and swallowed so the still succeeds. Budget-capped
-    by ``LUMIRA_MAGICA_DAILY_MAX_VIDEO``.
+    by ``LUMIRA_SPIRAL_DAILY_MAX_VIDEO``.
     """
     if not enabled and os.getenv("LUMIRA_AUTO_VIDEO", "").strip().lower() not in {
         "1",
@@ -300,16 +300,16 @@ def maybe_pair_video(
         "on",
     }:
         return None
-    if not os.environ.get("MAGICA_API_KEY"):
+    if not os.environ.get("SPIRAL_API_KEY"):
         return None
     try:
-        from ..core.magica_media import MagicaVideoGenerator
+        from ..core.spiral_media import SpiralVideoGenerator
 
         video_prompt = (
             f"Slow camera move across this scene: {prompt[:200]}. "
             f"Mood: {mood or 'energized'}."
         )
-        path = MagicaVideoGenerator().generate_video(
+        path = SpiralVideoGenerator().generate_video(
             video_prompt,
             duration_seconds=5,
             aspect_ratio="1:1",

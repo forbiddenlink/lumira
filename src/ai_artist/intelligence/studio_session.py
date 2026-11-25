@@ -160,7 +160,7 @@ def pick_archive_seed(
 ) -> dict[str, str] | None:
     """Pick a recent work to continue — prompt-level remix, not img2img.
 
-    Magica's generate path cannot take a reference image, so continuation is
+    Spiral's generate path cannot take a reference image, so continuation is
     honest at the prompt: same subject family, a new sentence. Returns None
     unless the session is continuation and something paintable exists.
     """

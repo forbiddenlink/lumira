@@ -111,8 +111,8 @@ class TestLumiraState:
 class _FakeStudioGenerator:
     """Stand-in image generator that never hits the network or time.sleep.
 
-    Used to keep /create and /request tests off the real Magica poll loop
-    (magica_client.poll_run sleeps in a thread and would hang bare pytest).
+    Used to keep /create and /request tests off the real Spiral poll loop
+    (spiral_client.poll_run sleeps in a thread and would hang bare pytest).
     """
 
     node_type = "fake"
@@ -141,7 +141,7 @@ class TestLumiraCreate:
         """Patch the generator boundary so background generation can't hang."""
         with patch(
             "ai_artist.web.lumira_routes._build_studio_generator",
-            return_value=("magica", _FakeStudioGenerator()),
+            return_value=("spiral", _FakeStudioGenerator()),
         ):
             yield
 
@@ -643,7 +643,7 @@ async def test_maybe_retry_studio_piece_can_be_disabled(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_maybe_retry_keeps_first_when_retry_generate_raises(monkeypatch):
-    """A failed second Magica call must not discard the first paid picture."""
+    """A failed second Spiral call must not discard the first paid picture."""
     from unittest.mock import AsyncMock
 
     from PIL import Image
@@ -652,7 +652,7 @@ async def test_maybe_retry_keeps_first_when_retry_generate_raises(monkeypatch):
 
     first = Image.new("RGB", (8, 8), "red")
     generator = MagicMock()
-    generator.generate = MagicMock(side_effect=RuntimeError("magica down"))
+    generator.generate = MagicMock(side_effect=RuntimeError("spiral down"))
     ws = MagicMock()
     ws.send_thinking_update = AsyncMock()
     ws.broadcast_inner_dialogue = AsyncMock()
