@@ -100,8 +100,8 @@ to make Lumira a more polished, feature-rich AI artist.
     - [x] Overall coverage: 54% → 61%
 - Now: 24/7 web create (key present, TESTING=1 off), gallery art-first, archive remix, outer-loop steer, mood video XOR soundtrack
 - Next:
-  - FLUX Kontext / Magica img2img if the API grows a reference-image path
-  - Watch Magica spend after autonomy default-on
+  - FLUX Kontext / Spiral img2img if the API grows a reference-image path
+  - Watch Spiral spend after autonomy default-on
 
 ## Potential Future Improvements
 

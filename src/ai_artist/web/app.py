@@ -1159,7 +1159,7 @@ async def get_image_file(
     if not gallery_path_obj:
         raise HTTPException(status_code=503, detail="Gallery not initialized")
 
-    # Validate file extension (images + Magica multimodal assets)
+    # Validate file extension (images + Spiral multimodal assets)
     allowed_extensions = {
         ".png",
         ".jpg",

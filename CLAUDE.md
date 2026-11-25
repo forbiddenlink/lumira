@@ -3,7 +3,7 @@
 Autonomous AI artist system -- not a tool, an artist with personality, moods, memory, and
 creative independence. Python 3.11+, FastAPI, Stable Diffusion XL/FLUX; creates artwork based
 on emotional states, learns from experience, evolves its style. A lightweight "gallery +
-cloud-generation" build (`Dockerfile.gallery`, no local ML/GPU, generation via Replicate/Magica)
+cloud-generation" build (`Dockerfile.gallery`, no local ML/GPU, generation via Replicate/Spiral)
 deploys to Railway (`.railway/railway.ts`, Infrastructure as Code).
 
 ## Stack
@@ -12,7 +12,7 @@ deploys to Railway (`.railway/railway.ts`, Infrastructure as Code).
 - FastAPI (`>=0.115.0,<0.142.0`) + Uvicorn; SQLAlchemy 2 + Alembic; SQLite (WAL mode)
 - Pydantic V2 + pydantic-settings for config (`.env` support, nested delimiter `__`)
 - Local generation: torch, diffusers, transformers, accelerate, peft (SDXL, FLUX)
-- Cloud generation: Replicate API, Magica/Galaxy AI; `anthropic` SDK; `chromadb` (vector memory)
+- Cloud generation: Replicate API, Spiral; `anthropic` SDK; `chromadb` (vector memory)
 - Redis + RQ (async job queue); structlog (logging); `tenacity` (retry/backoff)
 - Jinja2 templates + plain CSS custom properties for the web UI (not Next.js/Tailwind)
 - Optional extras (`pyproject.toml [project.optional-dependencies]`): training (wandb, xformers), monitoring (Sentry, Prometheus), social (Twitter/X, Instagram, Bluesky), graph memory (FalkorDB), C2PA provenance, e2e (Playwright)
@@ -123,12 +123,12 @@ Names confirmed via `os.getenv`/`os.environ` in source plus the deploy vars set 
 service:
 
 - `RAILWAY_API_KEY` -- fail-closed auth on generation/admin routes (gallery browsing stays public without it; those routes return 503)
-- `MAGICA_API_KEY`, `MAGICA_BASE_URL`, `REPLICATE_API_TOKEN`, `ANTHROPIC_API_KEY` -- generation and AI providers
+- `SPIRAL_API_KEY`, `SPIRAL_BASE_URL`, `REPLICATE_API_TOKEN`, `ANTHROPIC_API_KEY` -- generation and AI providers
 - `ALLOWED_ORIGINS`, `UNSPLASH_ACCESS_KEY`, `UNSPLASH_SECRET_KEY`, `REDIS_URL`, `FALKORDB_PASSWORD` -- infra/service config
 - `LUMIRA_AUTO_SOUNDTRACK`, `LUMIRA_AUTO_VIDEO` -- pair new artwork with generated audio/video
 - `TWITTER_API_KEY`/`TWITTER_API_SECRET`/`TWITTER_ACCESS_TOKEN`/`TWITTER_ACCESS_SECRET`/`TWITTER_BEARER_TOKEN`, `INSTAGRAM_USERNAME`/`INSTAGRAM_PASSWORD`/`INSTAGRAM_SESSION_FILE`, `BLUESKY_HANDLE`/`BLUESKY_PASSWORD` -- social posting
 - `LUMIRA_DEV_MODE`, `DEBUG` -- local-dev auth bypass, never enable in production
-- `LUMIRA_AI_KILL_SWITCH`, `LUMIRA_DAILY_SPEND_USD_MAX`, `LUMIRA_MAGICA_COST_PER_IMAGE_USD`, `LUMIRA_MAGICA_DAILY_MAX_IMAGES`, `LUMIRA_REPLICATE_COST_PER_IMAGE_USD`, `LUMIRA_REPLICATE_DAILY_MAX_IMAGES` -- spend guards
+- `LUMIRA_AI_KILL_SWITCH`, `LUMIRA_DAILY_SPEND_USD_MAX`, `LUMIRA_SPIRAL_COST_PER_IMAGE_USD`, `LUMIRA_SPIRAL_DAILY_MAX_IMAGES`, `LUMIRA_REPLICATE_COST_PER_IMAGE_USD`, `LUMIRA_REPLICATE_DAILY_MAX_IMAGES` -- spend guards
 - `LUMIRA_PORT`/`PORT`, `WS_MAX_CONNECTIONS`, `LUMIRA_MAX_CONCURRENT_GENERATIONS`, `LUMIRA_MAX_QUEUE_DEPTH`, `LUMIRA_JOB_MAX_RETRIES`, `LUMIRA_JOB_RETRY_PAID` (paid cloud jobs never auto-retry unless set), `LUMIRA_MIN_FREE_DISK_MB`, `LUMIRA_SCHEDULER_PERSIST`, `LUMIRA_SESSION_RETRY`, `LUMIRA_AUTONOMOUS_CREATE`, `LUMIRA_AUTONOMOUS_INTERVAL_MIN`, `LUMIRA_FORCE_LOCAL_WEB`, `LUMIRA_MODERATION_ENABLED`, `TESTING` -- runtime tuning
 
 Most non-secret settings (model backend, device, generation defaults, database URL) live in

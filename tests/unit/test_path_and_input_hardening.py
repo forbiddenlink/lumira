@@ -7,7 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
 
-from ai_artist.core.magica_client import MagicaClient
+from ai_artist.core.spiral_client import SpiralClient, SpiralModel
 from ai_artist.gallery.manager import GalleryManager
 from ai_artist.utils.config import WebConfig
 from ai_artist.utils.prompt_emphasis import PromptEmphasis
@@ -32,8 +32,8 @@ def client(tmp_path):
 
 
 def test_video_rejects_artwork_path_outside_gallery(client, monkeypatch):
-    monkeypatch.setenv("MAGICA_API_KEY", "dummy")
-    with patch("ai_artist.core.magica_media.MagicaVideoGenerator") as gen:
+    monkeypatch.setenv("SPIRAL_API_KEY", "dummy")
+    with patch("ai_artist.core.spiral_media.SpiralVideoGenerator") as gen:
         response = client.post(
             "/api/lumira/video",
             json={"prompt": "drift", "artwork_path": "../../etc/settings.json"},
@@ -51,10 +51,21 @@ def test_image_file_outside_gallery_is_403_whether_or_not_it_exists(client, tmp_
     assert missing.status_code == 403
 
 
-@pytest.mark.parametrize("node_type", ["../admin", "a/b", "x?y=1", "", "a#b"])
-def test_magica_rejects_node_type_that_is_not_one_segment(node_type):
+@pytest.mark.parametrize(
+    ("provider", "model"),
+    [
+        ("fal", "../admin"),
+        ("fal", "a//b"),
+        ("fal", "x?y=1"),
+        ("fal", ""),
+        ("fal", "a#b"),
+        ("", "model"),
+        ("a/b", "model"),
+    ],
+)
+def test_spiral_rejects_malformed_provider_or_model(provider, model):
     with pytest.raises(ValueError):
-        MagicaClient(api_key="dummy").start_run(node_type, {})
+        SpiralClient(api_key="dummy").start_run(SpiralModel(provider, model), {})
 
 
 def test_emphasis_parses_weights_and_stays_linear_on_hostile_input():

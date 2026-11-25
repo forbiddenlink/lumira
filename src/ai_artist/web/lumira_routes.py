@@ -50,7 +50,7 @@ _background_tasks: set[asyncio.Task] = set()
 async def _run_in_thread(func: Any, /, *args: Any, **kwargs: Any) -> Any:
     """Run blocking generator I/O off the event loop.
 
-    Magica (and local SD) ``generate()`` / ``load_model()`` are synchronous.
+    Spiral (and local SD) ``generate()`` / ``load_model()`` are synchronous.
     Running them inline inside a background ``asyncio.Task`` blocks the loop and
     delays the HTTP response that should return ``session_id`` immediately.
     """
@@ -236,7 +236,7 @@ def _maybe_pair_soundtrack(
     metadata: dict[str, Any],
     enabled: bool,
 ) -> Path | None:
-    """Web wrapper around shared Magica soundtrack pairing."""
+    """Web wrapper around shared Spiral soundtrack pairing."""
     from ..personality.continuity import maybe_pair_soundtrack
 
     # Preserve nested metadata.metadata shape used by studio sidecars.
@@ -258,7 +258,7 @@ def _maybe_pair_video(
     metadata: dict[str, Any],
     enabled: bool,
 ) -> Path | None:
-    """Web wrapper around shared Magica video pairing."""
+    """Web wrapper around shared Spiral video pairing."""
     from ..personality.continuity import maybe_pair_video
 
     metadata.setdefault("metadata", {})
@@ -361,7 +361,7 @@ def configure_autonomy_scheduler(
 async def run_scheduled_autonomous_create() -> None:
     """Create one autonomous artwork via the studio create path (HTTP loopback).
 
-    Uses Magica/local backends already configured for the web app, and
+    Uses Spiral/local backends already configured for the web app, and
     broadcasts WS progress like a normal studio create.
     """
     global _autonomy_creation_count, _autonomy_failure_count, _autonomy_busy
@@ -640,7 +640,7 @@ class UserCreationRequest(BaseModel):
     )
     with_soundtrack: bool = Field(
         default=False,
-        description="Pair the artwork with a Magica-generated instrumental soundtrack",
+        description="Pair the artwork with a Spiral-generated instrumental soundtrack",
     )
 
     @model_validator(mode="after")
@@ -1817,7 +1817,7 @@ async def create_artwork(
                             mood=mood.value,
                             subject=subject,
                             style=style,
-                            model=getattr(generator, "node_type", None)
+                            model=getattr(generator, "model_key", None)
                             or getattr(generator, "model_name", None)
                             or config.model.base_model,
                             file_path=str(save_path),
@@ -1842,7 +1842,7 @@ async def create_artwork(
                             "mood": mood.value,
                             "subject": subject,
                             "style": style,
-                            "model": getattr(generator, "node_type", None)
+                            "model": getattr(generator, "model_key", None)
                             or getattr(generator, "model_name", None)
                             or config.model.base_model,
                             "backend": backend,
@@ -2333,7 +2333,7 @@ async def user_request_creation(
                     session_id=session_id, ws_manager=ws_manager
                 )
 
-                # Load LoRA config if requested (Replicate-compatible; Magica strips it)
+                # Load LoRA config if requested (Replicate-compatible; Spiral strips it)
                 lora_url = None
                 lora_scale = 0.8
                 final_prompt = prompt
@@ -2395,7 +2395,7 @@ async def user_request_creation(
                             mood=mood.value,
                             subject=subject,
                             style=style,
-                            model=getattr(generator, "node_type", None)
+                            model=getattr(generator, "model_key", None)
                             or config.model.base_model,
                             file_path=str(save_path),
                         )
@@ -2417,7 +2417,7 @@ async def user_request_creation(
                             "mood": mood.value,
                             "subject": subject,
                             "style": style,
-                            "model": getattr(generator, "node_type", None)
+                            "model": getattr(generator, "model_key", None)
                             or config.model.base_model,
                             "backend": backend,
                             "reasoning": intent.reasoning,
@@ -3160,12 +3160,12 @@ async def get_thematic_series(request: Request) -> ThematicSeriesResponse:
 
 
 # =============================================================================
-# Magica multimodal (audio / video)
+# Spiral multimodal (audio / video)
 # =============================================================================
 
 
-class MagicaAudioRequest(BaseModel):
-    """Request a Magica instrumental soundtrack."""
+class SpiralAudioRequest(BaseModel):
+    """Request a Spiral instrumental soundtrack."""
 
     prompt: str = Field(..., min_length=1, max_length=2000)
     mood: str | None = Field(default=None, max_length=100)
@@ -3173,8 +3173,8 @@ class MagicaAudioRequest(BaseModel):
     model_id: str | None = Field(default=None, max_length=100)
 
 
-class MagicaVideoRequest(BaseModel):
-    """Request a Magica short video."""
+class SpiralVideoRequest(BaseModel):
+    """Request a Spiral short video."""
 
     prompt: str = Field(..., min_length=1, max_length=2000)
     mood: str | None = Field(default=None, max_length=100)
@@ -3188,8 +3188,8 @@ class MagicaVideoRequest(BaseModel):
     )
 
 
-class MagicaMediaResponse(BaseModel):
-    """Saved Magica media asset."""
+class SpiralMediaResponse(BaseModel):
+    """Saved Spiral media asset."""
 
     path: str
     url: str
@@ -3206,26 +3206,26 @@ def _media_public_url(path: Path) -> str:
         return str(path)
 
 
-@router.post("/soundtrack", response_model=MagicaMediaResponse)
+@router.post("/soundtrack", response_model=SpiralMediaResponse)
 @limiter.limit("5/minute")
 async def create_soundtrack(
     request: Request,
     _auth: GenerationAuthDep,
-    body: MagicaAudioRequest,
-) -> MagicaMediaResponse:
-    """Generate a Magica instrumental soundtrack for a prompt/mood."""
+    body: SpiralAudioRequest,
+) -> SpiralMediaResponse:
+    """Generate a Spiral instrumental soundtrack for a prompt/mood."""
     import os
 
-    if not os.environ.get("MAGICA_API_KEY"):
-        raise HTTPException(status_code=503, detail="MAGICA_API_KEY not configured")
+    if not os.environ.get("SPIRAL_API_KEY"):
+        raise HTTPException(status_code=503, detail="SPIRAL_API_KEY not configured")
 
     state = _get_lumira_state()
     mood = body.mood or state["mood_system"].current_mood.value
 
-    from ..core.magica_media import MagicaAudioGenerator
+    from ..core.spiral_media import SpiralAudioGenerator
 
     try:
-        path = MagicaAudioGenerator(model_id=body.model_id).generate_audio(
+        path = SpiralAudioGenerator(model_id=body.model_id).generate_audio(
             body.prompt,
             duration_seconds=body.duration_seconds,
             mood=mood,
@@ -3235,9 +3235,9 @@ async def create_soundtrack(
         raise HTTPException(status_code=503, detail=str(e)) from e
     except Exception as e:
         logger.error("soundtrack_generation_failed", error=str(e))
-        raise HTTPException(status_code=502, detail=f"Magica audio failed: {e}") from e
+        raise HTTPException(status_code=502, detail=f"Spiral audio failed: {e}") from e
 
-    return MagicaMediaResponse(
+    return SpiralMediaResponse(
         path=str(path),
         url=_media_public_url(path),
         kind="audio",
@@ -3246,19 +3246,19 @@ async def create_soundtrack(
     )
 
 
-@router.post("/video", response_model=MagicaMediaResponse)
+@router.post("/video", response_model=SpiralMediaResponse)
 @limiter.limit("3/minute")
 async def create_video(
     request: Request,
     _auth: GenerationAuthDep,
-    body: MagicaVideoRequest,
-) -> MagicaMediaResponse:
-    """Generate a short Magica video from a prompt/mood."""
+    body: SpiralVideoRequest,
+) -> SpiralMediaResponse:
+    """Generate a short Spiral video from a prompt/mood."""
     import json
     import os
 
-    if not os.environ.get("MAGICA_API_KEY"):
-        raise HTTPException(status_code=503, detail="MAGICA_API_KEY not configured")
+    if not os.environ.get("SPIRAL_API_KEY"):
+        raise HTTPException(status_code=503, detail="SPIRAL_API_KEY not configured")
 
     # Validate before the paid generation call: the sidecar below is read and
     # rewritten, so an escaping path would be an arbitrary .json write.
@@ -3274,10 +3274,10 @@ async def create_video(
     state = _get_lumira_state()
     mood = body.mood or state["mood_system"].current_mood.value
 
-    from ..core.magica_media import MagicaVideoGenerator
+    from ..core.spiral_media import SpiralVideoGenerator
 
     try:
-        path = MagicaVideoGenerator(model_id=body.model_id).generate_video(
+        path = SpiralVideoGenerator(model_id=body.model_id).generate_video(
             body.prompt,
             duration_seconds=body.duration_seconds,
             aspect_ratio=body.aspect_ratio,
@@ -3288,7 +3288,7 @@ async def create_video(
         raise HTTPException(status_code=503, detail=str(e)) from e
     except Exception as e:
         logger.error("video_generation_failed", error=str(e))
-        raise HTTPException(status_code=502, detail=f"Magica video failed: {e}") from e
+        raise HTTPException(status_code=502, detail=f"Spiral video failed: {e}") from e
 
     url = _media_public_url(path)
 
@@ -3315,7 +3315,7 @@ async def create_video(
                 error=str(attach_err),
             )
 
-    return MagicaMediaResponse(
+    return SpiralMediaResponse(
         path=str(path),
         url=url,
         kind="video",
@@ -4046,7 +4046,7 @@ async def create_with_reference(
                             "mood": mood.value,
                             "subject": subject,
                             "style": style,
-                            "model": getattr(generator, "node_type", None)
+                            "model": getattr(generator, "model_key", None)
                             or config.model.base_model,
                             "backend": backend,
                             "reference_id": body.reference_id,
@@ -5142,7 +5142,7 @@ async def generate_preview(
 ) -> PreviewResponse:
     """Generate a fast preview for concept validation.
 
-    Uses Magica (when ``MAGICA_API_KEY`` / studio backend is magica) for a
+    Uses Spiral (when ``SPIRAL_API_KEY`` / studio backend is spiral) for a
     quick hosted preview; otherwise falls back to local FLUX.1 Schnell.
     """
     import asyncio
@@ -5180,20 +5180,20 @@ async def generate_preview(
         seed = body.seed or 0
         used_backend = "local-flux"
 
-        magica_key = os.getenv("MAGICA_API_KEY", "").strip()
-        use_magica = bool(magica_key) and "your_" not in magica_key.lower()
+        spiral_key = os.getenv("SPIRAL_API_KEY", "").strip()
+        use_spiral = bool(spiral_key) and "your_" not in spiral_key.lower()
 
-        if use_magica:
-            used_backend = "magica"
-            from ..core.magica_generator import MagicaGenerator, model_for_mood
+        if use_spiral:
+            used_backend = "spiral"
+            from ..core.spiral_generator import SpiralGenerator, model_for_mood
 
             # Cheaper/faster Nano Banana for previews (1K square)
             node = model_for_mood(mood_name)
             if node.startswith("flux") or "grok" in node or "gpt" in node:
                 node = "nano_banana_2"
 
-            def _run_magica() -> tuple[str, int]:
-                gen = MagicaGenerator(model_id=node)
+            def _run_spiral() -> tuple[str, int]:
+                gen = SpiralGenerator(model_id=node)
                 images = gen.generate(
                     prompt=enhanced,
                     width=1024,
@@ -5206,7 +5206,7 @@ async def generate_preview(
                 b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
                 return b64, body.seed or 0
 
-            image_base64, seed = await asyncio.to_thread(_run_magica)
+            image_base64, seed = await asyncio.to_thread(_run_spiral)
         else:
             from ..core.mood_blender import MoodBlender
             from ..core.preview_generator import get_preview_generator

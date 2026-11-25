@@ -18,7 +18,7 @@ def test_local_backend_keeps_default_retries():
     assert _max_retries_for({"backend": "local"}) == 3
 
 
-@pytest.mark.parametrize("backend", ["replicate", "magica", "Magica", "something-new"])
+@pytest.mark.parametrize("backend", ["replicate", "spiral", "Spiral", "something-new"])
 def test_paid_or_unknown_backend_gets_no_retries(backend):
     assert _max_retries_for({"backend": backend}) == 0
 
@@ -32,7 +32,7 @@ def test_paid_backend_from_config_yaml_gets_no_retries(tmp_path):
 def test_opt_in_restores_retries_for_paid(monkeypatch):
     monkeypatch.setenv("LUMIRA_JOB_RETRY_PAID", "1")
     monkeypatch.setenv("LUMIRA_JOB_MAX_RETRIES", "2")
-    assert _max_retries_for({"backend": "magica"}) == 2
+    assert _max_retries_for({"backend": "spiral"}) == 2
 
 
 def test_global_zero_still_disables_local(monkeypatch):

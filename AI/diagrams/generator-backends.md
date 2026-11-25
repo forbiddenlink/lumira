@@ -4,7 +4,7 @@ Snapshot as of 2026-07-28. Source: `src/ai_artist/core/`, `web/lumira_routes.py`
 
 Lumira's generation stage is duck-typed: any class exposing
 `generate(prompt, ...) -> list[PIL.Image]` (plus `load_model()` / cleanup) can stand in.
-Two concrete backends exist today; a hosted multi-model backend (Magica) is the planned third.
+Two concrete backends exist today; a hosted multi-model backend (Spiral) is the third.
 
 ```mermaid
 flowchart TD
@@ -21,27 +21,27 @@ flowchart TD
 
     Factory -->|local| Local["ImageGenerator<br/>generator.py:62<br/>diffusers SDXL / FLUX · GPU"]
     Factory -->|replicate| Rep["ReplicateGenerator<br/>replicate_generator.py:78<br/>hosted API · REPLICATE_MODELS registry"]
-    Factory -->|magica| Mag["MagicaGenerator<br/>magica_generator.py<br/>REST · MAGICA_MODELS · image (+video/audio future)"]
+    Factory -->|spiral| Mag["SpiralGenerator<br/>spiral_generator.py<br/>REST · SPIRAL_MODELS · image (+video/audio future)"]
 
     Local --> Pool["ModelPool<br/>model_pool.py:24<br/>pipeline cache"]
 
-    Mag -.->|gated: MAGICA_API_KEY| Note["REST built; live run untested until key set.<br/>See MAGICA_INTEGRATION.md"]
+    Mag -.->|gated: SPIRAL_API_KEY| Note["REST built; live run untested until key set.<br/>See SPIRAL_INTEGRATION.md"]
 ```
 
 ## Backend interface (duck-typed — no ABC yet)
 
-| Method | local `ImageGenerator` | `ReplicateGenerator` | `MagicaGenerator` |
+| Method | local `ImageGenerator` | `ReplicateGenerator` | `SpiralGenerator` |
 |--------|------------------------|----------------------|-----------------------------|
-| `generate(prompt, ...) -> list[Image]` | ✅ `generator.py:471` | ✅ `replicate_generator.py:142` | ✅ `magica_generator.py` |
+| `generate(prompt, ...) -> list[Image]` | ✅ `generator.py:471` | ✅ `replicate_generator.py:142` | ✅ `spiral_generator.py` |
 | `load_model()` | ✅ | ✅ | ✅ no-op (remote) |
-| budget guard | n/a (local) | `_check_replicate_budget:52` | `_check_magica_budget` |
-| model registry | `MoodModelConfig` `config.py:26` | `REPLICATE_MODELS:20` | `MAGICA_MODELS` |
+| budget guard | n/a (local) | `_check_replicate_budget:52` | `_check_spiral_budget` |
+| model registry | `MoodModelConfig` `config.py:26` | `REPLICATE_MODELS:20` | `SPIRAL_MODELS` |
 
 ## Selection
 
-`config.model.backend` (`local` \| `replicate` \| `magica`, added 2026-07-28, default
+`config.model.backend` (`local` \| `replicate` \| `spiral`, added 2026-07-28, default
 `"local"`) selects the backend via `get_image_generator()` in `core/generator_factory.py`.
-Studio/web create paths use `build_web_image_generator()` (2026-07-29): Magica-first when
+Studio/web create paths use `build_web_image_generator()` (2026-07-29): Spiral-first when
 keys exist and backend is still `local`. Worker uses the factory directly. CLI
-`main.py` stays on local ImageGenerator. `magica` requires `MAGICA_API_KEY`; see
-MAGICA_INTEGRATION.md. Audio/video use `magica_media.py` (not the image factory).
+`main.py` stays on local ImageGenerator. `spiral` requires `SPIRAL_API_KEY`; see
+SPIRAL_INTEGRATION.md. Audio/video use `spiral_media.py` (not the image factory).

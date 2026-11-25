@@ -66,7 +66,7 @@ def test_llm_cost_estimate_scales_with_tokens(sg):
 
 def test_image_cap_accumulates_across_requests(sg):
     sg.check_and_record_images("replicate", 2, cap=3)
-    sg.check_and_record_images("magica", 1, cap=3)
+    sg.check_and_record_images("spiral", 1, cap=3)
     sg.current_spend_usd()
     with pytest.raises(sg.SpendBudgetExceededError):
         sg.check_and_record_images("replicate", 2, cap=3)
@@ -78,7 +78,7 @@ def test_image_and_llm_spend_share_fallback_budget(sg, monkeypatch):
     sg.check_and_record_images("replicate", 1, cap=3, cost_per_image_usd=0.4)
     assert sg.current_spend_usd() == pytest.approx(0.8)
     with pytest.raises(sg.SpendBudgetExceededError):
-        sg.check_and_record_images("magica", 1, cap=3, cost_per_image_usd=0.3)
+        sg.check_and_record_images("spiral", 1, cap=3, cost_per_image_usd=0.3)
     assert sg.current_spend_usd() == pytest.approx(0.8)
 
 

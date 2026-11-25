@@ -251,7 +251,7 @@ def test_cli_presence_after_pairs_soundtrack(tmp_path, monkeypatch):
     sidecar.write_text('{"prompt": "fog"}')
 
     monkeypatch.setattr(cont, "should_pair_soundtrack", lambda **_: True)
-    monkeypatch.setenv("MAGICA_API_KEY", "test-key")
+    monkeypatch.setenv("SPIRAL_API_KEY", "test-key")
 
     audio_path = tmp_path / "score.mp3"
     audio_path.write_bytes(b"audio")
@@ -261,7 +261,7 @@ def test_cli_presence_after_pairs_soundtrack(tmp_path, monkeypatch):
             return audio_path
 
     monkeypatch.setattr(
-        "ai_artist.core.magica_media.MagicaAudioGenerator",
+        "ai_artist.core.spiral_media.SpiralAudioGenerator",
         FakeAudio,
     )
     # Avoid desire engine side effects writing real data paths
@@ -291,7 +291,7 @@ def test_cli_presence_after_pairs_soundtrack(tmp_path, monkeypatch):
 def test_maybe_pair_soundtrack_disabled_without_key(monkeypatch, tmp_path):
     from ai_artist.personality.continuity import maybe_pair_soundtrack
 
-    monkeypatch.delenv("MAGICA_API_KEY", raising=False)
+    monkeypatch.delenv("SPIRAL_API_KEY", raising=False)
     monkeypatch.delenv("LUMIRA_AUTO_SOUNDTRACK", raising=False)
     image = tmp_path / "x.png"
     image.write_bytes(b"x")
@@ -311,7 +311,7 @@ def test_should_pair_video_for_motion_moods(monkeypatch):
     from ai_artist.personality.continuity import should_pair_video
 
     monkeypatch.delenv("LUMIRA_AUTO_VIDEO", raising=False)
-    monkeypatch.setenv("MAGICA_API_KEY", "test-key")
+    monkeypatch.setenv("SPIRAL_API_KEY", "test-key")
     assert should_pair_video(mood="energized") is True
     assert should_pair_video(mood="serene") is False
 
@@ -320,7 +320,7 @@ def test_should_pair_video_can_be_disabled(monkeypatch):
     from ai_artist.personality.continuity import should_pair_video
 
     monkeypatch.setenv("LUMIRA_AUTO_VIDEO", "0")
-    monkeypatch.setenv("MAGICA_API_KEY", "test-key")
+    monkeypatch.setenv("SPIRAL_API_KEY", "test-key")
     assert should_pair_video(mood="energized") is False
 
 
@@ -329,7 +329,7 @@ def test_choose_extra_media_is_xor(monkeypatch):
 
     monkeypatch.delenv("LUMIRA_AUTO_VIDEO", raising=False)
     monkeypatch.delenv("LUMIRA_AUTO_SOUNDTRACK", raising=False)
-    monkeypatch.setenv("MAGICA_API_KEY", "test-key")
+    monkeypatch.setenv("SPIRAL_API_KEY", "test-key")
     # energized is both a motion mood and a soundtrack mood — video wins.
     assert (
         choose_extra_media(
@@ -354,7 +354,7 @@ def test_maybe_pair_video_writes_sidecar(tmp_path, monkeypatch):
     image.write_bytes(b"fake")
     sidecar = image.with_suffix(".json")
     sidecar.write_text('{"prompt": "storm"}')
-    monkeypatch.setenv("MAGICA_API_KEY", "test-key")
+    monkeypatch.setenv("SPIRAL_API_KEY", "test-key")
 
     video_path = tmp_path / "clip.mp4"
     video_path.write_bytes(b"video")
@@ -364,7 +364,7 @@ def test_maybe_pair_video_writes_sidecar(tmp_path, monkeypatch):
             return video_path
 
     monkeypatch.setattr(
-        "ai_artist.core.magica_media.MagicaVideoGenerator",
+        "ai_artist.core.spiral_media.SpiralVideoGenerator",
         FakeVideo,
     )
     assert (

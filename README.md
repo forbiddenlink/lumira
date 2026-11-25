@@ -4,7 +4,7 @@
 
 An autonomous AI artist with personality, moods, memory, and creative independence. A
 lightweight "gallery + cloud-generation" build (`Dockerfile.gallery`, no local ML/GPU,
-generation via Replicate/Magica) deploys to Railway; see `docs/DEPLOYMENT.md`.
+generation via Replicate/Spiral) deploys to Railway; see `docs/DEPLOYMENT.md`.
 
 ## What makes Lumira different
 
@@ -131,7 +131,7 @@ See [docs/ROADMAP.md](docs/ROADMAP.md) for what's actively planned, and
 
 **Core:**
 
-- Stable Diffusion XL and FLUX (diffusers; xFormers is an optional dependency); cloud generation through Replicate or Magica
+- Stable Diffusion XL and FLUX (diffusers; xFormers is an optional dependency); cloud generation through Replicate or Spiral
 - LoRA for style training
 - PyTorch
 

@@ -37,4 +37,4 @@ flowchart LR
 | `vector_memory/<id>/data_level0.bin` | vector index |
 
 > NOTE: these are **runtime state**, currently git-tracked and churning on every run.
-> See MAGICA_INTEGRATION.md "Repo hygiene" for the untrack decision.
+> See SPIRAL_INTEGRATION.md "Repo hygiene" for the untrack decision.
