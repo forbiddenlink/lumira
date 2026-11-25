@@ -128,6 +128,24 @@ def _resolve(
     return key, parse_model_ref(key)
 
 
+def is_catalog_model(kind: str, model_id: str | None) -> bool:
+    """True when ``model_id`` is None, a catalog key, or an alias for ``kind``.
+
+    HTTP routes call this so web callers cannot pick an arbitrary
+    ``provider/model`` ref: the spend guard prices audio/video at a flat
+    per-item estimate, so an uncatalogued (possibly far pricier) model would
+    slip past the dollar cap. Raw refs stay available to Python callers.
+    """
+    if model_id is None:
+        return True
+    catalog, aliases = (
+        (SPIRAL_AUDIO_MODELS, _AUDIO_ALIASES)
+        if kind == "audio"
+        else (SPIRAL_VIDEO_MODELS, _VIDEO_ALIASES)
+    )
+    return aliases.get(model_id, model_id) in catalog
+
+
 # Rough per-item cost estimates for the shared dollar budget (Spiral price
 # sentences, 2026-11-25: ElevenLabs Music $0.195/min, Kling v3 Pro 5s silent
 # ~$0.73, Gemini Omni 5s 720p ~$0.82, Seedance 5s 720p ~$0.99). Override per

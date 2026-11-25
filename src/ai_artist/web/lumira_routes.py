@@ -3222,7 +3222,10 @@ async def create_soundtrack(
     state = _get_lumira_state()
     mood = body.mood or state["mood_system"].current_mood.value
 
-    from ..core.spiral_media import SpiralAudioGenerator
+    from ..core.spiral_media import SpiralAudioGenerator, is_catalog_model
+
+    if not is_catalog_model("audio", body.model_id):
+        raise HTTPException(status_code=400, detail="Unknown audio model_id")
 
     try:
         path = SpiralAudioGenerator(model_id=body.model_id).generate_audio(
@@ -3274,7 +3277,10 @@ async def create_video(
     state = _get_lumira_state()
     mood = body.mood or state["mood_system"].current_mood.value
 
-    from ..core.spiral_media import SpiralVideoGenerator
+    from ..core.spiral_media import SpiralVideoGenerator, is_catalog_model
+
+    if not is_catalog_model("video", body.model_id):
+        raise HTTPException(status_code=400, detail="Unknown video model_id")
 
     try:
         path = SpiralVideoGenerator(model_id=body.model_id).generate_video(

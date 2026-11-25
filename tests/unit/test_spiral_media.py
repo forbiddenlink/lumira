@@ -362,3 +362,21 @@ def test_generate_failed_run_raises(monkeypatch, tmp_path):
         pytest.raises(RuntimeError, match="failed"),
     ):
         gen.generate_audio("a prompt", gallery_root=tmp_path)
+
+
+def test_is_catalog_model_allows_catalog_keys_and_aliases():
+    from ai_artist.core.spiral_media import is_catalog_model
+
+    assert is_catalog_model("audio", None)
+    assert is_catalog_model("audio", "elevenlabs_music")
+    assert is_catalog_model("audio", "lyria-pro")
+    assert is_catalog_model("video", "kling")
+    assert is_catalog_model("video", "sora-2")
+
+
+def test_is_catalog_model_rejects_raw_refs_and_cross_kind():
+    from ai_artist.core.spiral_media import is_catalog_model
+
+    assert not is_catalog_model("video", "fal/some-expensive/video-model")
+    assert not is_catalog_model("audio", "kling")
+    assert not is_catalog_model("video", "elevenlabs_music")
