@@ -6027,10 +6027,12 @@
           }),
         })
           .then(function (res) {
-            return res.json().then(function (data) {
-              if (!res.ok) throw new Error(data.detail || "Video failed");
-              return data;
-            });
+            if (!res.ok) {
+              return lumiraResponseError(res, "Video failed").then(function (e) {
+                throw e;
+              });
+            }
+            return res.json();
           })
           .then(function (data) {
             addLog("LUMIRA", "Video ready");
@@ -6102,8 +6104,8 @@
         })
           .then(function (res) {
             if (!res.ok) {
-              return res.json().then(function (err) {
-                throw new Error(err.detail || "Explore failed");
+              return lumiraResponseError(res, "Explore failed").then(function (e) {
+                throw e;
               });
             }
             return res.json();
@@ -6124,7 +6126,7 @@
             addLog("EXPLORE", "Generated " + data.images_base64.length + " interpolation steps");
           })
           .catch(function (err) {
-            grid.textContent = "Explore failed: " + err;
+            grid.textContent = "Explore failed: " + (err && err.message ? err.message : err);
           });
       }
 
