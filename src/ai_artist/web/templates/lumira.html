@@ -1372,6 +1372,33 @@
         color: var(--accent-ink);
       }
 
+      .btn-preview:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .btn-preview:disabled:hover {
+        background: color-mix(in oklab, var(--accent) 15%, transparent);
+        color: var(--text-main);
+      }
+
+      .studio-auth-notice {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem 0.75rem;
+        margin-top: 0.75rem;
+        padding: 0.65rem 0.85rem;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+
+      .studio-auth-notice[hidden] {
+        display: none;
+      }
+
       /* Inner dialogue panel */
       .dialogue-panel {
         margin-top: 1rem;
@@ -3066,6 +3093,7 @@
           </button>
           <button
             class="btn-preview"
+            id="explore-open-btn"
             data-action="openExploreModal"
             aria-label="Explore latent space between concepts"
           >
@@ -3095,6 +3123,23 @@
             aria-label="Let Lumira create autonomously"
           >
             Or let Lumira decide
+          </button>
+        </div>
+        <div
+          id="studio-auth-notice"
+          class="studio-auth-notice"
+          role="status"
+          aria-live="polite"
+          hidden
+        >
+          <span id="studio-auth-message"></span>
+          <button
+            type="button"
+            id="studio-key-btn"
+            class="btn-preview"
+            data-action="addStudioKey"
+          >
+            Add API key
           </button>
         </div>
 
@@ -3223,7 +3268,7 @@
       <div class="explore-content">
         <div style="display: flex; justify-content: space-between; align-items: center">
           <h2 id="explore-title" style="margin: 0; font-size: 1rem">Latent Exploration</h2>
-          <button type="button" class="close-btn" data-action="closeExploreModal">&times;</button>
+          <button type="button" class="close-btn" data-action="closeExploreModal" aria-label="Close exploration">&times;</button>
         </div>
         <div class="explore-field">
           <label for="explore-concept-a">Starting concept</label>
@@ -3425,6 +3470,87 @@
         return headers;
       }
 
+      var STUDIO_AUTH_MESSAGE = "Sign in or add an API key to generate.";
+      var STUDIO_GENERATE_CONTROLS = [
+        "request-create-btn",
+        "request-preview-btn",
+        "explore-open-btn",
+        "animate-last-btn",
+        "create-btn",
+      ];
+
+      function hasStudioKey() {
+        try {
+          return !!sessionStorage.getItem("lumira_api_key");
+        } catch (e) {
+          return false;
+        }
+      }
+
+      // Generation is owner-only (the API requires X-API-Key), so anonymous
+      // visitors can browse but not generate.
+      function studioCanGenerate() {
+        return _generationAvailable && (!_authRequired || hasStudioKey());
+      }
+
+      function refreshStudioAuthState() {
+        var locked = _authRequired && !hasStudioKey();
+        STUDIO_GENERATE_CONTROLS.forEach(function (id) {
+          var el = document.getElementById(id);
+          if (!el) return;
+          // Leave controls alone while a generation is in flight.
+          if (locked) {
+            el.disabled = true;
+            el.title = STUDIO_AUTH_MESSAGE;
+          } else if (el.title === STUDIO_AUTH_MESSAGE) {
+            el.disabled = false;
+            el.removeAttribute("title");
+          }
+        });
+        var notice = document.getElementById("studio-auth-notice");
+        var message = document.getElementById("studio-auth-message");
+        if (notice && message) {
+          notice.hidden = !locked;
+          message.textContent = locked ? STUDIO_AUTH_MESSAGE : "";
+        }
+        if (locked) hideSuggestionPanel();
+      }
+
+      function addStudioKey() {
+        var key = window.prompt("Enter the studio API key:");
+        if (key && key.trim()) {
+          sessionStorage.setItem("lumira_api_key", key.trim());
+        }
+        refreshStudioAuthState();
+      }
+
+      // Turn any non-2xx response into a readable Error and, for auth
+      // failures, drop the stale key so the UI returns to its locked state.
+      function lumiraResponseError(res, fallback) {
+        return res
+          .json()
+          .catch(function () {
+            return {};
+          })
+          .then(function (body) {
+            if (res.status === 401 || res.status === 403) {
+              try {
+                sessionStorage.removeItem("lumira_api_key");
+              } catch (e) {}
+              refreshStudioAuthState();
+              return new Error(STUDIO_AUTH_MESSAGE);
+            }
+            if (res.status === 429) {
+              var wait = res.headers.get("Retry-After");
+              return new Error(
+                "Too many requests" + (wait ? ", retry in " + wait + " s." : ", try again shortly."),
+              );
+            }
+            var detail = body && body.detail;
+            return new Error(typeof detail === "string" && detail ? detail : fallback);
+          });
+      }
+
       function updatePromptCounter(el) {
         var counter = document.getElementById("request-prompt-counter");
         if (!counter) return;
@@ -3433,7 +3559,12 @@
       }
 
       function ensureGenerationAvailable() {
-        if (_generationAvailable) return true;
+        if (_generationAvailable && !(_authRequired && !hasStudioKey())) return true;
+        if (_generationAvailable) {
+          refreshStudioAuthState();
+          addLog("SYSTEM", STUDIO_AUTH_MESSAGE);
+          return false;
+        }
         addLog(
           "SYSTEM",
           "Lumira can't generate right now — image generation isn't configured for this deployment. Browse her existing gallery in the meantime.",
@@ -3448,6 +3579,7 @@
         if (overlay) overlay.classList.remove("active");
         if (btn) btn.disabled = false;
         stopProgressPreviewStudio();
+        refreshStudioAuthState();
       }
 
       // Mood colors — atelier pigments (not neon SaaS)
@@ -4350,8 +4482,8 @@
             clearInterval(progressInterval);
             clearTimeout(timeoutId);
             if (!res.ok) {
-              return res.json().then(function (err) {
-                throw new Error(err.detail || "Creation failed");
+              return lumiraResponseError(res, "Creation failed").then(function (e) {
+                throw e;
               });
             }
             return res.json();
@@ -5686,6 +5818,7 @@
       }
 
       function generatePreview() {
+        if (!ensureGenerationAvailable()) return;
         var promptEl = document.getElementById("request-prompt");
         var prompt = promptEl.value.trim();
         if (!prompt) {
@@ -5696,15 +5829,20 @@
         var btn = document.getElementById("request-preview-btn");
         btn.disabled = true;
         addLog("PREVIEW", "Generating fast preview…");
+        var previewController = new AbortController();
+        var previewTimeout = setTimeout(function () {
+          previewController.abort();
+        }, LUMIRA_GENERATION_TIMEOUT_MS);
         fetch("/api/lumira/preview", {
           method: "POST",
           headers: lumiraApiHeaders(),
           body: JSON.stringify({ prompt: prompt }),
+          signal: previewController.signal,
         })
           .then(function (res) {
             if (!res.ok) {
-              return res.json().then(function (err) {
-                throw new Error(err.detail || "Preview failed");
+              return lumiraResponseError(res, "Preview failed").then(function (e) {
+                throw e;
               });
             }
             return res.json();
@@ -5727,10 +5865,19 @@
             addLog("PREVIEW", "Preview ready in " + (data.generation_time || "?") + "s");
           })
           .catch(function (err) {
-            addLog("ERROR", "Preview request failed: " + err);
+            addLog(
+              "ERROR",
+              err && err.name === "AbortError"
+                ? "Preview timed out. Try again in a moment."
+                : err && err.message
+                  ? err.message
+                  : "Preview request failed",
+            );
           })
           .finally(function () {
+            clearTimeout(previewTimeout);
             btn.disabled = false;
+            refreshStudioAuthState();
           });
       }
 
@@ -5756,6 +5903,11 @@
           }),
         })
           .then(function (res) {
+            if (!res.ok) {
+              return lumiraResponseError(res, "Full render failed").then(function (e) {
+                throw e;
+              });
+            }
             return res.json();
           })
           .then(function (data) {
@@ -5768,7 +5920,7 @@
             fetchState(true);
           })
           .catch(function (err) {
-            addLog("ERROR", "Approve failed: " + err);
+            addLog("ERROR", err && err.message ? err.message : "Approve failed");
           })
           .finally(function () {
             btn.disabled = false;
@@ -6062,8 +6214,8 @@
             clearInterval(progressInterval);
             clearTimeout(timeoutId);
             if (!res.ok) {
-              return res.json().then(function (err) {
-                throw new Error(err.detail || "Creation request failed");
+              return lumiraResponseError(res, "Creation request failed").then(function (e) {
+                throw e;
               });
             }
             return res.json();
@@ -6191,6 +6343,9 @@
       }
 
       function fetchSuggestion(prompt) {
+        // Suggestions need the same key as generation; skip the call instead
+        // of firing a request that is guaranteed to 401.
+        if (_authRequired && !hasStudioKey()) return;
         var panel = document.getElementById('prompt-suggestion');
         panel.classList.add('visible');
         panel.innerHTML = '<div class="prompt-suggestion-loading">Lumira is thinking\u2026</div>';
@@ -6201,7 +6356,13 @@
           body: JSON.stringify({prompt: prompt})
         })
         .then(function(res) {
-          if (!res.ok) throw new Error();
+          if (!res.ok) {
+            if (res.status === 401 || res.status === 403) {
+              try { sessionStorage.removeItem("lumira_api_key"); } catch (e) {}
+              refreshStudioAuthState();
+            }
+            throw new Error();
+          }
           return res.json();
         })
         .then(function(data) {
@@ -6276,6 +6437,7 @@
                 "I can think and remember. Making a new piece is locked until this studio has a key.",
               );
             }
+            refreshStudioAuthState();
           })
           .catch(function () {});
         fetchState(true);
@@ -6381,6 +6543,7 @@
           "downloadArtwork",
           "findSimilarArtworks",
           "forceEvolve",
+          "addStudioKey",
           "generatePreview",
           "generateVariations",
           "hideSuggestionPanel",

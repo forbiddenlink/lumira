@@ -83,3 +83,89 @@ class TestGalleryModal:
 
         page.locator("#modal .modal-close").click()
         expect(page.locator("#modal")).not_to_have_class(re.compile(r"active"))
+
+
+def _boxes_overlap(a: dict, b: dict) -> bool:
+    return not (
+        a["x"] + a["width"] <= b["x"]
+        or b["x"] + b["width"] <= a["x"]
+        or a["y"] + a["height"] <= b["y"]
+        or b["y"] + b["height"] <= a["y"]
+    )
+
+
+class TestGalleryLayout:
+    """Layout regressions that only show up once a dialog is open."""
+
+    @pytest.mark.parametrize("viewport", ["desktop", "mobile"])
+    def test_templates_modal_header_and_actions_do_not_collide(
+        self, request: pytest.FixtureRequest, viewport: str
+    ):
+        page = request.getfixturevalue(
+            "gallery_page" if viewport == "desktop" else "mobile_page"
+        )
+        if viewport == "mobile":
+            page.goto(f"{request.getfixturevalue('base_url')}/")
+            page.wait_for_selector("#gallery", timeout=15000)
+        page.evaluate("showTemplatesModal()")
+        page.wait_for_selector("#templates-modal.active")
+
+        title = page.locator(".templates-title").bounding_box()
+        close = page.locator(".templates-close-btn").bounding_box()
+        desc = page.locator(".templates-desc").bounding_box()
+        new_btn = page.locator(".templates-new-btn").bounding_box()
+        assert title and close and desc and new_btn
+        assert not _boxes_overlap(title, close)
+        assert not _boxes_overlap(desc, new_btn)
+        # The header must span the card, not shrink-wrap its content, so the
+        # close button sits clear of the title rather than touching it.
+        card = page.locator(".templates-modal-content").bounding_box()
+        assert card
+        assert close["x"] + close["width"] >= card["x"] + card["width"] - 40
+
+    def test_mobile_zoom_controls_clear_the_info_sheet(
+        self, mobile_page: Page, base_url: str
+    ):
+        page = mobile_page
+        page.goto(f"{base_url}/")
+        page.wait_for_selector("#gallery", timeout=15000)
+        page.wait_for_timeout(1500)
+        cards = page.locator(".gallery-item")
+        if cards.count() == 0:
+            pytest.skip("No gallery images available for modal test")
+        cards.first.click()
+        page.wait_for_selector("#modal.active", timeout=10000)
+        page.wait_for_selector("#modal-info.visible")
+        page.wait_for_timeout(500)
+
+        zoom = page.locator(".modal-zoom-controls").bounding_box()
+        info = page.locator("#modal-info").bounding_box()
+        assert zoom and info
+        assert zoom["y"] + zoom["height"] <= info["y"] + 1
+
+    def test_info_toggle_is_not_a_second_close_button(self, gallery_page: Page):
+        page = gallery_page
+        page.wait_for_timeout(1500)
+        cards = page.locator(".gallery-item")
+        if cards.count() == 0:
+            pytest.skip("No gallery images available for modal test")
+        cards.first.click()
+        page.wait_for_selector("#modal.active", timeout=10000)
+
+        toggle = page.locator("#modal-info-toggle")
+        expect(toggle).to_have_attribute("aria-expanded", "true")
+        # Same icon open and closed: an X here reads as a duplicate close.
+        assert 'x1="18"' not in toggle.inner_html()
+
+    def test_modal_icon_buttons_have_accessible_names(self, gallery_page: Page):
+        page = gallery_page
+        for selector in (
+            ".modal-zoom-btn",
+            "#modal-info-toggle",
+            "#modal-prev",
+            "#modal-next",
+        ):
+            buttons = page.locator(selector)
+            for index in range(buttons.count()):
+                label = buttons.nth(index).get_attribute("aria-label")
+                assert label, f"{selector}[{index}] has no aria-label"

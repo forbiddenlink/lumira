@@ -1506,13 +1506,22 @@
       }
 
       /* === TEMPLATES MODAL === */
-      .templates-modal-content {
-        max-width: 800px;
+      .modal-content.templates-modal-content {
+        /* .modal-content is a full-bleed centered flex column; without these
+           resets the header and description row shrink to their content and
+           the close button collides with the title. */
+        width: min(800px, calc(100% - 32px));
+        height: auto;
+        max-height: calc(100% - 32px);
+        overflow-y: auto;
+        align-items: stretch;
+        justify-content: flex-start;
         background: var(--bg-elevated);
         border-radius: 16px;
         padding: 0;
       }
       .templates-header {
+        gap: 16px;
         padding: 24px;
         border-bottom: 1px solid var(--border);
         display: flex;
@@ -1526,6 +1535,7 @@
         color: var(--text-main);
       }
       .templates-close-btn {
+        flex: none;
         width: 36px;
         height: 36px;
         border-radius: 50%;
@@ -1548,15 +1558,21 @@
       }
       .templates-desc-row {
         display: flex;
+        flex-wrap: wrap;
+        gap: 12px 16px;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 20px;
       }
       .templates-desc {
+        flex: 1 1 14rem;
+        min-width: 0;
         margin: 0;
         color: var(--text-muted);
       }
       .templates-new-btn {
+        flex: none;
+        white-space: nowrap;
         padding: 10px 20px;
         background: linear-gradient(
           135deg,
@@ -1929,6 +1945,16 @@
         .modal-zoom-controls {
           flex-wrap: wrap;
           gap: 8px;
+          justify-content: flex-start;
+          left: 12px;
+          right: 76px;
+          transform: none;
+        }
+
+        /* The info sheet covers the bottom half of the screen and holds the
+           Love/File buttons, so lift the zoom controls above it. */
+        .modal:has(.modal-info.visible) .modal-zoom-controls {
+          bottom: calc(50vh + 10px);
         }
 
         .modal-zoom-btn {
@@ -3801,6 +3827,7 @@
         id="modal-info-toggle"
         data-action="toggleModalInfo"
         aria-label="Toggle image information panel"
+        aria-expanded="true"
       >
         <svg
           width="20"
@@ -3843,20 +3870,22 @@
           class="modal-zoom-btn"
           data-action="zoomModal" data-arg="-0.2"
           title="Zoom out"
+          aria-label="Zoom out"
         >
           −
         </button>
-        <div class="modal-zoom-level" id="modal-zoom-level">100%</div>
-        <button class="modal-zoom-btn" data-action="zoomModal" data-arg="0.2" title="Zoom in">
+        <div class="modal-zoom-level" id="modal-zoom-level" role="status" aria-label="Zoom level">100%</div>
+        <button class="modal-zoom-btn" data-action="zoomModal" data-arg="0.2" title="Zoom in" aria-label="Zoom in">
           +
         </button>
-        <button class="modal-zoom-btn" data-action="resetZoom" title="Reset zoom">
+        <button class="modal-zoom-btn" data-action="resetZoom" title="Reset zoom" aria-label="Reset zoom">
           ⟲
         </button>
         <button
           class="modal-zoom-btn comparison-btn"
           data-action="startComparison"
           title="Compare (C)"
+          aria-label="Compare with another artwork"
           style="margin-left: 12px; font-size: 18px"
         >
           ⇆
@@ -6104,6 +6133,7 @@
           featuredBtn.title = image.featured
             ? "Remove from featured"
             : "Add to featured";
+          featuredBtn.setAttribute("aria-label", featuredBtn.title);
           featuredBtn.onclick = (e) =>
             toggleFeatured(image.path, image.featured, e);
 
@@ -6112,6 +6142,7 @@
           downloadBtn.innerHTML =
             '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>';
           downloadBtn.title = "Download";
+          downloadBtn.setAttribute("aria-label", downloadBtn.title);
           downloadBtn.onclick = (e) =>
             downloadImage(image.path, image.filename, e);
 
@@ -6120,6 +6151,7 @@
           deleteBtn.innerHTML =
             '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
           deleteBtn.title = "Delete";
+          deleteBtn.setAttribute("aria-label", deleteBtn.title);
           deleteBtn.onclick = (e) => deleteImage(image.path, e);
 
           const shareBtn = document.createElement("button");
@@ -6127,6 +6159,7 @@
           shareBtn.innerHTML =
             '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>';
           shareBtn.title = "Share";
+          shareBtn.setAttribute("aria-label", shareBtn.title);
           shareBtn.onclick = (e) => {
             e.stopPropagation();
             const idx = allImages.indexOf(image);
@@ -6139,6 +6172,7 @@
           loveBtn.innerHTML =
             '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>';
           loveBtn.title = "Love this — teach Lumira";
+          loveBtn.setAttribute("aria-label", loveBtn.title);
           loveBtn.onclick = (e) => loveArtwork(image, e);
 
           actions.appendChild(loveBtn);
@@ -6233,8 +6267,7 @@
 
         // Show info sidebar by default
         modalInfo.classList.add("visible");
-        modalInfoToggle.innerHTML =
-          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+        modalInfoToggle.setAttribute("aria-expanded", "true");
         isModalInfoVisible = true;
 
         document.body.style.overflow = "hidden";
@@ -6342,12 +6375,10 @@
 
         if (isModalInfoVisible) {
           modalInfo.classList.add("visible");
-          modalInfoToggle.innerHTML =
-            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+          modalInfoToggle.setAttribute("aria-expanded", "true");
         } else {
           modalInfo.classList.remove("visible");
-          modalInfoToggle.innerHTML =
-            '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
+          modalInfoToggle.setAttribute("aria-expanded", "false");
         }
       }
 

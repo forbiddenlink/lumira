@@ -792,3 +792,70 @@ class TestArtistPresence:
             }""")
         assert state.get("mood")
         assert state.get("feeling")
+
+
+class TestStudioAuthUx:
+    """Anonymous visitors get a clear message instead of a silent 401."""
+
+    @staticmethod
+    def _open_locked_studio(page: Page, base_url: str) -> list[str]:
+        """Open the studio as if the deployment required an API key."""
+        calls: list[str] = []
+        page.route(
+            "**/api/auth-mode",
+            lambda route: route.fulfill(
+                json={
+                    "auth_required": True,
+                    "dev_mode": False,
+                    "generation_available": True,
+                }
+            ),
+        )
+        page.on(
+            "request",
+            lambda req: calls.append(req.url) if "/api/lumira/" in req.url else None,
+        )
+        page.goto(f"{base_url}/lumira", wait_until="domcontentloaded")
+        page.wait_for_selector("#studio-auth-notice:not([hidden])")
+        return calls
+
+    def test_generate_controls_locked_without_key(
+        self, page_with_server: Page, base_url: str
+    ):
+        page = page_with_server
+        calls = self._open_locked_studio(page, base_url)
+
+        expect(page.locator("#studio-auth-message")).to_have_text(
+            "Sign in or add an API key to generate."
+        )
+        expect(page.locator("#request-create-btn")).to_be_disabled()
+        expect(page.locator("#request-preview-btn")).to_be_disabled()
+
+        # Typing must not fire suggest-prompt while locked.
+        page.locator("#request-prompt").fill("a lighthouse at dusk")
+        page.wait_for_timeout(1600)
+        assert not [c for c in calls if "suggest-prompt" in c]
+
+    def test_rejected_key_returns_to_locked_state(
+        self, page_with_server: Page, base_url: str
+    ):
+        page = page_with_server
+        self._open_locked_studio(page, base_url)
+        page.route(
+            "**/api/lumira/preview",
+            lambda route: route.fulfill(
+                status=401,
+                json={"detail": "API key required. Provide X-API-Key header."},
+            ),
+        )
+        page.on("dialog", lambda dialog: dialog.accept("not-a-real-key"))
+
+        page.locator("#studio-key-btn").click()
+        expect(page.locator("#request-preview-btn")).to_be_enabled()
+
+        page.locator("#request-prompt").fill("a lighthouse at dusk")
+        page.locator("#request-preview-btn").click()
+
+        # The 401 must end the request, lock the controls again and say why.
+        expect(page.locator("#studio-auth-notice")).to_be_visible()
+        expect(page.locator("#request-preview-btn")).to_be_disabled()
