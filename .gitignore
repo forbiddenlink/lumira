@@ -131,3 +131,5 @@ TEST_REPORT.md
 
 # Design-research screenshots (regenerable)
 design-research/shots/
+
+.claude/settings.local.json
